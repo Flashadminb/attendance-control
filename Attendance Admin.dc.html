@@ -1,0 +1,2227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="_ds/modernist-3f726d7a-cfb7-4b7e-a4e3-1da24770154c/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+<script src="_ds/modernist-3f726d7a-cfb7-4b7e-a4e3-1da24770154c/_ds_bundle.js"></script>
+<style>
+  body { margin:0; font-family:"Archivo","Noto Sans Thai",system-ui,sans-serif; }
+  h1,h2,h3,h4,h5,h6 { font-family:"Archivo","Noto Sans Thai",system-ui,sans-serif; }
+  a { color: var(--color-accent-700); }
+  a:hover { color: var(--color-accent); }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb { background:#bab6b6; }
+  ::-webkit-scrollbar-track { background:#eae7e7; }
+  @media print { .noprint { display:none !important; } }
+</style>
+</helmet>
+
+<div style="display:flex; height:100vh; background:#f3f2f2; color:#201e1d; font-size:14px;">
+
+  <aside class="noprint" style="width:236px; flex:none; border-right:2px solid rgba(32,30,29,.4); display:flex; flex-direction:column; background:#f3f2f2;">
+    <div style="padding:20px 18px 16px; border-bottom:2px solid rgba(32,30,29,.4);">
+      <div style="font-family:Archivo; font-weight:800; font-size:19px; letter-spacing:-.02em; line-height:1.05;">ATTENDANCE<br>CONTROL</div>
+      <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7d7979; margin-top:6px;">HCM Daily Processing</div>
+    </div>
+    <nav style="display:flex; flex-direction:column;">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="7">
+        <button type="button" onClick="{{ n.go }}" style="{{ n.style }}">
+          <span style="width:22px; flex:none; font-family:Archivo; font-weight:800; font-size:11px;">{{ n.num }}</span>
+          <span style="flex:1; text-align:left;">{{ n.label }}</span>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="margin-top:auto; padding:16px 18px; border-top:2px solid rgba(32,30,29,.4); font-size:11px; color:#605d5d; line-height:1.6;">
+      <div style="display:flex; justify-content:space-between; gap:10px;"><span style="flex:1; min-width:0; white-space:nowrap;">ชุดข้อมูล</span><strong style="font-family:Archivo; flex:none; white-space:nowrap;">{{ periodLabel }}</strong></div>
+      <div style="display:flex; justify-content:space-between; gap:10px;"><span style="flex:1; min-width:0; white-space:nowrap;">พนักงาน</span><strong style="font-family:Archivo; flex:none; white-space:nowrap;">{{ empCount }}</strong></div>
+      <div style="display:flex; justify-content:space-between; gap:10px;"><span style="flex:1; min-width:0; white-space:nowrap;">แหล่งข้อมูล</span><strong style="font-family:Archivo; flex:none; white-space:nowrap;">{{ sourceLabel }}</strong></div>
+    </div>
+  </aside>
+
+  <main style="flex:1; min-width:0; overflow:auto; display:flex; flex-direction:column;">
+
+    <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:22px 28px 14px; border-bottom:2px solid rgba(32,30,29,.4);">
+      <div>
+        <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7d7979;">{{ screenKicker }}</div>
+        <h2 style="margin:2px 0 0; font-size:29px;">{{ screenTitle }}</h2>
+      </div>
+      <div class="noprint" style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:11px; color:#605d5d;">{{ filterSummary }}</span>
+        <select class="input" onChange="{{ onPickMonth }}" value="{{ curMonth }}" style="height:34px; font-size:12px; width:170px;">
+          <sc-for list="{{ monthOpts }}" as="m" hint-placeholder-count="2"><option value="{{ m.month }}">{{ m.label }}</option></sc-for>
+        </select>
+        <button type="button" class="btn btn-secondary" onClick="{{ goExport }}" style="height:34px; white-space:nowrap;">ส่งออก</button>
+      </div>
+    </header>
+
+    <!-- ══ 1 · UPLOAD ══ -->
+    <sc-if value="{{ isUpload }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:24px 28px 60px; display:flex; flex-direction:column; gap:22px;">
+      <p style="max-width:640px; color:#605d5d; margin:0;">อัปโหลดไฟล์รายวันจาก HCM ทั้งสองไฟล์ ระบบจะจับคู่รหัสพนักงานกับตารางกะ แล้วประมวลผลสีตามกฎที่ตั้งไว้โดยอัตโนมัติ ไม่ต้องแก้สูตรในชีตอีก</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+        <label style="{{ dropAStyle }}" onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDropAtt }}">
+          <input type="file" accept=".xlsx,.xls,.csv" onChange="{{ onPickAtt }}" style="display:none;">
+          <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7d7979;">ไฟล์ที่ 1 — จำเป็น</div>
+          <div style="font-family:Archivo; font-weight:800; font-size:21px; margin-top:4px;">เวลาทำงาน (Attendance)</div>
+          <div style="font-size:12px; color:#605d5d; margin-top:6px;">คอลัมน์ 01–31 เก็บข้อความ เช่น in:08:45 out:20:32 / วันหยุด / ลาพักร้อน1วัน</div>
+          <div style="margin-top:auto; padding-top:16px; display:flex; align-items:center; gap:10px;">
+            <span class="btn btn-primary" style="height:34px; pointer-events:none;">เลือกไฟล์</span>
+            <span style="font-size:12px; color:#605d5d;">หรือลากไฟล์มาวางที่นี่</span>
+          </div>
+          <div style="margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px;">{{ attStatus }}</div>
+        </label>
+
+        <label style="{{ dropBStyle }}" onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDropSch }}">
+          <input type="file" accept=".xlsx,.xls,.csv" onChange="{{ onPickSch }}" style="display:none;">
+          <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7d7979;">ไฟล์ที่ 2 — อัปเฉพาะตอนมีคนใหม่หรือเปลี่ยนกะ</div>
+          <div style="font-family:Archivo; font-weight:800; font-size:21px; margin-top:4px;">ตารางกะ (Schedule)</div>
+          <div style="font-size:12px; color:#605d5d; margin-top:6px;">ค่าในช่องคือชื่อกะ+เวลา เช่น กะเช้า09:00-18:00 / กะดึก21:00-06:00 · ระบบจำไฟล์ล่าสุดไว้ให้ ไม่ต้องอัปซ้ำทุกวัน</div>
+          <div style="margin-top:auto; padding-top:16px; display:flex; align-items:center; gap:10px;">
+            <span class="btn btn-primary" style="height:34px; pointer-events:none;">เลือกไฟล์</span>
+            <span style="font-size:12px; color:#605d5d;">หรือลากไฟล์มาวางที่นี่</span>
+          </div>
+          <div style="margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px; display:flex; align-items:center; gap:10px;">
+            <span style="flex:1; min-width:0;">{{ schStatus }}</span>
+            <sc-if value="{{ schRemembered }}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="btn btn-ghost" onClick="{{ forgetSchedule }}" style="height:26px; font-size:11px; flex:none;">ลืมตารางกะนี้</button>
+            </sc-if>
+          </div>
+        </label>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button type="button" class="btn btn-secondary" onClick="{{ loadDemo }}" style="height:36px;">โหลดข้อมูลตัวอย่าง</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ clearAll }}" style="height:36px;">ล้างข้อมูลทั้งหมด</button>
+        <span style="font-size:12px; color:#605d5d;">ไฟล์ถูกประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดออกนอกเครื่อง</span>
+      </div>
+
+      <hr class="hr">
+      <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:24px;">
+        <div>
+          <h5 style="margin:0 0 8px;">คอลัมน์ที่ระบบตรวจพบ</h5>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <sc-for list="{{ detectedCols }}" as="c" hint-placeholder-count="10">
+              <span class="tag tag-outline" style="font-size:11px;">{{ c }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <h5 style="margin:0 0 8px;">บันทึกการประมวลผล</h5>
+          <div style="border:2px solid rgba(32,30,29,.4); background:#eae9e9; font-size:12px; font-family:Archivo; max-height:190px; overflow:auto;">
+            <sc-for list="{{ logLines }}" as="l" hint-placeholder-count="4">
+              <div style="padding:6px 10px; border-bottom:1px solid #d7d3d3; display:flex; gap:10px;">
+                <span style="color:#7d7979; flex:none;">{{ l.t }}</span><span>{{ l.m }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ══ 2 · DASHBOARD ══ -->
+    <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:22px 28px 60px; display:flex; flex-direction:column; gap:22px;">
+
+      <div class="noprint" style="display:flex; align-items:center; gap:0; flex-wrap:wrap; border-bottom:2px solid rgba(32,30,29,.4);">
+        <sc-for list="{{ dashTabs }}" as="t" hint-placeholder-count="2">
+          <button type="button" onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
+        </sc-for>
+        <span style="margin-left:auto; font-size:11px; color:#605d5d;">{{ dashTabHint }}</span>
+      </div>
+
+
+      <div class="noprint" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; border:2px solid rgba(32,30,29,.4); padding:12px 14px; background:#eae9e9;">
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ตั้งแต่วันที่</label>
+          <input class="input" type="date" value="{{ dashFrom }}" min="{{ dateMin }}" max="{{ dateMax }}" onInput="{{ onDashFrom }}" style="height:32px; font-size:12px;"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ถึงวันที่</label>
+          <input class="input" type="date" value="{{ dashTo }}" min="{{ dateMin }}" max="{{ dateMax }}" onInput="{{ onDashTo }}" style="height:32px; font-size:12px;"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ช่วงสำเร็จรูป</label>
+          <div class="seg" style="height:36px;">
+            <sc-for list="{{ rangePresets }}" as="p" hint-placeholder-count="4">
+              <button type="button" class="seg-opt" onClick="{{ p.pick }}" style="{{ p.style }}">{{ p.label }}</button>
+            </sc-for>
+          </div></div>
+        <div style="margin-left:auto; text-align:right; font-size:11px; color:#605d5d;">{{ rangeSummary }}</div>
+      </div>
+
+      <sc-if value="{{ isDashShift }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:22px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
+          <div>
+            <h4 style="margin:0;">ผลรายกะ — {{ dayKey }}</h4>
+            <div style="font-size:12px; color:#605d5d;">จัดกลุ่มตามกะที่ตั้งไว้ในไฟล์ตารางกะของวันนั้น</div>
+          </div>
+          <select onChange="{{ onPickDay }}" value="{{ dayKey }}" class="input" style="width:150px; height:30px; font-size:12px;">
+            <sc-for list="{{ dates }}" as="d" hint-placeholder-count="3"><option value="{{ d }}">{{ d }}</option></sc-for>
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); border:2px solid rgba(32,30,29,.4); border-right:0;">
+          <sc-for list="{{ shiftCards }}" as="c" hint-placeholder-count="4">
+            <div style="{{ c.style }}">
+              <div style="display:flex; align-items:baseline; justify-content:space-between;">
+                <div style="font-family:Archivo,'Noto Sans Thai',sans-serif; font-weight:800; font-size:17px;">{{ c.name }}</div>
+                <div style="font-size:11px; color:#605d5d; font-family:Archivo;">{{ c.time }}</div>
+              </div>
+              <div style="display:flex; gap:18px; margin-top:10px;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:Archivo; font-weight:800; font-size:30px; line-height:1;">{{ c.attRate }}</div>
+                  <div style="font-size:11px; color:#7d7979; white-space:nowrap; margin-top:2px;">Attendance Rate</div>
+                  <div style="height:8px; background:#eae7e7; margin-top:8px;"><span style="{{ c.attBarStyle }}"></span></div>
+                </div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:Archivo; font-weight:800; font-size:30px; line-height:1;">{{ c.onTime }}</div>
+                  <div style="font-size:11px; color:#7d7979; white-space:nowrap; margin-top:2px;">ตรงเวลา · {{ c.headcount }} คน</div>
+                  <div style="height:8px; background:#eae7e7; margin-top:8px;"><span style="{{ c.barStyle }}"></span></div>
+                </div>
+              </div>
+              <div style="height:0; margin:0 0 12px;"></div>
+              <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; font-size:11px;">
+                <sc-for list="{{ c.stats }}" as="s" hint-placeholder-count="4">
+                  <div><div style="font-family:Archivo; font-weight:800; font-size:17px; color:{{ s.color }};">{{ s.value }}</div><div style="color:#605d5d;">{{ s.label }}</div></div>
+                </sc-for>
+              </div>
+              <div style="margin-top:12px; font-size:11px; color:#605d5d; border-top:1px solid #d7d3d3; padding-top:8px;">{{ c.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.05fr 1fr; gap:24px;">
+          <section>
+            <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">อัตราตรงเวลารายกะตลอดเดือน</h4>
+            <svg viewBox="0 0 520 200" style="width:100%; height:200px; display:block;">
+              <line x1="34" y1="10" x2="34" y2="160" stroke="#201e1d" stroke-width="2"></line>
+              <line x1="34" y1="160" x2="512" y2="160" stroke="#201e1d" stroke-width="2"></line>
+              <sc-for list="{{ shiftTrendGrid }}" as="g" hint-placeholder-count="3">
+                <line x1="34" y1="{{ g.y }}" x2="512" y2="{{ g.y }}" stroke="#d7d3d3" stroke-width="1"></line>
+              </sc-for>
+              <sc-for list="{{ shiftTrendGrid }}" as="g" hint-placeholder-count="3">
+                <text x="0" y="{{ g.ty }}" font-size="10" fill="#7d7979" font-family="Archivo">{{ g.label }}</text>
+              </sc-for>
+              <sc-for list="{{ shiftTrendLines }}" as="l" hint-placeholder-count="3">
+                <path d="{{ l.d }}" fill="none" stroke="{{ l.stroke }}" stroke-width="2.5" stroke-dasharray="{{ l.dash }}"></path>
+              </sc-for>
+              <sc-for list="{{ shiftTrendLegend }}" as="l" hint-placeholder-count="3">
+                <g><rect x="{{ l.x }}" y="182" width="10" height="4" fill="{{ l.stroke }}"></rect><text x="{{ l.tx }}" y="188" font-size="10" fill="#605d5d" font-family="Archivo,'Noto Sans Thai',sans-serif">{{ l.label }}</text></g>
+              </sc-for>
+            </svg>
+          </section>
+          <section>
+            <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ปัญหาของวันนี้ แยกตามกะ</h4>
+            <div style="max-height:340px; overflow:auto;">
+              <table class="table" style="width:100%; font-size:12px;">
+                <thead><tr><th style="text-align:left;">กะ</th><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:left;">สถานะ</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ shiftIssues }}" as="r" hint-placeholder-count="8">
+                    <tr onClick="{{ r.open }}" style="cursor:pointer;">
+                      <td style="font-family:Archivo; font-size:11px;">{{ r.shift }}</td>
+                      <td style="font-weight:600;">{{ r.name }}</td>
+                      <td style="font-size:11px;">{{ r.branch }}</td>
+                      <td><span style="{{ r.tagStyle }}">{{ r.status }}</span></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <section>
+          <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">สรุปรายกะ × ตำแหน่ง (ทั้งเดือน)</h4>
+          <table class="table" style="width:100%; font-size:12px;">
+            <thead><tr><th style="text-align:left;">กะ</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:right;">คน</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">นาทีสาย/ครั้ง</th><th style="text-align:right;">ออกก่อน</th><th style="text-align:right;">Attendance Rate</th><th style="text-align:left; width:170px;">อัตราตรงเวลา</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ shiftBranchRows }}" as="r" hint-placeholder-count="8">
+                <tr onClick="{{ r.open }}" style="cursor:pointer;">
+                  <td style="font-family:Archivo,'Noto Sans Thai',sans-serif; font-weight:600;">{{ r.shift }}</td>
+                  <td>{{ r.branch }}</td>
+                  <td style="text-align:right; font-family:Archivo;">{{ r.headcount }}</td>
+                  <td style="text-align:right; font-family:Archivo; color:#ae1800; font-weight:600;">{{ r.absent }}</td>
+                  <td style="text-align:right; font-family:Archivo;">{{ r.late }}</td>
+                  <td style="text-align:right; font-family:Archivo;">{{ r.avgLate }}</td>
+                  <td style="text-align:right; font-family:Archivo;">{{ r.early }}</td>
+                  <td style="text-align:right; font-family:Archivo; font-weight:800;">{{ r.attRate }}</td>
+                  <td><div style="display:flex; align-items:center; gap:8px;"><span style="flex:1; height:10px; background:#eae7e7; display:block;"><span style="{{ r.barStyle }}"></span></span><strong style="font-family:Archivo; width:44px; text-align:right;">{{ r.onTime }}</strong></div></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </section>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isDashOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-direction:column; gap:22px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); border:2px solid rgba(32,30,29,.4);">
+        <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+          <div style="{{ k.style }}">
+            <div style="font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:inherit; opacity:.62;">{{ k.label }}</div>
+            <div style="font-family:Archivo; font-weight:800; font-size:40px; line-height:1.05; margin-top:8px; letter-spacing:-.03em;">{{ k.value }}</div>
+            <div style="font-size:12px; color:inherit; opacity:.72; margin-top:4px;">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:24px;">
+        <section>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">
+            <h4 style="margin:0;">รายวัน — ใครขาด/สายบ้าง</h4>
+            <select onChange="{{ onPickDay }}" value="{{ dayKey }}" class="input" style="width:150px; height:30px; font-size:12px;">
+              <sc-for list="{{ dates }}" as="d" hint-placeholder-count="3"><option value="{{ d }}">{{ d }}</option></sc-for>
+            </select>
+          </div>
+          <div style="display:flex; gap:0; border-bottom:2px solid rgba(32,30,29,.4);">
+            <sc-for list="{{ dayTotals }}" as="t" hint-placeholder-count="4">
+              <div style="{{ t.style }}">
+                <div style="font-family:Archivo; font-weight:800; font-size:22px;">{{ t.value }}</div>
+                <div style="font-size:11px; color:#605d5d;">{{ t.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="max-height:330px; overflow:auto;">
+            <table class="table" style="width:100%; font-size:12px;">
+              <thead><tr><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">กะ</th><th style="text-align:left;">สถานะ</th><th style="text-align:right;">เวลา</th></tr></thead>
+              <tbody>
+                <sc-for list="{{ dayIssues }}" as="r" hint-placeholder-count="8">
+                  <tr onClick="{{ r.open }}" style="cursor:pointer;">
+                    <td><div style="font-weight:600;">{{ r.name }}</div><div style="font-size:11px; color:#7d7979;">{{ r.position }}</div></td>
+                    <td style="font-size:11px; font-family:Archivo;">{{ r.shiftName }}</td>
+                    <td><span style="{{ r.tagStyle }}">{{ r.status }}</span></td>
+                    <td style="text-align:right; font-family:Archivo; font-size:11px; color:#605d5d;">{{ r.time }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section style="display:flex; flex-direction:column; gap:20px;">
+          <div>
+            <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">เทรนด์รายวันของเดือน</h4>
+            <svg viewBox="0 0 520 190" style="width:100%; height:190px; display:block;">
+              <line x1="34" y1="10" x2="34" y2="152" stroke="#201e1d" stroke-width="2"></line>
+              <line x1="34" y1="152" x2="512" y2="152" stroke="#201e1d" stroke-width="2"></line>
+              <sc-for list="{{ trendGrid }}" as="g" hint-placeholder-count="3">
+                <line x1="34" y1="{{ g.y }}" x2="512" y2="{{ g.y }}" stroke="#d7d3d3" stroke-width="1"></line>
+              </sc-for>
+              <sc-for list="{{ trendGrid }}" as="g" hint-placeholder-count="3">
+                <text x="0" y="{{ g.ty }}" font-size="10" fill="#7d7979" font-family="Archivo">{{ g.label }}</text>
+              </sc-for>
+              <path d="{{ trendLate }}" fill="none" stroke="#e8a400" stroke-width="2.5"></path>
+              <path d="{{ trendAbsent }}" fill="none" stroke="#ec3013" stroke-width="2.5"></path>
+              <sc-for list="{{ trendTicks }}" as="t" hint-placeholder-count="4">
+                <text x="{{ t.x }}" y="168" font-size="10" fill="#7d7979" font-family="Archivo" text-anchor="middle">{{ t.label }}</text>
+              </sc-for>
+              <path d="{{ trendAtt }}" fill="none" stroke="#201e1d" stroke-width="2" stroke-dasharray="5 3"></path>
+              <rect x="240" y="176" width="10" height="4" fill="#201e1d"></rect>
+              <text x="256" y="182" font-size="10" fill="#605d5d" font-family="Archivo">Att. Rate %</text>
+              <rect x="360" y="176" width="10" height="4" fill="#e8a400"></rect>
+              <text x="376" y="182" font-size="10" fill="#605d5d" font-family="Archivo">สาย %</text>
+              <rect x="430" y="176" width="10" height="4" fill="#ec3013"></rect>
+              <text x="446" y="182" font-size="10" fill="#605d5d" font-family="Archivo">ขาด %</text>
+            </svg>
+          </div>
+          <div>
+            <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ตำแหน่งที่ต้องจับตา</h4>
+            <sc-for list="{{ hubBars }}" as="h" hint-placeholder-count="6">
+              <div onClick="{{ h.open }}" style="display:grid; grid-template-columns:150px 1fr 52px; gap:10px; align-items:center; padding:5px 0; border-bottom:1px solid #d7d3d3; cursor:pointer; font-size:12px;">
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ h.branch }}</span>
+                <span style="height:12px; background:#eae7e7; display:block;"><span style="{{ h.barStyle }}"></span></span>
+                <span style="text-align:right; font-family:Archivo; font-weight:800;">{{ h.onTime }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+
+      <section>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">
+          <h4 style="margin:0;">รายชื่อที่ถึงเกณฑ์ออกหนังสือเตือน</h4>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:12px;">
+          <button type="button" class="btn btn-ghost noprint" onClick="{{ goRules }}" style="height:28px;">ตั้งกฎ</button>
+          <span style="color:#605d5d;">เตือนล่วงหน้าเมื่อเหลือ</span>
+          <input class="input noprint" type="number" min="1" max="10" value="{{ nearGap }}" onInput="{{ onNearGap }}" style="height:28px; width:52px; font-size:12px; padding:0 6px;">
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12px;">
+          <span style="color:#605d5d;">รอบนับ</span>
+          <div class="seg" style="height:36px;">
+            <sc-for list="{{ winOpts }}" as="o" hint-placeholder-count="3">
+              <button type="button" class="seg-opt" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ isWinDays }}" hint-placeholder-val="{{ false }}">
+            <input class="input noprint" type="number" min="7" max="365" value="{{ winDays }}" onInput="{{ onWinDays }}" style="height:36px; width:68px; font-size:12px; padding:0 6px;">
+          </sc-if>
+        </div>
+
+        </div>
+        <table class="table" style="width:100%; font-size:12px;">
+          <thead><tr><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">นาทีสาย</th><th style="text-align:right;">สายสูงสุด/วัน</th><th style="text-align:right;">แสกนไม่ครบ</th><th style="text-align:left;">ระดับ · เข้ากฎข้อไหน</th><th style="text-align:left;">หนังสือเตือน</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ watchlist }}" as="w" hint-placeholder-count="6">
+              <tr onClick="{{ w.open }}" style="cursor:pointer;">
+                <td style="font-weight:600;">{{ w.name }}</td><td>{{ w.position }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ w.absent }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ w.late }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ w.lateMin }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ w.maxLate }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ w.inc }}</td>
+                <td><span style="{{ w.levelStyle }}">{{ w.level }}</span><div style="font-size:10px; color:#7d7979; margin-top:2px;">{{ w.reason }}</div></td>
+                <td onClick="{{ w.stop }}">
+                  <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; white-space:nowrap;">
+                    <input type="checkbox" checked="{{ w.issued }}" onChange="{{ w.toggleIssue }}" style="accent-color:#ec3013;">
+                    <span style="font-size:11px; color:#605d5d;">{{ w.issuedLabel }}</span>
+                  </label>
+                </td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">
+          <h4 style="margin:0;">ใกล้ครบเกณฑ์ — ควรเตือนก่อนออกหนังสือ</h4>
+          <span style="font-size:12px; color:#605d5d;">{{ nearRule }}</span>
+        </div>
+        <table class="table" style="width:100%; font-size:12px;">
+          <thead><tr><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:left;">เหลืออีก</th><th style="text-align:left;">หนังสือเตือนที่เคยได้</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ nearList }}" as="n" hint-placeholder-count="5">
+              <tr onClick="{{ n.open }}" style="cursor:pointer;">
+                <td style="font-weight:600;">{{ n.name }}</td>
+                <td>{{ n.position }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ n.absent }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ n.late }}</td>
+                <td><span style="{{ n.gapStyle }}">{{ n.gap }}</span></td>
+                <td style="font-size:11px; color:#605d5d;">{{ n.history }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ══ 3 · GRID ══ -->
+    <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex; flex-direction:column; flex:1; min-height:0;">
+      <div class="noprint" style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; padding:14px 28px; border-bottom:2px solid rgba(32,30,29,.4);">
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ค้นหา</label>
+          <input class="input" placeholder="ชื่อ หรือ รหัสพนักงาน" onInput="{{ onSearch }}" value="{{ search }}" style="height:32px; width:200px; font-size:12px;"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ตำแหน่ง</label>
+          <select class="input" onChange="{{ onPos }}" value="{{ fPos }}" style="height:32px; width:200px; font-size:12px;">
+            <sc-for list="{{ posOpts }}" as="p" hint-placeholder-count="4"><option value="{{ p }}">{{ p }}</option></sc-for>
+          </select></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">กะ</label>
+          <div class="seg" style="height:36px;">
+            <sc-for list="{{ gridShiftOpts }}" as="g" hint-placeholder-count="5">
+              <button type="button" class="seg-opt" onClick="{{ g.pick }}" style="{{ g.style }}">{{ g.label }}</button>
+            </sc-for>
+          </div></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ประเภทสถานะ</label>
+          <div class="seg" style="height:36px;">
+            <sc-for list="{{ statusOpts }}" as="s" hint-placeholder-count="4">
+              <button type="button" class="seg-opt" onClick="{{ s.pick }}" style="{{ s.style }}">{{ s.label }}</button>
+            </sc-for>
+          </div></div>
+        <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+          <span style="font-size:12px; color:#605d5d;">{{ gridCountLabel }}</span>
+          <button type="button" class="btn btn-ghost" onClick="{{ resetFilters }}" style="height:32px;">ล้างตัวกรอง</button>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:14px; flex-wrap:wrap; padding:10px 28px; border-bottom:2px solid rgba(32,30,29,.4); font-size:11px; align-items:center;">
+        <strong style="font-family:Archivo; letter-spacing:.08em; text-transform:uppercase; font-size:10px;">Legend</strong>
+        <sc-for list="{{ legend }}" as="g" hint-placeholder-count="5">
+          <span style="display:inline-flex; align-items:center; gap:6px;"><span style="{{ g.sw }}"></span>{{ g.label }}</span>
+        </sc-for>
+      </div>
+
+      <div ref="{{ gridRef }}" onScroll="{{ onGridScroll }}" style="flex:1; min-height:0; overflow:auto; background:#fff;">
+        <div style="{{ gridInnerStyle }}">
+          <div style="{{ gridHeadStyle }}">
+            <div style="width:236px; flex:none; position:sticky; left:0; z-index:3; background:#201e1d; color:#fff; padding:0 8px; display:flex; align-items:center; font-size:11px; letter-spacing:.08em; text-transform:uppercase;">พนักงาน</div>
+            <div style="width:56px; flex:none; background:#201e1d; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px;">ขาด</div>
+            <div style="width:56px; flex:none; background:#201e1d; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px;">สาย</div>
+            <div style="width:56px; flex:none; background:#201e1d; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px;">Rate</div>
+            <sc-for list="{{ dayCols }}" as="d" hint-placeholder-count="14">
+              <div style="{{ d.style }}">{{ d.label }}</div>
+            </sc-for>
+          </div>
+          <div style="{{ spacerTopStyle }}"></div>
+          <sc-for list="{{ visibleRows }}" as="r" hint-placeholder-count="16">
+            <div style="{{ r.rowStyle }}">
+              <div onClick="{{ r.open }}" style="{{ r.nameStyle }}">
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">{{ r.name }}</span>
+                <span style="font-family:Archivo; font-size:10px; color:#7d7979; flex:none;">{{ r.id }}</span>
+              </div>
+              <div style="width:56px; flex:none; display:flex; align-items:center; justify-content:center; font-family:Archivo; font-weight:800; font-size:11px; border-right:1px solid #d7d3d3; color:#ae1800;">{{ r.absent }}</div>
+              <div style="width:56px; flex:none; display:flex; align-items:center; justify-content:center; font-family:Archivo; font-weight:800; font-size:11px; border-right:1px solid #d7d3d3;">{{ r.late }}</div>
+              <div style="width:56px; flex:none; display:flex; align-items:center; justify-content:center; font-family:Archivo; font-size:10px; border-right:2px solid rgba(32,30,29,.4); color:#605d5d;">{{ r.rate }}</div>
+              <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="14">
+                <div title="{{ c.tip }}" style="{{ c.style }}">{{ c.code }}</div>
+              </sc-for>
+            </div>
+          </sc-for>
+          <div style="{{ spacerBottomStyle }}"></div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ══ 4 · EMPLOYEE ══ -->
+    <sc-if value="{{ isEmp }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex; flex:1; min-height:0;">
+      <div class="noprint" style="width:280px; flex:none; border-right:2px solid rgba(32,30,29,.4); display:flex; flex-direction:column;">
+        <div style="padding:12px;">
+          <input class="input" placeholder="ค้นหาด้วยชื่อ หรือ รหัสพนักงาน" onInput="{{ onSearch }}" value="{{ search }}" style="height:32px; width:100%; font-size:12px;">
+          <div style="font-size:11px; color:#7d7979; margin-top:6px;">{{ empListCount }}</div>
+        </div>
+        <div style="flex:1; overflow:auto; border-top:2px solid rgba(32,30,29,.4);">
+          <sc-for list="{{ empListShort }}" as="e" hint-placeholder-count="12">
+            <button type="button" onClick="{{ e.open }}" style="{{ e.style }}">
+              <div style="display:flex; justify-content:space-between; gap:8px; align-items:baseline;">
+                <span style="font-weight:600; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ e.name }}</span>
+                <span style="font-family:Archivo; font-size:11px; color:#ae1800; flex:none;">{{ e.id }}</span>
+              </div>
+              <div style="font-size:11px; color:#7d7979; display:flex; justify-content:space-between;"><span>{{ e.position }}</span><span style="font-family:Archivo;">{{ e.flagText }}</span></div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:1; min-width:0; overflow:auto; padding:22px 28px 60px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:14px;">
+          <div>
+            <h3 style="margin:0;">{{ empName }}</h3>
+            <div style="font-size:12px; color:#605d5d;">{{ empMeta }}</div>
+          </div>
+          <div style="display:flex; gap:26px; text-align:right;">
+            <div>
+              <div style="font-family:Archivo; font-weight:800; font-size:34px; line-height:1;">{{ empAttRate }}</div>
+              <div style="font-size:11px; color:#7d7979; letter-spacing:.08em; text-transform:uppercase;">Attendance Rate</div>
+            </div>
+            <div>
+              <div style="font-family:Archivo; font-weight:800; font-size:34px; line-height:1;">{{ empOnTime }}</div>
+              <div style="font-size:11px; color:#7d7979; letter-spacing:.08em; text-transform:uppercase;">อัตราตรงเวลา</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(8,1fr); border:2px solid rgba(32,30,29,.4); border-top:0; margin-bottom:22px;">
+          <sc-for list="{{ empStats }}" as="s" hint-placeholder-count="8">
+            <div style="{{ s.style }}">
+              <div style="font-family:Archivo; font-weight:800; font-size:24px;">{{ s.value }}</div>
+              <div style="font-size:11px; color:#605d5d;">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <h5 style="margin:0 0 8px;">สรุปรหัสแบบชีต HCM</h5>
+        <div style="display:flex; gap:0; border:2px solid rgba(32,30,29,.4); margin-bottom:22px;">
+          <sc-for list="{{ empCodes }}" as="c" hint-placeholder-count="9">
+            <div style="{{ c.style }}">
+              <div style="font-family:Archivo; font-weight:800; font-size:11px; letter-spacing:.06em;">{{ c.code }}</div>
+              <div style="font-family:Archivo; font-weight:800; font-size:20px;">{{ c.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <h5 style="margin:0 0 8px;">ปฏิทินรายวัน</h5>
+        <div style="display:flex; flex-wrap:wrap; gap:3px; margin-bottom:22px;">
+          <sc-for list="{{ empStrip }}" as="c" hint-placeholder-count="31">
+            <div title="{{ c.tip }}" style="{{ c.style }}">
+              <div style="font-size:9px; opacity:.75; font-family:Archivo;">{{ c.day }}</div>
+              <div style="font-family:Archivo; font-weight:800; font-size:11px;">{{ c.code }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <h5 style="margin:0 0 8px;">รายละเอียดวันที่มีปัญหา</h5>
+        <table class="table" style="width:100%; font-size:12px;">
+          <thead><tr><th style="text-align:left;">วันที่</th><th style="text-align:left;">กะที่กำหนด</th><th style="text-align:left;">แสกนจริง</th><th style="text-align:left;">ผลการประเมิน</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ empIssues }}" as="d" hint-placeholder-count="6">
+              <tr><td style="font-family:Archivo;">{{ d.date }}</td><td>{{ d.shift }}</td><td style="font-family:Archivo;">{{ d.scan }}</td>
+              <td><span style="{{ d.tagStyle }}">{{ d.code }}</span> <span style="color:#605d5d;">{{ d.tip }}</span></td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ══ 5 · HUBS ══ -->
+    <sc-if value="{{ isHub }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:22px 28px 60px;">
+      <div class="noprint" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:16px;">
+        <div class="field" style="margin:0;"><label style="font-size:11px;">กะ</label>
+          <div class="seg" style="height:36px;">
+            <sc-for list="{{ posShiftOpts }}" as="o" hint-placeholder-count="5">
+              <button type="button" class="seg-opt" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+            </sc-for>
+          </div></div>
+        <div style="margin-left:auto; font-size:11px; color:#605d5d;">{{ posShiftHint }}</div>
+      </div>
+      <table class="table" style="width:100%; font-size:12px;">
+        <thead><tr><th style="text-align:left;">ตำแหน่งงาน</th><th style="text-align:right;">พนักงาน</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">นาทีสาย</th><th style="text-align:right;">แสกนไม่ครบ</th><th style="text-align:right;">ลา</th><th style="text-align:right;">Attendance Rate</th><th style="text-align:left; width:170px;">อัตราตรงเวลา</th></tr></thead>
+        <tbody>
+          <sc-for list="{{ hubRows }}" as="h" hint-placeholder-count="8">
+            <tr onClick="{{ h.open }}" style="cursor:pointer;">
+              <td style="font-weight:600;">{{ h.branch }}</td>
+              <td style="text-align:right; font-family:Archivo;">{{ h.headcount }}</td>
+              <td style="text-align:right; font-family:Archivo; color:#ae1800; font-weight:600;">{{ h.absent }}</td>
+              <td style="text-align:right; font-family:Archivo;">{{ h.late }}</td>
+              <td style="text-align:right; font-family:Archivo;">{{ h.lateMin }}</td>
+              <td style="text-align:right; font-family:Archivo;">{{ h.incomplete }}</td>
+              <td style="text-align:right; font-family:Archivo;">{{ h.leave }}</td>
+              <td style="text-align:right;"><span style="{{ h.attStyle }}">{{ h.attRate }}</span></td>
+              <td><div style="display:flex; align-items:center; gap:8px;"><span style="flex:1; height:10px; background:#eae7e7; display:block;"><span style="{{ h.barStyle }}"></span></span><strong style="font-family:Archivo; width:44px; text-align:right;">{{ h.onTime }}</strong></div></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+      <div class="noprint" style="margin-top:18px; display:flex; gap:10px;">
+        <button type="button" class="btn btn-secondary" onClick="{{ printReport }}" style="height:36px;">พิมพ์ / บันทึกเป็น PDF</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ exportHubCSV }}" style="height:36px;">ดาวน์โหลด CSV รายตำแหน่ง</button>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ══ WARNINGS ══ -->
+    <sc-if value="{{ isWarn }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:22px 28px 60px; display:flex; flex-direction:column; gap:22px;">
+      <div class="noprint" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ค้นหาชื่อ หรือ รหัสพนักงาน</label>
+          <input class="input" placeholder="เช่น สมชาย หรือ 57050" value="{{ warnSearch }}" onInput="{{ onWarnSearch }}" style="height:34px; width:260px; font-size:12px;"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">เรียงตาม</label>
+          <div class="seg" style="height:36px;">
+            <sc-for list="{{ warnSortOpts }}" as="o" hint-placeholder-count="3">
+              <button type="button" class="seg-opt" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+            </sc-for>
+          </div></div>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button type="button" class="btn btn-ghost" onClick="{{ exportWarnCSV }}" style="height:34px;">ดาวน์โหลด CSV</button>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); border:2px solid rgba(32,30,29,.4);">
+        <sc-for list="{{ warnKpis }}" as="k" hint-placeholder-count="4">
+          <div style="{{ k.style }}">
+            <div style="font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:inherit; opacity:.62;">{{ k.label }}</div>
+            <div style="font-family:Archivo; font-weight:800; font-size:32px; line-height:1.05; margin-top:6px;">{{ k.value }}</div>
+            <div style="font-size:12px; color:inherit; opacity:.72;">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <section>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">
+          <h4 style="margin:0;">สถิติรายคน — ใครโดนไปกี่ครั้ง</h4>
+          <span style="font-size:11px; color:#605d5d;">{{ warnCountLabel }}</span>
+        </div>
+        <table class="table" style="width:100%; font-size:12px;">
+          <thead><tr><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">รหัส</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:right;">จำนวนครั้ง</th><th style="text-align:left;">ระดับล่าสุด</th><th style="text-align:left;">ออกครั้งล่าสุด</th><th style="text-align:left;">เดือนที่โดน</th><th></th></tr></thead>
+          <tbody>
+            <sc-for list="{{ warnPeople }}" as="p" hint-placeholder-count="8">
+              <tr>
+                <td style="font-weight:600;">{{ p.name }}</td>
+                <td style="font-family:Archivo;">{{ p.id }}</td>
+                <td>{{ p.position }}</td>
+                <td style="text-align:right;"><span style="{{ p.countStyle }}">{{ p.count }}</span></td>
+                <td><span style="{{ p.levelStyle }}">{{ p.level }}</span></td>
+                <td style="font-family:Archivo;">{{ p.last }}</td>
+                <td style="font-family:Archivo; font-size:11px; color:#605d5d;">{{ p.months }}</td>
+                <td style="text-align:right;"><button type="button" class="btn btn-ghost" onClick="{{ p.open }}" style="height:26px; font-size:11px;">ดูรายวัน</button></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ประวัติการออกหนังสือ</h4>
+        <div style="max-height:340px; overflow:auto;">
+          <table class="table" style="width:100%; font-size:12px;">
+            <thead><tr><th style="text-align:left;">วันที่ออก</th><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:left;">ระดับ</th><th style="text-align:left;">รอบข้อมูล</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th></th></tr></thead>
+            <tbody>
+              <sc-for list="{{ warnLog }}" as="w" hint-placeholder-count="8">
+                <tr>
+                  <td style="font-family:Archivo;">{{ w.date }}</td>
+                  <td style="font-weight:600;">{{ w.name }}</td>
+                  <td>{{ w.position }}</td>
+                  <td><span style="{{ w.levelStyle }}">{{ w.level }}</span></td>
+                  <td style="font-family:Archivo;">{{ w.month }}</td>
+                  <td style="text-align:right; font-family:Archivo; color:#ae1800;">{{ w.absent }}</td>
+                  <td style="text-align:right; font-family:Archivo;">{{ w.late }}</td>
+                  <td style="text-align:right;"><button type="button" class="btn btn-ghost noprint" onClick="{{ w.remove }}" style="height:26px; font-size:11px;">ยกเลิก</button></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    </sc-if>
+
+    <!-- ══ ARCHIVE ══ -->
+    <sc-if value="{{ isArchive }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:22px 28px 60px; display:flex; flex-direction:column; gap:22px;">
+      <div class="noprint" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;">
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+          <span style="font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#7d7979; margin-right:4px;">ช่วงเร็ว</span>
+          <sc-for list="{{ yearChips }}" as="y" hint-placeholder-count="4">
+            <button type="button" onClick="{{ y.pick }}" style="{{ y.style }}">{{ y.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-primary" onClick="{{ saveNow }}" style="height:34px;">บันทึกเดือนปัจจุบันเข้าคลัง</button>
+          <button type="button" class="btn btn-secondary" onClick="{{ exportArchive }}" style="height:34px;">สำรองข้อมูล JSON</button>
+          <button type="button" class="btn btn-ghost" onClick="{{ exportArchiveCSV }}" style="height:34px;">CSV รายเดือน</button>
+        </div>
+      </div>
+
+      <div class="noprint" style="display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; border:2px solid rgba(32,30,29,.4); padding:12px 14px; background:#eae9e9;">
+        <div class="field" style="margin:0;"><label style="font-size:11px;">เดือนเริ่มต้น</label>
+          <input class="input" type="month" value="{{ archFrom }}" min="{{ archMin }}" max="{{ archMax }}" onInput="{{ onArchFrom }}" style="height:32px; font-size:12px;"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ถึงเดือน</label>
+          <input class="input" type="month" value="{{ archTo }}" min="{{ archMin }}" max="{{ archMax }}" onInput="{{ onArchTo }}" style="height:32px; font-size:12px;"></div>
+        <div style="width:2px; height:44px; background:rgba(32,30,29,.4);"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ดูรายวัน ตั้งแต่</label>
+          <input class="input" type="date" value="{{ archDayFrom }}" onInput="{{ onArchDayFrom }}" style="height:32px; font-size:12px;"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ถึงวันที่</label>
+          <input class="input" type="date" value="{{ archDayTo }}" onInput="{{ onArchDayTo }}" style="height:32px; font-size:12px;"></div>
+        <div style="margin-left:auto; text-align:right; font-size:11px; color:#605d5d;">{{ archRangeSummary }}</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); border:2px solid rgba(32,30,29,.4);">
+        <sc-for list="{{ archKpis }}" as="k" hint-placeholder-count="5">
+          <div style="{{ k.style }}">
+            <div style="font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:inherit; opacity:.62;">{{ k.label }}</div>
+            <div style="font-family:Archivo; font-weight:800; font-size:32px; line-height:1.05; margin-top:6px;">{{ k.value }}</div>
+            <div style="font-size:12px; color:inherit; opacity:.72;">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <section>
+        <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">อัตราตรงเวลารายเดือน — ตลอดช่วงที่เก็บไว้</h4>
+        <svg viewBox="0 0 1040 240" style="width:100%; height:250px; display:block;">
+          <line x1="44" y1="10" x2="44" y2="196" stroke="#201e1d" stroke-width="2"></line>
+          <line x1="44" y1="196" x2="1032" y2="196" stroke="#201e1d" stroke-width="2"></line>
+          <sc-for list="{{ archGrid }}" as="g" hint-placeholder-count="4">
+            <line x1="44" y1="{{ g.y }}" x2="1032" y2="{{ g.y }}" stroke="#d7d3d3" stroke-width="1"></line>
+          </sc-for>
+          <sc-for list="{{ archGrid }}" as="g" hint-placeholder-count="4">
+            <text x="4" y="{{ g.ty }}" font-size="11" fill="#7d7979" font-family="Archivo">{{ g.label }}</text>
+          </sc-for>
+          <sc-for list="{{ archBars }}" as="b" hint-placeholder-count="12">
+            <g><rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="{{ b.fill }}"></rect>
+            <text x="{{ b.lx }}" y="212" font-size="10" fill="#605d5d" font-family="Archivo" text-anchor="middle">{{ b.label }}</text></g>
+          </sc-for>
+          <sc-for list="{{ archYearMarks }}" as="y" hint-placeholder-count="3">
+            <g><line x1="{{ y.x }}" y1="10" x2="{{ y.x }}" y2="204" stroke="#201e1d" stroke-width="1" stroke-dasharray="4 3"></line>
+            <text x="{{ y.tx }}" y="232" font-size="12" font-family="Archivo" font-weight="800" fill="#201e1d">{{ y.label }}</text></g>
+          </sc-for>
+          <path d="{{ archAbsentPath }}" fill="none" stroke="#ec3013" stroke-width="2"></path>
+          <text x="880" y="20" font-size="11" fill="#ec3013" font-family="Archivo">เส้นแดง = อัตราขาดงาน %</text>
+        </svg>
+      </section>
+
+      <section>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">
+          <h4 style="margin:0;">รายวันในช่วงที่เลือก — {{ dayRangeLabel }}</h4>
+          <span style="font-size:11px; color:#605d5d;">{{ dayRangeTotals }}</span>
+        </div>
+        <div style="display:flex; gap:2px; flex-wrap:wrap; margin:12px 0 14px;">
+          <sc-for list="{{ archRangeDays }}" as="d" hint-placeholder-count="20">
+            <div title="{{ d.tip }}" style="{{ d.style }}">
+              <div style="font-size:9px; font-family:Archivo; opacity:.7;">{{ d.day }}</div>
+              <div style="font-family:Archivo; font-weight:800; font-size:11px;">{{ d.rate }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="max-height:290px; overflow:auto;">
+          <table class="table" style="width:100%; font-size:12px;">
+            <thead><tr><th style="text-align:left;">วันที่</th><th style="text-align:right;">วันทำงาน</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">ออกก่อน</th><th style="text-align:right;">แสกนไม่ครบ</th><th style="text-align:right;">ลา</th><th style="text-align:right;">Attendance Rate</th><th style="text-align:right;">ตรงเวลา</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ archRangeRows }}" as="r" hint-placeholder-count="10">
+                <tr><td style="font-family:Archivo;">{{ r.date }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.slots }}</td>
+                <td style="text-align:right; font-family:Archivo; color:#ae1800;">{{ r.absent }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.late }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.early }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.inc }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.leave }}</td>
+                <td style="text-align:right; font-family:Archivo; font-weight:800;">{{ r.attRate }}</td>
+                <td style="text-align:right;"><span style="{{ r.rateStyle }}">{{ r.onTime }}</span></td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div class="noprint" style="margin-top:10px;"><button type="button" class="btn btn-ghost" onClick="{{ exportRangeCSV }}" style="height:32px;">ดาวน์โหลด CSV ช่วงวันนี้</button></div>
+      </section>
+
+      <section>
+        <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">เดือนที่บันทึกไว้</h4>
+        <table class="table" style="width:100%; font-size:12px;">
+          <thead><tr><th style="text-align:left;">เดือน</th><th style="text-align:right;">พนักงาน</th><th style="text-align:right;">วัน</th><th style="text-align:right;">Attendance Rate</th><th style="text-align:right;">ตรงเวลา</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">ออกก่อน</th><th style="text-align:right;">แสกนไม่ครบ</th><th style="text-align:left;">กะเช้า / บ่าย / ดึก</th><th style="text-align:left;">ที่มา</th><th></th></tr></thead>
+          <tbody>
+            <sc-for list="{{ archRows }}" as="r" hint-placeholder-count="10">
+              <tr onClick="{{ r.open }}" style="{{ r.rowStyle }}">
+                <td style="font-family:Archivo; font-weight:800;">{{ r.month }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.employees }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.days }}</td>
+                <td style="text-align:right; font-family:Archivo; font-weight:800;">{{ r.attRate }}</td>
+                <td style="text-align:right;"><span style="{{ r.rateStyle }}">{{ r.onTime }}</span></td>
+                <td style="text-align:right; font-family:Archivo; color:#ae1800;">{{ r.absent }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.late }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.early }}</td>
+                <td style="text-align:right; font-family:Archivo;">{{ r.inc }}</td>
+                <td style="font-family:Archivo; font-size:11px;">{{ r.shifts }}</td>
+                <td style="font-size:11px; color:#605d5d;">{{ r.source }}</td>
+                <td style="text-align:right;"><button type="button" class="btn btn-ghost" onClick="{{ r.remove }}" style="height:26px; font-size:11px;">ลบ</button></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+
+      <sc-if value="{{ hasArchDetail }}" hint-placeholder-val="{{ false }}">
+      <section>
+        <h4 style="margin:0 0 8px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">รายวันของเดือน {{ archDetailMonth }}</h4>
+        <div style="display:flex; gap:2px; flex-wrap:wrap; margin-bottom:14px;">
+          <sc-for list="{{ archDetailDays }}" as="d" hint-placeholder-count="31">
+            <div title="{{ d.tip }}" style="{{ d.style }}">
+              <div style="font-size:9px; font-family:Archivo; color:#605d5d;">{{ d.day }}</div>
+              <div style="font-family:Archivo; font-weight:800; font-size:11px;">{{ d.rate }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <table class="table" style="width:100%; font-size:12px;">
+          <thead><tr><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:right;">พนักงาน</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">แสกนไม่ครบ</th><th style="text-align:right;">ตรงเวลา</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ archDetailBranches }}" as="b" hint-placeholder-count="8">
+              <tr><td>{{ b.branch }}</td><td style="text-align:right; font-family:Archivo;">{{ b.heads }}</td>
+              <td style="text-align:right; font-family:Archivo; color:#ae1800;">{{ b.absent }}</td>
+              <td style="text-align:right; font-family:Archivo;">{{ b.late }}</td>
+              <td style="text-align:right; font-family:Archivo;">{{ b.inc }}</td>
+              <td style="text-align:right; font-family:Archivo; font-weight:800;">{{ b.onTime }}</td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ══ 6 · EXPORT ══ -->
+    <sc-if value="{{ isExport }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:22px 28px 60px; display:flex; flex-direction:column; gap:22px;">
+      <div class="noprint" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; border:2px solid rgba(32,30,29,.4); padding:12px 14px; background:#eae9e9;">
+        <div class="field" style="margin:0;"><label style="font-size:11px;">เดือนที่จะส่งออก</label>
+          <select class="input" onChange="{{ onPickMonth }}" value="{{ curMonth }}" style="height:32px; font-size:12px; width:170px;">
+            <sc-for list="{{ monthOpts }}" as="m" hint-placeholder-count="2"><option value="{{ m.month }}">{{ m.label }}</option></sc-for>
+          </select></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ตั้งแต่วันที่</label>
+          <input class="input" type="date" value="{{ exFrom }}" min="{{ dateMin }}" max="{{ dateMax }}" onInput="{{ onExFrom }}" style="height:32px; font-size:12px;"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ถึงวันที่</label>
+          <input class="input" type="date" value="{{ exTo }}" min="{{ dateMin }}" max="{{ dateMax }}" onInput="{{ onExTo }}" style="height:32px; font-size:12px;"></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ช่วงสำเร็จรูป</label>
+          <div class="seg" style="height:36px;">
+            <sc-for list="{{ exPresets }}" as="p" hint-placeholder-count="4">
+              <button type="button" class="seg-opt" onClick="{{ p.pick }}" style="{{ p.style }}">{{ p.label }}</button>
+            </sc-for>
+          </div></div>
+        <div style="margin-left:auto; text-align:right; font-size:11px; color:#605d5d;">{{ exSummary }}</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:20px;">
+        <div class="card" style="padding:18px; display:flex; flex-direction:column; gap:8px;">
+          <div class="card-kicker">รูปภาพ</div>
+          <div class="card-title">PNG ตารางสีทั้งหมด</div>
+          <p class="card-body" style="margin:0;">เรนเดอร์ตารางตามตัวกรองปัจจุบันเป็นภาพเดียว เหมาะกับการส่งไลน์กลุ่มหัวหน้างาน</p>
+          <div style="font-size:12px; color:#605d5d;">{{ pngHint }}</div>
+          <div style="display:flex; gap:8px; margin-top:auto; padding-top:10px;">
+            <button type="button" class="btn btn-primary" onClick="{{ exportPNG }}" style="height:36px;">สร้างไฟล์ PNG</button>
+          </div>
+        </div>
+        <div class="card" style="padding:18px; display:flex; flex-direction:column; gap:8px;">
+          <div class="card-kicker">สเปรดชีต</div>
+          <div class="card-title">Excel (มีสี) และ CSV</div>
+          <p class="card-body" style="margin:0;">ไฟล์ Excel เก็บสีของแต่ละช่องไว้เหมือนในชีต ส่วน CSV เป็นข้อมูลดิบสำหรับต่อระบบอื่น</p>
+          <div style="display:flex; gap:8px; margin-top:auto; padding-top:10px;">
+            <button type="button" class="btn btn-primary" onClick="{{ exportXLS }}" style="height:36px;">Excel มีสี</button>
+            <button type="button" class="btn btn-secondary" onClick="{{ exportCSV }}" style="height:36px;">CSV</button>
+            <button type="button" class="btn btn-ghost" onClick="{{ copyTSV }}" style="height:36px;">คัดลอกไปวางในชีต</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:18px;">
+        <div class="card-kicker">รายงาน</div>
+        <div class="card-title">PDF รายงานสรุปตามตำแหน่ง</div>
+        <p class="card-body" style="margin:6px 0 12px; max-width:660px;">สรุปสถิติตามตำแหน่งงานพร้อมรายชื่อที่ถึงเกณฑ์เตือน จัดหน้าให้พิมพ์ได้ทันที (เลือกปลายทางเป็น Save as PDF ในหน้าต่างพิมพ์)</p>
+        <button type="button" class="btn btn-secondary" onClick="{{ printReport }}" style="height:36px;">เปิดหน้าพิมพ์</button>
+      </div>
+
+      <hr class="hr">
+
+      <section>
+        <h4 style="margin:0 0 4px;">Sync เข้า Google Sheet ใหม่</h4>
+        <p style="max-width:760px; color:#605d5d;">ข้อมูลทั้งหมดมาจากไฟล์ที่อัปโหลดในหน้าแรกเท่านั้น — การ sync คือ "เขียนผลที่ประมวลผลแล้ว" ลงชีตปลายทางให้พนักงานและหัวหน้าสาขาเปิดดูเองได้ ไม่ดึงข้อมูลกลับ และไม่แตะไฟล์ต้นทางของ HCM</p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); border:2px solid rgba(32,30,29,.4); margin-bottom:18px;">
+          <sc-for list="{{ syncTabs }}" as="t" hint-placeholder-count="4">
+            <div style="padding:12px 14px; border-right:1px solid #d7d3d3;">
+              <div style="font-family:Archivo; font-weight:800; font-size:12px;">{{ t.tab }}</div>
+              <div style="font-size:11px; color:#605d5d; margin-top:4px;">{{ t.desc }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:24px; align-items:start;">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div class="field" style="margin:0;"><label>ลิงก์ Google Sheet ปลายทาง</label>
+              <input class="input" value="{{ sheetUrl }}" onInput="{{ onSheetUrl }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:36px;"></div>
+            <div class="field" style="margin:0;"><label>Web app URL จาก Apps Script (ลงท้าย /exec)</label>
+              <input class="input" value="{{ endpoint }}" onInput="{{ onEndpoint }}" placeholder="https://script.google.com/macros/s/AKfy.../exec" style="height:36px;"></div>
+            <div class="field" style="margin:0;"><label>TOKEN (ต้องตรงกับที่ตั้งใน Apps Script)</label>
+              <input class="input" value="{{ syncToken }}" onInput="{{ onSyncToken }}" placeholder="CHANGE-ME-1234" style="height:36px;"></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div class="field" style="margin:0;"><label>ชื่อแท็บ</label><input class="input" value="{{ sheetTab }}" onInput="{{ onSheetTab }}" style="height:36px;"></div>
+              <div class="field" style="margin:0;"><label>ขอบเขตข้อมูล</label>
+                <select class="input" onChange="{{ onSyncScope }}" value="{{ syncScope }}" style="height:36px;">
+                  <option value="filtered">เดือนที่เปิดอยู่ ตามตัวกรอง</option><option value="all">เดือนที่เปิดอยู่ ทั้งหมด</option>
+                  <option value="range">ตามช่วงวันที่เลือกด้านบน</option><option value="every">ทุกเดือนที่เก็บไว้ในเครื่อง</option>
+                  <option value="summary">เฉพาะสรุปรายตำแหน่ง</option>
+                </select></div>
+            </div>
+            <label style="display:flex; gap:8px; align-items:center; font-size:13px;">
+              <input type="checkbox" checked="{{ syncDaily }}" onChange="{{ onSyncDaily }}"> sync อัตโนมัติทุกวันเวลา 07:30 หลังไฟล์ HCM เข้า
+            </label>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-primary" onClick="{{ runSync }}" style="height:36px;">{{ syncBtn }}</button>
+              <button type="button" class="btn btn-ghost" onClick="{{ copyTSV }}" style="height:36px;">คัดลอกข้อมูลไว้วางเอง</button>
+            </div>
+          </div>
+          <div style="border:2px solid rgba(32,30,29,.4); background:#eae9e9; min-height:170px;">
+            <div style="padding:8px 12px; border-bottom:2px solid rgba(32,30,29,.4); font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-family:Archivo; font-weight:800;">Sync log</div>
+            <sc-for list="{{ syncLog }}" as="l" hint-placeholder-count="3">
+              <div style="padding:6px 12px; border-bottom:1px solid #d7d3d3; font-size:12px; display:flex; gap:10px; font-family:Archivo;">
+                <span style="color:#7d7979;">{{ l.t }}</span><span style="{{ l.style }}">{{ l.m }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+    </div>
+    </sc-if>
+
+    <!-- ══ 7 · SETTINGS ══ -->
+    <sc-if value="{{ isRules }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:22px 28px 60px; display:grid; grid-template-columns:1fr 1fr; gap:28px;">
+        <div style="grid-column:1 / -1;">
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">กะทำงาน — แก้ชื่อ / เพิ่มกะ</h4>
+        <div class="noprint" style="border:2px solid rgba(32,30,29,.4); background:#eae9e9; padding:14px;">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px;">
+            <h5 style="margin:0;">ตั้งค่ากะทำงาน</h5>
+            <span style="font-size:11px; color:#605d5d;">ระบบจับคู่กะจากเวลาเริ่มงานในไฟล์ตารางกะ (ต่างกันไม่เกิน 3 ชม.) — กะที่ไม่ตรงช่วงใดจะอยู่กลุ่ม "กะอื่น"</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <sc-for list="{{ shiftRows }}" as="g" hint-placeholder-count="3">
+              <div style="display:grid; grid-template-columns:minmax(160px,1fr) auto 82px auto 82px auto auto; gap:8px; align-items:center;">
+                <input class="input" value="{{ g.name }}" onInput="{{ g.rename }}" style="height:30px; width:180px; font-size:12px;">
+                <span style="font-size:11px; color:#605d5d; white-space:nowrap;">เริ่มงาน</span>
+                <input class="input" type="text" inputmode="numeric" maxlength="5" placeholder="09:00" value="{{ g.start }}" onInput="{{ g.setStart }}" style="height:30px; width:82px; font-size:12px; padding:0 8px; font-family:Archivo; text-align:center;">
+                <span style="font-size:11px; color:#605d5d; white-space:nowrap;">น. ถึง</span>
+                <input class="input" type="text" inputmode="numeric" maxlength="5" placeholder="18:00" value="{{ g.end }}" onInput="{{ g.setEnd }}" style="height:30px; width:82px; font-size:12px; padding:0 8px; font-family:Archivo; text-align:center;">
+                <span style="font-size:11px; color:#605d5d; white-space:nowrap;">น.</span>
+                <button type="button" class="btn btn-ghost" onClick="{{ g.remove }}" style="height:28px; font-size:11px;">ลบ</button>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <button type="button" class="btn btn-secondary" onClick="{{ addShift }}" style="height:32px;">เพิ่มกะ</button>
+            <button type="button" class="btn btn-ghost" onClick="{{ resetShifts }}" style="height:32px;">คืนค่าเริ่มต้น</button>
+          </div>
+        </div>
+        </div>
+      <section style="display:flex; flex-direction:column; gap:18px;">
+        <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">เกณฑ์เวลา</h4>
+          <div class="field"><label>ผ่อนผันสาย (grace period) — {{ graceLabel }}</label>
+            <input type="range" min="0" max="30" step="1" value="{{ grace }}" onInput="{{ onGrace }}" style="width:100%; accent-color:#ec3013;"></div>
+          <div class="field"><label>ผ่อนผันออกก่อนเวลา — {{ earlyLabel }}</label>
+            <input type="range" min="0" max="30" step="1" value="{{ earlyGrace }}" onInput="{{ onEarly }}" style="width:100%; accent-color:#ec3013;"></div>
+        </div>
+        <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">กฎสีแดง</h4>
+          <sc-for list="{{ ruleToggles }}" as="t" hint-placeholder-count="4">
+            <label style="display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px solid #d7d3d3;">
+              <input type="checkbox" checked="{{ t.on }}" onChange="{{ t.toggle }}" style="margin-top:3px; accent-color:#ec3013;">
+              <span><span style="font-weight:600;">{{ t.label }}</span><br><span style="font-size:12px; color:#605d5d;">{{ t.hint }}</span></span>
+            </label>
+          </sc-for>
+        </div>
+        <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">กฎหนังสือเตือน</h4>
+          <p style="font-size:12px; color:#605d5d; margin:0 0 10px;">ตั้งได้อิสระว่าอะไรถึงเกณฑ์ออกใบเตือน เช่น สาย 5 ครั้ง ขาด 3 วัน หรือสายครั้งเดียวเกิน 120 นาที ก็ออกทันที · ใครเข้าหลายกฎจะได้ระดับที่รุนแรงสุด</p>
+          <div style="border:2px solid rgba(32,30,29,.4);">
+            <div style="display:grid; grid-template-columns:28px 1.3fr 74px 1.2fr 62px 34px; gap:6px; padding:8px 10px; background:#201e1d; color:#fff; font-size:10px; letter-spacing:.06em; text-transform:uppercase;">
+              <span>ใช้</span><span>ตัวชี้วัด</span><span>ตั้งแต่</span><span>ระดับใบเตือน</span><span>ความรุนแรง</span><span></span>
+            </div>
+            <sc-for list="{{ warnRuleRows }}" as="r" hint-placeholder-count="5">
+              <div style="display:grid; grid-template-columns:28px 1.3fr 74px 1.2fr 62px 34px; gap:6px; padding:6px 10px; border-bottom:1px solid #d7d3d3; align-items:center;">
+                <input type="checkbox" checked="{{ r.on }}" onChange="{{ r.toggle }}" style="accent-color:#ec3013;">
+                <select class="input" value="{{ r.metric }}" onChange="{{ r.setMetric }}" style="height:30px; font-size:12px;">
+                  <sc-for list="{{ r.metricOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.key }}">{{ o.label }}</option></sc-for>
+                </select>
+                <input class="input" type="number" min="1" value="{{ r.value }}" onInput="{{ r.setValue }}" style="height:30px; font-size:12px; padding:0 6px;">
+                <input class="input" value="{{ r.level }}" onInput="{{ r.setLevel }}" style="height:30px; font-size:12px; padding:0 6px;">
+                <input class="input" type="number" min="1" max="9" value="{{ r.sev }}" onInput="{{ r.setSev }}" style="height:30px; font-size:12px; padding:0 6px;">
+                <button type="button" class="btn btn-ghost" onClick="{{ r.remove }}" style="height:30px; padding:0; font-size:14px;">✕</button>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px; align-items:center;">
+            <button type="button" class="btn btn-secondary" onClick="{{ addRule }}" style="height:32px;">เพิ่มกฎ</button>
+            <button type="button" class="btn btn-ghost" onClick="{{ resetRules }}" style="height:32px;">คืนค่าเริ่มต้น</button>
+            <span style="font-size:11px; color:#605d5d;">{{ warnRuleSummary }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section style="display:flex; flex-direction:column; gap:18px;">
+        <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">วันหยุดนักขัตฤกษ์ (PH)</h4>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input class="input" type="date" value="{{ newHoliday }}" onInput="{{ onNewHoliday }}" style="height:34px;">
+            <button type="button" class="btn btn-secondary" onClick="{{ addHoliday }}" style="height:34px;">เพิ่ม</button>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <sc-for list="{{ holidayChips }}" as="h" hint-placeholder-count="2">
+              <button type="button" class="tag tag-neutral" onClick="{{ h.remove }}" style="cursor:pointer; border:0;">{{ h.label }} ✕</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">การแสดงผลในช่อง</h4>
+          <div class="seg" style="height:34px; width:fit-content;">
+            <sc-for list="{{ detailOpts }}" as="d" hint-placeholder-count="3">
+              <button type="button" class="seg-opt" onClick="{{ d.pick }}" style="{{ d.style }}">{{ d.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">สูตรที่ใช้คำนวณ</h4>
+          <div style="border:2px solid rgba(32,30,29,.4); padding:12px 14px; font-size:12px; line-height:1.7; background:#eae9e9;">
+            <div><strong>Attendance Rate</strong> = จำนวนคนที่มีการแสกนเวลาในวันนั้น ÷ จำนวนพนักงานทั้งหมด (นับวันหยุดรวมในตัวหาร) — ตรงกับสูตร <span style="font-family:Archivo;">COUNTIF(range,1)/headcount</span> ในชีต HCM และค่ารายเดือนคือค่าเฉลี่ยของอัตรารายวัน</div>
+            <div style="margin-top:6px;">ช่องที่มีตัวเลขเวลา (0,2–9) ถือว่า <span style="font-family:Archivo;">= 1</span> คือมาทำงาน · <span style="font-family:Archivo;">ลาพักร้อน1วัน</span> ไม่ถูกนับเป็นมาทำงาน เพราะเลข 1 ไม่ถือเป็นเวลา (เหมือน REGEXMATCH ในชีต)</div>
+            <div style="margin-top:6px;"><strong>แสกนไม่ครบ (INC) นับเป็นขาดงาน</strong> ในการคิด Attendance Rate เพราะยังพิสูจน์การมาทำงานไม่ได้ — แต่ยังโชว์รหัส <span style="font-family:Archivo;">INC</span> สีแดงตามเดิม ไม่กลายเป็น AB ในตาราง<br>ถ้าพนักงานยื่นแสกนย้อนหลังจนอนุมัติแล้ว ไฟล์รอบใหม่จาก HCM จะมีเวลาเข้า-ออกครบ พออัปโหลดทับเดือนเดิม สถานะจะเปลี่ยนเป็นมาทำงานเองอัตโนมัติ</div>
+            <div style="margin-top:6px;"><strong>ลาครึ่งวัน นับเป็นมาทำงาน</strong> ถ้าครึ่งที่ต้องทำงานมีการแสกนครบ (สายก็ยังนับว่ามา) · แต่ถ้าครึ่งนั้น<strong>แสกนไม่ครบหรือไม่แสกนเลย ถือเป็นขาดงาน</strong> — ในตารางจะเห็นเป็นช่องทแยงสองสี <span style="font-family:Archivo;">AL½</span> เทาอ่อน+แดง</div>
+            <div style="margin-top:6px;"><strong>อัตราตรงเวลา</strong> = (วันปกติ + วันลาที่อนุมัติ) ÷ วันทำงาน โดยตัดวันหยุดประจำสัปดาห์และวันหยุดนักขัตฤกษ์ออกจากตัวหาร แล้วหักวันขาด สาย ออกก่อนเวลา และแสกนไม่ครบ</div>
+          </div>
+        </div>
+        <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ตารางแปลงรหัส</h4>
+          <table class="table" style="width:100%; font-size:12px;">
+            <thead><tr><th style="text-align:left; width:70px;">รหัส</th><th style="text-align:left;">ความหมาย</th><th style="text-align:left; width:80px;">สี</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ codeTable }}" as="c" hint-placeholder-count="8">
+                <tr><td style="font-family:Archivo; font-weight:800;">{{ c.code }}</td><td>{{ c.label }}</td><td><span style="{{ c.sw }}"></span></td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">รหัสที่เพิ่มเอง</h4>
+          <p style="font-size:12px; color:#605d5d; margin:0 0 10px;">ถ้า HCM ส่งคำใหม่ที่ระบบยังไม่รู้จัก เพิ่มที่นี่ได้เลย — ระบบจะหาคำนี้ในช่อง แล้วบังคับรหัส/สี/การนับตามที่ตั้ง กฎที่เพิ่มเองมาก่อนกฎมาตรฐานเสมอ</p>
+          <div style="border:2px solid rgba(32,30,29,.4);">
+            <div style="display:grid; grid-template-columns:26px 1.4fr 62px 1.2fr 1fr 54px 30px; gap:6px; padding:8px 10px; background:#201e1d; color:#fff; font-size:10px; letter-spacing:.06em; text-transform:uppercase;">
+              <span>ใช้</span><span>คำที่พบในไฟล์</span><span>รหัส</span><span>ความหมาย</span><span>สี</span><span>นับมา</span><span></span>
+            </div>
+            <sc-for list="{{ customCodeRows }}" as="c" hint-placeholder-count="2">
+              <div style="display:grid; grid-template-columns:26px 1.4fr 62px 1.2fr 1fr 54px 30px; gap:6px; padding:6px 10px; border-bottom:1px solid #d7d3d3; align-items:center;">
+                <input type="checkbox" checked="{{ c.on }}" onChange="{{ c.toggle }}" style="accent-color:#ec3013;">
+                <input class="input" value="{{ c.match }}" onInput="{{ c.setMatch }}" placeholder="เช่น ทำงานนอกสถานที่" style="height:30px; font-size:12px; padding:0 6px;">
+                <input class="input" value="{{ c.code }}" onInput="{{ c.setCode }}" placeholder="WFH" style="height:30px; font-size:12px; padding:0 6px;">
+                <input class="input" value="{{ c.label }}" onInput="{{ c.setLabel }}" style="height:30px; font-size:12px; padding:0 6px;">
+                <select class="input" value="{{ c.color }}" onChange="{{ c.setColor }}" style="height:30px; font-size:12px;">
+                  <sc-for list="{{ c.colorOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.key }}">{{ o.label }}</option></sc-for>
+                </select>
+                <input type="checkbox" checked="{{ c.present }}" onChange="{{ c.setPresent }}" style="accent-color:#5cb87f;">
+                <button type="button" class="btn btn-ghost" onClick="{{ c.remove }}" style="height:30px; padding:0; font-size:14px;">✕</button>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary" onClick="{{ addCode }}" style="height:32px;">เพิ่มรหัส</button>
+            <span style="font-size:11px; color:#605d5d;">ติ๊ก "นับมา" = ให้ถือว่ามาทำงานในการคิด Attendance Rate</span>
+          </div>
+
+          <sc-if value="{{ hasUnknown }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:14px; border:2px solid #ec3013; background:#fff2ef; padding:10px 12px;">
+              <div style="font-weight:600; font-size:12px; margin-bottom:6px;">พบคำที่ระบบยังไม่รู้จักในไฟล์ที่อัปล่าสุด — กดเพื่อเพิ่มเป็นรหัส</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <sc-for list="{{ unknownChips }}" as="u" hint-placeholder-count="3">
+                  <button type="button" class="tag tag-outline" onClick="{{ u.add }}" style="cursor:pointer;">{{ u.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+    </div>
+    </sc-if>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;grace&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:30,&quot;unit&quot;:&quot;นาที&quot;,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;earlyGrace&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:30,&quot;unit&quot;:&quot;นาที&quot;,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;warnAbsent&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:10,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;warnLate&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:20,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;cellDetail&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;code&quot;,&quot;options&quot;:[&quot;code&quot;,&quot;plain&quot;,&quot;time&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;การแสดงผล&quot;},&quot;demoSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:640,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:50,&quot;max&quot;:2000,&quot;step&quot;:10,&quot;section&quot;:&quot;การแสดงผล&quot;}}">
+const RED = '#ec3013', YEL = '#e8a400', GRY = '#d7d3d3', GRY2 = '#eae7e7', OK = '#5cb87f';   // เขียว = มาทำงานปกติ
+const CMAP = { red: RED, yellow: YEL, gray: GRY, 'gray-half': GRY2, ok: OK, out: '#f3f2f2' };
+const NAV = [
+  ['upload', 'อัปโหลดไฟล์', 'Ingest', 'อัปโหลดไฟล์ประจำวัน'],
+  ['dash', 'แดชบอร์ด', 'Overview', 'ภาพรวมการมาทำงาน'],
+  ['grid', 'ตารางสี', 'Matrix', 'พนักงาน × วันที่'],
+  ['emp', 'รายพนักงาน', 'Employee', 'รายละเอียดรายบุคคล'],
+  ['hub', 'รายตำแหน่ง', 'Position', 'สรุปตามตำแหน่งงาน'],
+  ['warn', 'หนังสือเตือน', 'Warnings', 'สถิติการออกหนังสือเตือน'],
+  ['archive', 'คลังสถิติย้อนหลัง', 'Archive', 'สถิติย้อนหลังรายวัน / รายเดือน / รายปี'],
+  ['export', 'Export & Sync', 'Distribute', 'ส่งออกและ sync'],
+  ['rules', 'ตั้งค่ากฎสี', 'Rules', 'เกณฑ์และการแปลงสี'],
+];
+const now = () => new Date().toLocaleTimeString('th-TH', { hour12: false });
+
+class Component extends DCLogic {
+  state = {
+    screen: 'dash', eng: null, model: null, src: 'demo', log: [], columns: [],
+    attName: '', schName: '', dragA: false, dragB: false, schRemembered: false,
+    dashTab: 'all', exPreset: 'ทั้งเดือน', archive: [], archYear: 'ทั้งหมด', archOpen: null,
+    datasets: [], curMonth: '', exFrom: '', exTo: '',
+    warnings: [], warnRules: [], customCodes: [], warnSearch: '', warnSort: 'count', nearGap: 1, hShift: 'all', winMode: 'month', winDays: 30, shiftGroups: [], shiftEditOpen: false,
+    dashFrom: '', dashTo: '', rangePreset: 'month', gShift: 'all',
+    archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
+    search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
+    dayKey: '', selId: null, scrollTop: 0, viewH: 600,
+    grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: true, holidays: [],
+    detail: 'code', warnAbsent: 3, warnLate: 5, newHoliday: '',
+    sheetUrl: ''  /* วาง URL ชีตของคุณในหน้า Export & Sync ครั้งเดียว แล้วระบบจำให้ */, sheetTab: 'Matrix', syncScope: 'filtered', syncDaily: true,
+    syncState: 'idle', syncLog: [], endpoint: '', syncToken: '',
+  };
+
+  async componentDidMount() {
+    const eng = await import('./hcm-engine.js');
+    this.eng = eng;
+    this.setState({ eng: true, grace: this.props.grace ?? 5, earlyGrace: this.props.earlyGrace ?? 5,
+      warnAbsent: this.props.warnAbsent ?? 3, warnLate: this.props.warnLate ?? 5, detail: this.props.cellDetail ?? 'code' },
+      () => this.loadDemo());
+    this.loadArchive();
+    this.loadSchedule();
+    this.setState({ datasets: this.eng.listDatasets() });
+    this.loadWarnings();
+    this.loadWarnRules();
+    this.loadCustomCodes();
+    this.loadThresholds();
+    this.loadShiftGroups();
+    try {
+      const c = JSON.parse(localStorage.getItem('hcm-sync-endpoint-v1') || 'null');
+      if (c) this.setState({ endpoint: c.endpoint || '', syncToken: c.token || '', sheetUrl: c.sheetUrl || this.state.sheetUrl });
+    } catch (e) {}
+    this._ro = () => this.setState({ viewH: window.innerHeight });
+    window.addEventListener('resize', this._ro);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._ro); }
+
+  cfg() { const s = this.state; return { grace: s.grace, earlyGrace: s.earlyGrace, flagNoShift: s.flagNoShift, flagShiftOnHoliday: s.flagShiftOnHoliday, holidays: s.holidays, customCodes: s.customCodes }; }
+  addLog(m) { this.setState(s => ({ log: [{ t: now(), m }, ...s.log].slice(0, 40) })); }
+
+  /* ── archive (localStorage, keeps years of monthly + daily aggregates) ── */
+  ARCH_KEY = 'hcm-attendance-archive-v2';
+  loadArchive() {
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(this.ARCH_KEY) || '[]'); } catch (e) { arr = []; }
+    if (!Array.isArray(arr) || !arr.length) {
+      const d = new Date();
+      arr = this.eng.demoArchive(2026, 8, 30);
+      this.writeArchive(arr);
+    }
+    this.setState({ archive: arr.sort((a, b) => a.month.localeCompare(b.month)) });
+  }
+  writeArchive(arr) { try { localStorage.setItem(this.ARCH_KEY, JSON.stringify(arr)); } catch (e) { this.addLog('บันทึกคลังไม่สำเร็จ: พื้นที่เก็บเต็ม'); } }
+  saveSnapshot(model, src) {
+    if (!model || !model.dates.length) return null;
+    const s = this.state;
+    const snap = this.eng.snapshot(model, { ...this.cfg(), warnAbsent: s.warnAbsent, warnLate: s.warnLate }, src);
+    this.setState(p => {
+      const arr = [...p.archive.filter(a => a.month !== snap.month), snap].sort((a, b) => a.month.localeCompare(b.month));
+      this.writeArchive(arr);
+      return { archive: arr };
+    });
+    return snap;
+  }
+  SHIFT_KEY = 'hcm-shift-groups-v1';
+  loadShiftGroups() {
+    let g = null;
+    try { g = JSON.parse(localStorage.getItem(this.SHIFT_KEY) || 'null'); } catch (e) {}
+    this.setState({ shiftGroups: this.eng.normalizeGroups(Array.isArray(g) && g.length ? g : this.eng.DEFAULT_SHIFT_GROUPS.map(x => ({ ...x }))) });
+  }
+  saveShiftGroups(groups) {
+    try { localStorage.setItem(this.SHIFT_KEY, JSON.stringify(groups)); } catch (e) {}
+    this.setState({ shiftGroups: groups });
+  }
+  bucket(raw) { return this.eng.bucketWith(raw, this.state.shiftGroups); }
+  groupName(key) {
+    if (key === 'none') return 'ไม่ได้ตั้งกะ';
+    if (key === 'other') return 'กะอื่น';
+    const g = this.state.shiftGroups.find(x => x.key === key);
+    return g ? g.name : key;
+  }
+
+  THRESHOLD_KEY = 'hcm-warn-thresholds-v1';
+  loadThresholds() {
+    try {
+      const t = JSON.parse(localStorage.getItem(this.THRESHOLD_KEY) || 'null');
+      if (t) this.setState({ warnAbsent: t.warnAbsent ?? 3, warnLate: t.warnLate ?? 5, nearGap: t.nearGap ?? 1, winMode: t.winMode ?? 'month', winDays: t.winDays ?? 30 });
+    } catch (e) {}
+  }
+  saveThresholds(patch) {
+    this.setState(patch, () => {
+      const s = this.state;
+      try { localStorage.setItem(this.THRESHOLD_KEY, JSON.stringify({ warnAbsent: s.warnAbsent, warnLate: s.warnLate, nearGap: s.nearGap, winMode: s.winMode, winDays: s.winDays })); } catch (e) {}
+    });
+  }
+
+  /* รอบนับเกณฑ์: รายเดือน (รีเซตทุกเดือน) / รายปี / ย้อนหลัง N วัน */
+  warnWindow(dates) {
+    const s = this.state;
+    const to = dates[dates.length - 1] || '';
+    const curMo = (dates[0] || '').slice(0, 7);
+    const all = (s.datasets || []).map(d => d.month);
+    if (s.winMode === 'year') {
+      const y = curMo.slice(0, 4);
+      return { from: `${y}-01-01`, to, months: all.filter(m => m.startsWith(y)), label: `ปี ${y}`, period: y, cross: true };
+    }
+    if (s.winMode === 'days') {
+      const d = new Date(to); d.setDate(d.getDate() - (s.winDays - 1));
+      const from = d.toISOString().slice(0, 10);
+      return { from, to, months: all.filter(m => m >= from.slice(0, 7) && m <= to.slice(0, 7)), label: `${s.winDays} วันล่าสุด`, period: `${from}~${to}`, cross: true };
+    }
+    return { from: dates[0] || '', to, months: [curMo], label: `เดือน ${curMo}`, period: curMo, cross: false };
+  }
+  windowStats(dates) {
+    const w = this.warnWindow(dates);
+    if (!w.cross) return null;
+    const key = w.months.join(',') + '|' + w.from + '|' + w.to;
+    if (this._wsKey !== key) { this._wsKey = key; this._ws = this.eng.statsAcross(w.months, w.from, w.to); }
+    return this._ws;
+  }
+
+  /* ── warning letters ── */
+  WARN_KEY = 'hcm-warning-letters-v1';
+  loadWarnings() {
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(this.WARN_KEY) || '[]'); } catch (e) { arr = []; }
+    this.setState({ warnings: Array.isArray(arr) ? arr : [] });
+  }
+  writeWarnings(arr) {
+    try { localStorage.setItem(this.WARN_KEY, JSON.stringify(arr)); } catch (e) { this.addLog('บันทึกประวัติหนังสือเตือนไม่สำเร็จ'); }
+    this.setState({ warnings: arr });
+  }
+  issueWarning(e, level, month) {
+    const rec = { key: `${e.id}|${month}`, id: e.id, name: e.name, position: e.position || '', level,
+      month, date: new Date().toISOString().slice(0, 10), absent: e.stat.absent, late: e.stat.late, lateMin: e.stat.lateMin };
+    const arr = [...this.state.warnings.filter(w => w.key !== rec.key), rec].sort((a, b) => b.date.localeCompare(a.date));
+    this.writeWarnings(arr);
+  }
+  revokeWarning(key) { this.writeWarnings(this.state.warnings.filter(w => w.key !== key)); }
+
+  /* ── กฎหนังสือเตือนที่แอดมินตั้งเอง ─────────────────────────────────── */
+  RULES_KEY = 'hcm-warn-rules-v1';
+  loadWarnRules() {
+    let r = null;
+    try { r = JSON.parse(localStorage.getItem(this.RULES_KEY) || 'null'); } catch (e) {}
+    this.setState({ warnRules: Array.isArray(r) && r.length ? r : this.eng.DEFAULT_WARN_RULES.map(x => ({ ...x })) });
+  }
+  saveWarnRules(rules) {
+    try { localStorage.setItem(this.RULES_KEY, JSON.stringify(rules)); } catch (e) { this.addLog('บันทึกกฎหนังสือเตือนไม่สำเร็จ'); }
+    this.setState({ warnRules: rules });
+  }
+  patchRule(id, patch) { this.saveWarnRules(this.state.warnRules.map(r => r.id === id ? { ...r, ...patch } : r)); }
+  addRule = () => this.saveWarnRules([...this.state.warnRules,
+    { id: 'w' + Date.now(), metric: 'late', value: 5, level: 'เตือนครั้งที่ 1', sev: 1, on: true }]);
+  removeRule(id) { this.saveWarnRules(this.state.warnRules.filter(r => r.id !== id)); }
+  resetRules = () => this.saveWarnRules(this.eng.DEFAULT_WARN_RULES.map(x => ({ ...x })));
+
+  /* ── ตารางแปลงรหัสที่แอดมินเพิ่มเอง ─────────────────────────────────── */
+  CODES_KEY = 'hcm-custom-codes-v1';
+  loadCustomCodes() {
+    let c = null;
+    try { c = JSON.parse(localStorage.getItem(this.CODES_KEY) || 'null'); } catch (e) {}
+    this.setState({ customCodes: Array.isArray(c) ? c : [] });
+  }
+  saveCustomCodes(list) {
+    try { localStorage.setItem(this.CODES_KEY, JSON.stringify(list)); } catch (e) { this.addLog('บันทึกตารางแปลงรหัสไม่สำเร็จ'); }
+    this.setState({ customCodes: list }, () => this.reprocess());
+  }
+  patchCode(id, patch) { this.saveCustomCodes(this.state.customCodes.map(c => c.id === id ? { ...c, ...patch } : c)); }
+  addCode = (preset) => this.saveCustomCodes([...this.state.customCodes,
+    { id: 'c' + Date.now(), match: (preset && preset.match) || '', code: '', label: (preset && preset.match) || '', color: 'gray', present: false, on: true }]);
+  removeCode(id) { this.saveCustomCodes(this.state.customCodes.filter(c => c.id !== id)); }
+
+  bucketStat(cells) {
+    const s = this.state, st = { absent: 0, late: 0, lateMin: 0, early: 0, earlyMin: 0, leave: 0, incomplete: 0, off: 0, worked: 0, red: 0 };
+    cells.forEach(c => {
+      if (c.color === 'red') { st.red++; if (c.code === 'AB' || c.code === 'NS') st.absent++; if (c.code === 'INC') st.incomplete++; }
+      if (c.late > s.grace) { st.late++; st.lateMin += c.late; }
+      if (c.early > s.earlyGrace) { st.early++; st.earlyMin += c.early; }
+      if (c.leave) st.leave++;
+      if (c.code === 'OFF') st.off++;
+      if (c.in != null && c.out != null) st.worked++;
+    });
+    return st;
+  }
+
+  rebuild(att, sch, src) {
+    const model = this.eng.buildModel(att, sch, this.cfg());
+    this.att = att; this.sch = sch;
+    this.setState({ model, src, columns: model.columns.slice(0, 16), dayKey: model.dates[model.dates.length - 1] || '',
+      selId: model.employees[0] ? model.employees[0].id : null,
+      unknownList: this.eng.unknownPhrases(att, this.state.customCodes) });
+    setTimeout(() => {
+      const sn = this.saveSnapshot(model, src);
+      if (sn) this.addLog(`บันทึกสถิติเดือน ${sn.month} เข้าคลังแล้ว`);
+      try {
+        const mo = this.eng.saveDataset(model, { source: src });
+        if (mo) { this.setState({ datasets: this.eng.listDatasets(), curMonth: mo }); this.addLog(`เก็บข้อมูลเดือน ${mo} ไว้ในเครื่องแล้ว — เดือนก่อนหน้ายังอยู่ครบ`); }
+      } catch (e) { this.addLog('เก็บข้อมูลเดือนนี้ไม่สำเร็จ (พื้นที่เต็ม) — ลบเดือนเก่าออกก่อน'); }
+    }, 0);
+    return model;
+  }
+  openMonth = (month) => {
+    if (!month || month === this.state.curMonth) return;
+    const m = this.eng.loadDataset(month);
+    if (!m) { this.addLog('ไม่พบข้อมูลเดือน ' + month); return; }
+    this.att = null; this.sch = null;
+    this.setState({ model: m, curMonth: month, src: m.source || 'stored', dayKey: m.dates[m.dates.length - 1] || '',
+      selId: m.employees[0] ? m.employees[0].id : null, dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0 });
+    this.addLog(`เปิดข้อมูลเดือน ${month} (${m.employees.length} คน)`);
+  };
+  reprocess() {
+    if (!this.att) return;
+    const m = this.eng.buildModel(this.att, this.sch, this.cfg());
+    this.setState({ model: m, unknownList: this.eng.unknownPhrases(this.att, this.state.customCodes) });
+  }
+
+  loadDemo = () => {
+    const { att, sch } = this.eng.demoData(this.props.demoSize ?? 640);
+    const m = this.rebuild(att, sch, 'demo');
+    this.addLog(`โหลดข้อมูลตัวอย่าง ${m.employees.length} คน × ${m.dates.length} วัน`);
+  };
+  clearAll = () => { this.att = null; this.sch = null; this.setState({ model: null, attName: '', schName: '', src: 'none', log: [] }); };
+
+  /* ── ตารางกะที่จำไว้ ───────────────────────────────────────────────────
+     แอดมินอัปไฟล์ attendance ทุกวัน แต่อัปตารางกะเฉพาะตอนมีพนักงานใหม่หรือเปลี่ยนกะ
+     จึงเก็บตารางกะล่าสุดไว้ แล้วหยิบมาใช้เองทุกครั้งที่อัปเฉพาะไฟล์ attendance   */
+  SCHED_KEY = 'hcm-schedule-v1';
+  loadSchedule() {
+    try {
+      const d = JSON.parse(localStorage.getItem(this.SCHED_KEY) || 'null');
+      if (!d || !Array.isArray(d.rows)) return;
+      this.rememberedSch = d.rows;
+      this.setState({ schName: `${d.name} · จำไว้จากที่อัปเมื่อ ${String(d.savedAt).slice(0, 10)}`, schRemembered: true });
+    } catch (e) {}
+  }
+  saveSchedule(rows, name) {
+    try {
+      localStorage.setItem(this.SCHED_KEY, JSON.stringify({ rows, name, savedAt: new Date().toISOString() }));
+      this.setState({ schRemembered: false });
+    } catch (e) { this.addLog('เก็บตารางกะไว้ใช้ครั้งหน้าไม่สำเร็จ (พื้นที่เต็ม)'); }
+  }
+  forgetSchedule = (ev) => {
+    // ปุ่มนี้อยู่ใน <label> ของ input file — ถ้าไม่กันไว้ การกดจะไปเปิดหน้าต่างเลือกไฟล์ด้วย
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+    localStorage.removeItem(this.SCHED_KEY);
+    this.sch = null; this.rememberedSch = null; this.schFromUpload = false;
+    this.setState({ schName: '', schRemembered: false });
+    this.addLog('ลบตารางกะที่จำไว้แล้ว');
+    if (this.att) this.rebuild(this.att, null, 'upload');
+  };
+
+  async ingest(file, which) {
+    try {
+      this.addLog(`กำลังอ่าน ${file.name}…`);
+      const rows = await this.eng.readSheet(file);
+      if (which === 'att') {
+        this.att = rows;
+        // ถ้ายังไม่ได้อัปตารางกะในรอบนี้ ให้หยิบตารางกะที่จำไว้มาใช้
+        // (และทิ้งตารางกะของข้อมูลตัวอย่างที่ค้างอยู่จากตอนเปิดแอป)
+        if (!this.schFromUpload) this.sch = this.rememberedSch || null;
+        this.setState({ attName: `${file.name} · ${rows.length - 2} แถว` });
+      } else {
+        this.sch = rows;
+        this.rememberedSch = rows;
+        this.schFromUpload = true;
+        this.setState({ schName: `${file.name} · ${rows.length - 2} แถว`, schRemembered: false });
+        this.saveSchedule(rows, file.name);
+        this.addLog('เก็บตารางกะไว้แล้ว — ครั้งหน้าอัปแค่ไฟล์ attendance ก็พอ');
+      }
+      if (this.att) { const m = this.rebuild(this.att, this.sch, 'upload'); this.addLog(`ประมวลผลแล้ว ${m.employees.length} คน × ${m.dates.length} วัน${this.sch ? (this.state.schRemembered ? ' (ใช้ตารางกะที่จำไว้)' : ' (จับคู่ตารางกะแล้ว)') : ' — ยังไม่มีไฟล์ตารางกะ'}`); }
+    } catch (e) { this.addLog('อ่านไฟล์ไม่สำเร็จ: ' + e.message); }
+  }
+
+  filtered() {
+    const s = this.state, m = s.model;
+    if (!m) return [];
+    const q = s.search.trim().toLowerCase();
+    return m.employees.filter(e => {
+      if (s.fBranch !== 'ทั้งหมด' && e.branch !== s.fBranch) return false;
+      if (s.fPos !== 'ทั้งหมด' && e.position !== s.fPos) return false;
+      if (q && !((e.name || '').toLowerCase().includes(q) || String(e.id).includes(q))) return false;
+      if (s.fStatus === 'late' && !e.stat.late) return false;
+      if (s.fStatus === 'absent' && !e.stat.absent) return false;
+      if (s.fStatus === 'leave' && !e.stat.leave) return false;
+      if (s.fStatus === 'red' && !e.stat.red) return false;
+      return true;
+    });
+  }
+
+  cellStyle(c, w) {
+    const base = CMAP[c.color] || OK;
+    const fg = c.color === 'red' ? '#fff' : '#201e1d';
+    const bg = c.color2
+      ? `background-color:${base}; background-image:linear-gradient(135deg, ${base} 50%, ${CMAP[c.color2]} 50%);`
+      : `background-color:${base};`;
+    return `width:${w}px; flex:none; height:26px; display:flex; align-items:center; justify-content:center; font-family:Archivo; font-weight:800; font-size:9px; letter-spacing:-.02em; border-right:1px solid rgba(255,255,255,.55); ${bg} color:${fg}; overflow:hidden;`;
+  }
+  cellText(c) {
+    if (this.state.detail === 'plain') return '';
+    if (this.state.detail === 'time') return c.in != null ? this.eng.fmtMin(c.in) : c.code;
+    return c.code;
+  }
+  shiftOf(c) {
+    const raw = (c && c.shift) || '';
+    if (!raw) return { name: 'ไม่ได้ตั้งกะ', time: '—', key: 'ไม่ได้ตั้งกะ' };
+    const m = raw.match(/(\d{1,2}[:.]\d{2})\s*[-–]\s*(\d{1,2}[:.]\d{2})/);
+    const name = (m ? raw.replace(m[0], '') : raw).trim() || 'กะ';
+    return { name, time: m ? m[0] : '—', key: name + (m ? ' ' + m[0] : '') };
+  }
+  tagStyle(color) {
+    const bg = CMAP[color] || GRY2;
+    return `display:inline-block; padding:1px 6px; font-family:Archivo; font-weight:800; font-size:10px; background:${bg}; color:${color === 'red' ? '#fff' : '#201e1d'};`;
+  }
+
+  posEmployees() {
+    const b = this.state.hShift;
+    const emps = this.filtered();
+    if (b === 'all') return emps;
+    const OUT = { color: 'out', code: '', tip: '', late: 0, early: 0, leave: null, in: null, out: null, shift: '', hcm: '' };
+    return emps.map(e => {
+      const cells = e.cells.map(c => this.bucket(c.shift) === b ? c : OUT);
+      return { ...e, cells, stat: this.bucketStat(cells) };
+    }).filter(e => e.cells.some(c => c !== OUT));
+  }
+  gridEmployees() {
+    const gb = this.state.gShift;
+    const emps = this.filtered();
+    if (gb === 'all') return emps;
+    const OUT = { color: 'out', code: '', tip: '', late: 0, early: 0, leave: null, in: null, out: null, shift: '' };
+    return emps.map(e => ({ ...e, cells: e.cells.map(c => this.bucket(c.shift) === gb ? c : OUT) }))
+      .filter(e => e.cells.some(c => c !== OUT));
+  }
+  exportRange() {
+    const dates = (this.state.model && this.state.model.dates) || [];
+    const f = this.state.exFrom || dates[0], t = this.state.exTo || dates[dates.length - 1];
+    const idx = dates.map((d, i) => i).filter(i => dates[i] >= f && dates[i] <= t);
+    return { dates: idx.map(i => dates[i]), idx, from: f, to: t };
+  }
+  exportRows() {
+    const m = this.state.model, emps = this.gridEmployees();
+    const R = this.exportRange();
+    const header = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'ตำแหน่ง', 'ขาด', 'สาย', 'นาทีสาย', 'ลา', 'มาทำงาน', 'Attendance Rate', ...this.eng.HCM_CODES, 'TOTAL', ...R.dates.map(d => d.slice(-2))];
+    const rows = [], colors = [];
+    emps.forEach(e => {
+      const days = e.cells.filter(c => c.color !== 'out').length;
+      const pres = e.cells.filter(c => this.eng.isPresent(c)).length;
+      const codes = this.eng.HCM_CODES.map(k => (e.stat.codes && e.stat.codes[k]) || 0);
+      rows.push([e.id, e.name, e.position, e.stat.absent, e.stat.late, e.stat.lateMin, e.stat.leave,
+        pres, (days ? Math.round(pres / days * 1000) / 10 : 0) + '%', ...codes, codes.reduce((a, b) => a + b, 0),
+        ...R.idx.map(i => e.cells[i].code || '')]);
+      colors.push([...Array(9 + this.eng.HCM_CODES.length + 1).fill(null), ...R.idx.map(i => e.cells[i].color)]);
+    });
+    return { header, rows, colors, emps };
+  }
+
+  renderVals() {
+    const s = this.state, m = s.model, E = this.eng;
+    const set = (patch, cb) => this.setState(patch, cb);
+    const go = (k) => () => this.setState({ screen: k });
+    const scr = NAV.find(n => n[0] === s.screen) || NAV[1];
+    const unknown = s.unknownList || [];
+    // เรนเดอร์รอบแรกเกิดก่อน componentDidMount จะ import engine เสร็จ — E จึงยังว่างได้
+    const BUILTIN = (E && E.BUILTIN_CODES) || [];
+    const COLOR_OPTS = ((E && E.CELL_COLORS) || []).map(([key, label]) => ({ key, label }));
+    const METRIC_OPTS = ((E && E.WARN_METRICS) || []).map(([key, label, unit]) => ({ key, label: `${label} (${unit})` }));
+
+    const V = {
+      navItems: NAV.map((n, i) => ({
+        num: String(i + 1).padStart(2, '0'), label: n[1], go: go(n[0]),
+        style: `display:flex; gap:8px; align-items:center; padding:11px 18px; border:0; border-bottom:1px solid #d7d3d3; cursor:pointer; font-family:Archivo,"Noto Sans Thai",sans-serif; font-size:13px; text-align:left; background:${s.screen === n[0] ? RED : 'transparent'}; color:${s.screen === n[0] ? '#fff' : '#201e1d'}; font-weight:${s.screen === n[0] ? 800 : 400};`,
+      })),
+      screenTitle: scr[3], screenKicker: scr[2],
+      isUpload: s.screen === 'upload', isDash: s.screen === 'dash', isGrid: s.screen === 'grid',
+      isEmp: s.screen === 'emp', isHub: s.screen === 'hub', isExport: s.screen === 'export', isRules: s.screen === 'rules',
+      goExport: go('export'),
+      goRules: go('rules'),
+      periodLabel: m && m.dates.length ? m.dates[0].slice(0, 7) : '—',
+      empCount: m ? m.employees.length : 0,
+      sourceLabel: s.src === 'demo' ? 'ตัวอย่าง' : s.src === 'upload' ? 'HCM' : '—',
+      attStatus: s.attName || 'ยังไม่ได้เลือกไฟล์',
+      schStatus: s.schName || 'ยังไม่ได้เลือกไฟล์',
+      schRemembered: s.schRemembered,
+      forgetSchedule: this.forgetSchedule,
+      detectedCols: s.columns, logLines: s.log,
+      loadDemo: this.loadDemo, clearAll: this.clearAll,
+      onDragOver: (e) => { e.preventDefault(); }, onDragLeave: () => {},
+      onDropAtt: (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) this.ingest(e.dataTransfer.files[0], 'att'); },
+      onDropSch: (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) this.ingest(e.dataTransfer.files[0], 'sch'); },
+      onPickAtt: (e) => { if (e.target.files[0]) this.ingest(e.target.files[0], 'att'); },
+      onPickSch: (e) => { if (e.target.files[0]) this.ingest(e.target.files[0], 'sch'); },
+      dropAStyle: `border:2px solid ${s.attName ? RED : 'rgba(32,30,29,.4)'}; background:${s.attName ? '#fff2ef' : '#eae9e9'}; padding:18px; min-height:210px; display:flex; flex-direction:column; cursor:pointer;`,
+      dropBStyle: `border:2px solid ${s.schName ? RED : 'rgba(32,30,29,.4)'}; background:${s.schName ? '#fff2ef' : '#eae9e9'}; padding:18px; min-height:210px; display:flex; flex-direction:column; cursor:pointer;`,
+      search: s.search, fBranch: s.fBranch, fPos: s.fPos, dayKey: s.dayKey,
+      onSearch: (e) => set({ search: e.target.value, scrollTop: 0 }),
+      onBranch: (e) => set({ fBranch: e.target.value, scrollTop: 0 }),
+      onPos: (e) => set({ fPos: e.target.value, scrollTop: 0 }),
+      onPickDay: (e) => set({ dayKey: e.target.value }),
+      resetFilters: () => set({ search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all', scrollTop: 0 }),
+      statusOpts: [['all', 'ทั้งหมด'], ['late', 'มาสาย'], ['absent', 'ขาด'], ['leave', 'ลา'], ['red', 'แดงทั้งหมด']].map(([k, l]) => ({
+        label: l, pick: () => set({ fStatus: k, scrollTop: 0 }),
+        style: `padding:0 12px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.fStatus === k ? '#201e1d' : 'transparent'}; color:${s.fStatus === k ? '#fff' : '#201e1d'};`,
+      })),
+      legend: [['red', 'ขาด / ไม่แสกน / ไม่มีกะ / แสกนไม่ครบ'], ['yellow', 'มาสาย หรือ ออกก่อนเวลา'], ['gray', 'ลาเต็มวัน / วันหยุด / PH'], ['gray-half', 'ลาครึ่งวัน (AL½)'], ['ok', 'มาทำงาน (สแกนครบ ตรงเวลา)']].map(([c, l]) => ({
+        label: l, sw: `width:16px; height:12px; display:inline-block; background:${CMAP[c]}; border:1px solid rgba(32,30,29,.35);`,
+      })),
+      printReport: () => window.print(),
+      sheetUrl: s.sheetUrl, sheetTab: s.sheetTab, syncScope: s.syncScope, syncDaily: s.syncDaily,
+      onSheetUrl: (e) => this.saveEndpoint({ sheetUrl: e.target.value }),
+      endpoint: s.endpoint, syncToken: s.syncToken,
+      onEndpoint: (e) => this.saveEndpoint({ endpoint: e.target.value.trim() }),
+      onSyncToken: (e) => this.saveEndpoint({ syncToken: e.target.value.trim() }), onSheetTab: (e) => set({ sheetTab: e.target.value }),
+      onSyncScope: (e) => set({ syncScope: e.target.value }), onSyncDaily: (e) => set({ syncDaily: e.target.checked }),
+      syncBtn: s.syncState === 'running' ? 'กำลัง sync…' : 'Sync ตอนนี้',
+      syncLog: s.syncLog,
+      grace: s.grace, earlyGrace: s.earlyGrace, graceLabel: `${s.grace} นาที`, earlyLabel: `${s.earlyGrace} นาที`,
+      onGrace: (e) => this.setState({ grace: +e.target.value }, () => this.reprocess()),
+      onEarly: (e) => this.setState({ earlyGrace: +e.target.value }, () => this.reprocess()),
+      warnAbsent: s.warnAbsent, warnLate: s.warnLate,
+      onWarnAbsent: (e) => this.saveThresholds({ warnAbsent: Math.max(1, +e.target.value || 1) }),
+      onWarnLate: (e) => this.saveThresholds({ warnLate: Math.max(1, +e.target.value || 1) }),
+      nearGap: s.nearGap,
+      winDays: s.winDays, isWinDays: s.winMode === 'days',
+      winOpts: [['month', 'รายเดือน'], ['year', 'รายปี'], ['days', 'ย้อนหลัง (วัน)']].map(([k, l]) => ({
+        label: l, pick: () => this.saveThresholds({ winMode: k }),
+        style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.winMode === k ? '#201e1d' : 'transparent'}; color:${s.winMode === k ? '#fff' : '#201e1d'};`,
+      })),
+      onWinDays: (e) => this.saveThresholds({ winDays: Math.max(7, +e.target.value || 30) }),
+      winLabel: s.winMode === 'year' ? 'รายปี' : s.winMode === 'days' ? `${s.winDays} วันล่าสุด` : 'รายเดือน',
+      onNearGap: (e) => this.saveThresholds({ nearGap: Math.max(1, +e.target.value || 1) }),
+      nearRule: `เหลืออีกไม่เกิน ${s.nearGap} ก็จะเข้ากฎใดกฎหนึ่ง · นับรอบ${s.winMode === 'year' ? 'รายปี' : s.winMode === 'days' ? s.winDays + ' วันล่าสุด' : 'รายเดือน'}`,
+      nearList: [],
+      ruleToggles: [
+        ['flagNoShift', 'ไม่มีกะทำงานแต่มีการแสกน → แดง', 'ใช้จับกรณีตารางกะยังไม่ถูกตั้งในระบบ'],
+        ['flagShiftOnHoliday', 'ตั้งกะในวันหยุดแต่ไม่แสกน → แดง', 'ตามคำอธิบายสีในไฟล์ HCM ต้นฉบับ'],
+      ].map(([k, label, hint]) => ({ label, hint, on: s[k], toggle: (e) => this.setState({ [k]: e.target.checked }, () => this.reprocess()) })),
+      warnRuleRows: (s.warnRules || []).map(r => ({
+        on: r.on, metric: r.metric, value: r.value, level: r.level, sev: r.sev,
+        metricOpts: METRIC_OPTS,
+        toggle: (e) => this.patchRule(r.id, { on: e.target.checked }),
+        setMetric: (e) => this.patchRule(r.id, { metric: e.target.value }),
+        setValue: (e) => this.patchRule(r.id, { value: Math.max(1, +e.target.value || 1) }),
+        setLevel: (e) => this.patchRule(r.id, { level: e.target.value }),
+        setSev: (e) => this.patchRule(r.id, { sev: Math.max(1, Math.min(9, +e.target.value || 1)) }),
+        remove: () => this.removeRule(r.id),
+      })),
+      addRule: this.addRule,
+      resetRules: this.resetRules,
+      warnRuleSummary: `${(s.warnRules || []).filter(r => r.on).length} กฎที่เปิดใช้ · ความรุนแรงเลขมากกว่า = ระดับสูงกว่า`,
+      newHoliday: s.newHoliday,
+      onNewHoliday: (e) => set({ newHoliday: e.target.value }),
+      addHoliday: () => { if (!s.newHoliday) return; this.setState(p => ({ holidays: [...new Set([...p.holidays, p.newHoliday])].sort(), newHoliday: '' }), () => this.reprocess()); },
+      holidayChips: s.holidays.map(h => ({ label: h, remove: () => this.setState(p => ({ holidays: p.holidays.filter(x => x !== h) }), () => this.reprocess()) })),
+      detailOpts: [['code', 'สี + ตัวย่อ'], ['plain', 'สีล้วน'], ['time', 'สี + เวลาเข้า']].map(([k, l]) => ({
+        label: l, pick: () => set({ detail: k }),
+        style: `padding:0 12px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.detail === k ? '#201e1d' : 'transparent'}; color:${s.detail === k ? '#fff' : '#201e1d'};`,
+      })),
+      codeTable: BUILTIN
+        .map(({ code, label, color }) => ({ code, label, sw: `display:inline-block; width:34px; height:12px; background:${CMAP[color]}; border:1px solid rgba(32,30,29,.35);` })),
+      customCodeRows: (s.customCodes || []).map(c => ({
+        on: c.on !== false, match: c.match, code: c.code, label: c.label, color: c.color, present: !!c.present,
+        colorOpts: COLOR_OPTS,
+        toggle: (e) => this.patchCode(c.id, { on: e.target.checked }),
+        setMatch: (e) => this.patchCode(c.id, { match: e.target.value }),
+        setCode: (e) => this.patchCode(c.id, { code: e.target.value }),
+        setLabel: (e) => this.patchCode(c.id, { label: e.target.value }),
+        setColor: (e) => this.patchCode(c.id, { color: e.target.value }),
+        setPresent: (e) => this.patchCode(c.id, { present: e.target.checked }),
+        remove: () => this.removeCode(c.id),
+      })),
+      addCode: () => this.addCode(),
+      hasUnknown: unknown.length > 0,
+      unknownChips: unknown.map(u => ({ label: `${u.text} (${u.n})`, add: () => this.addCode({ match: u.text }) })),
+      dashTabs: [['all', 'ภาพรวมทั้งหมด'], ...(s.shiftGroups || []).map(g => [g.key, g.name]), ['none', 'ไม่ได้ตั้งกะ'], ['compare', 'เปรียบเทียบทุกกะ']].map(([k, l]) => ({
+        label: l, pick: () => set({ dashTab: k }),
+        style: `padding:9px 18px; border:0; border-right:2px solid rgba(32,30,29,.4); cursor:pointer; font-family:Archivo,"Noto Sans Thai",sans-serif; font-size:13px; font-weight:${s.dashTab === k ? 800 : 400}; background:${s.dashTab === k ? '#201e1d' : 'transparent'}; color:${s.dashTab === k ? '#fff' : '#201e1d'};`,
+      })),
+      isDashOverview: s.dashTab !== 'compare', isDashShift: s.dashTab === 'compare',
+      dashTabHint: s.dashTab === 'compare' ? 'เทียบทุกกะในหน้าเดียว' : s.dashTab === 'all' ? 'รวมทุกกะ' : 'นับเฉพาะวันที่พนักงานถูกตั้งกะนี้ (อ่านจากไฟล์ตารางกะ)',
+      shiftEditOpen: s.shiftEditOpen, shiftEditLabel: s.shiftEditOpen ? 'ปิดการตั้งค่ากะ' : 'ตั้งค่ากะ',
+      toggleShiftEdit: () => set({ shiftEditOpen: !s.shiftEditOpen }),
+      shiftRows: (s.shiftGroups || []).map((g, i) => ({
+        name: g.name, start: g.start, end: g.end,
+        count: `${g.start}-${g.end}`,
+        rename: (e) => { const arr = s.shiftGroups.map((x, j) => j === i ? { ...x, name: e.target.value } : x); this.saveShiftGroups(arr); },
+        setStart: (e) => { const v = e.target.value; this.saveShiftGroups(s.shiftGroups.map((x, j) => j === i ? { ...x, start: v } : x)); },
+        setEnd: (e) => { const v = e.target.value; this.saveShiftGroups(s.shiftGroups.map((x, j) => j === i ? { ...x, end: v } : x)); },
+        remove: () => this.saveShiftGroups(s.shiftGroups.filter((x, j) => j !== i)),
+      })),
+      addShift: () => this.saveShiftGroups([...s.shiftGroups, { key: 'g' + Date.now().toString(36), name: 'กะใหม่', start: '08:00', end: '17:00' }]),
+      resetShifts: () => this.saveShiftGroups(this.eng.DEFAULT_SHIFT_GROUPS.map(x => ({ ...x }))),
+      shiftCards: [], shiftIssues: [], shiftBranchRows: [], shiftTrendGrid: [], shiftTrendLines: [], shiftTrendLegend: [],
+      syncTabs: [
+        { tab: 'Matrix', desc: 'ตารางพนักงาน × วันที่ พร้อมสีและตัวย่อ (AL, SL, OFF, L15)' },
+        { tab: 'Summary by position', desc: 'สรุปตามตำแหน่งงาน: Attendance Rate, ขาด, สาย, แสกนไม่ครบ' },
+        { tab: 'Daily rate', desc: 'Attendance Rate รายวันของช่วงที่เลือก' },
+        { tab: 'Warning list', desc: 'รายชื่อที่ถึงเกณฑ์ออกหนังสือเตือน' },
+      ],
+      monthOpts: ((s.datasets || []).length
+        ? s.datasets.map(d => ({ month: d.month, label: `${d.month} · ${d.employees} คน` }))
+        : (s.model && s.model.dates && s.model.dates.length
+            ? [{ month: s.model.dates[0].slice(0, 7), label: s.model.dates[0].slice(0, 7) + (s.src === 'demo' ? ' · ตัวอย่าง' : '') }]
+            : [])),
+      curMonth: s.curMonth || (s.model && s.model.dates && s.model.dates.length ? s.model.dates[0].slice(0, 7) : ''),
+      onPickMonth: (e) => this.openMonth(e.target.value),
+      hasMonths: true,
+      filterSummary: '', gridCountLabel: '', pngHint: '',
+      dates: [], dayTotals: [], dayIssues: [], kpis: [], trendGrid: [], trendTicks: [], trendLate: '', trendAbsent: '',
+      hubBars: [], watchlist: [], warnRule: `ขาด ≥ ${s.warnAbsent} วัน หรือ สาย ≥ ${s.warnLate} ครั้ง`,
+      branchOpts: ['ทั้งหมด'], posOpts: ['ทั้งหมด'], visibleRows: [], dayCols: [], hubRows: [],
+      gridRef: (el) => { this.gridEl = el; }, onGridScroll: (e) => this.setState({ scrollTop: e.target.scrollTop }),
+      gridInnerStyle: 'min-width:max-content; position:relative;', gridHeadStyle: 'display:flex; position:sticky; top:0; z-index:2; height:30px; border-bottom:2px solid rgba(32,30,29,.4);',
+      spacerTopStyle: 'height:0px;', spacerBottomStyle: 'height:0px;',
+      empListShort: [], empListCount: '', empName: '—', empMeta: '', empOnTime: '—', empStats: [], empStrip: [], empIssues: [],
+      exportPNG: () => this.exportPNG(), exportXLS: () => this.exportXLS(), exportCSV: () => this.exportCSV(),
+      copyTSV: () => this.copyTSV(), exportHubCSV: () => this.exportHubCSV(), runSync: () => this.runSync(),
+    };
+    // ── warning letters
+    V.isWarn = s.screen === 'warn';
+    const wq = s.warnSearch.trim().toLowerCase();
+    const allW = s.warnings;
+    const byPerson = new Map();
+    allW.forEach(w => {
+      if (!byPerson.has(w.id)) byPerson.set(w.id, { id: w.id, name: w.name, position: w.position, count: 0, last: '', level: '', months: [] });
+      const P = byPerson.get(w.id);
+      P.count++; P.months.push(w.month);
+      if (w.date > P.last) { P.last = w.date; P.level = w.level; }
+      P.name = P.name || w.name;
+    });
+    let people = [...byPerson.values()].filter(p => !wq || (p.name || '').toLowerCase().includes(wq) || String(p.id).includes(wq));
+    people.sort((a, b) => s.warnSort === 'count' ? b.count - a.count || b.last.localeCompare(a.last)
+      : s.warnSort === 'recent' ? b.last.localeCompare(a.last)
+      : (a.name || '').localeCompare(b.name || '', 'th'));
+    V.warnSortOpts = [['count', 'โดนมากสุด'], ['recent', 'ล่าสุด'], ['name', 'ชื่อ ก-ฮ']].map(([k, l]) => ({
+      label: l, pick: () => set({ warnSort: k }),
+      style: `padding:0 12px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.warnSort === k ? '#201e1d' : 'transparent'}; color:${s.warnSort === k ? '#fff' : '#201e1d'};`,
+    }));
+    V.warnSearch = s.warnSearch;
+    V.onWarnSearch = (e) => set({ warnSearch: e.target.value });
+    V.warnCountLabel = `${people.length} คน จากทั้งหมด ${byPerson.size} คนที่เคยได้รับหนังสือ`;
+    V.warnPeople = people.slice(0, 200).map(p => ({
+      id: p.id, name: p.name, position: p.position, count: p.count, last: p.last, level: p.level || '—',
+      months: [...new Set(p.months)].sort().join(', '),
+      countStyle: `display:inline-block; padding:1px 8px; font-family:Archivo; font-weight:800; font-size:12px; background:${p.count >= 3 ? RED : p.count === 2 ? YEL : GRY2}; color:${p.count >= 3 ? '#fff' : '#201e1d'};`,
+      levelStyle: this.tagStyle(String(p.level).includes('2') ? 'red' : 'yellow'),
+      open: () => this.setState({ screen: 'emp', selId: p.id }),
+    }));
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    V.warnKpis = [
+      { label: 'หนังสือที่ออกทั้งหมด', value: allW.length, sub: `${byPerson.size} คน`, style: 'padding:14px 16px; border-right:2px solid rgba(32,30,29,.4);' },
+      { label: 'ออกในเดือนนี้', value: allW.filter(w => w.date.startsWith(thisMonth)).length, sub: thisMonth, style: 'padding:14px 16px; border-right:2px solid rgba(32,30,29,.4);' },
+      { label: 'โดนซ้ำ 2 ครั้งขึ้นไป', value: [...byPerson.values()].filter(p => p.count >= 2).length, sub: 'ควรพิจารณาขั้นถัดไป', style: 'padding:14px 16px; border-right:2px solid rgba(32,30,29,.4); background:#fff2ef;' },
+      { label: 'โดน 3 ครั้งขึ้นไป', value: [...byPerson.values()].filter(p => p.count >= 3).length, sub: 'กลุ่มเสี่ยงสูงสุด', style: 'padding:14px 16px;' },
+    ];
+    V.warnLog = allW.filter(w => !wq || (w.name || '').toLowerCase().includes(wq) || String(w.id).includes(wq)).slice(0, 150).map(w => ({
+      date: w.date, name: w.name, position: w.position, level: w.level, month: w.month, absent: w.absent, late: w.late,
+      levelStyle: this.tagStyle(String(w.level).includes('2') ? 'red' : 'yellow'),
+      remove: () => this.revokeWarning(w.key),
+    }));
+    V.exportWarnCSV = () => this.eng.download('warning-letters.csv', this.eng.toCSV(
+      ['วันที่ออก', 'รหัสพนักงาน', 'ชื่อ-สกุล', 'ตำแหน่ง', 'ระดับ', 'รอบข้อมูล', 'ขาด', 'สาย', 'นาทีสาย'],
+      allW.map(w => [w.date, w.id, w.name, w.position, w.level, w.month, w.absent, w.late, w.lateMin])), 'text/csv;charset=utf-8');
+
+    // ── archive (independent of the currently loaded month)
+    V.isArchive = s.screen === 'archive';
+    const arch = s.archive;
+    const years = [...new Set(arch.map(a => a.month.slice(0, 4)))].sort();
+    const mFirst = arch.length ? arch[0].month : '', mLast = arch.length ? arch[arch.length - 1].month : '';
+    const aFrom = s.archFrom || mFirst, aTo = s.archTo || mLast;
+    const monthBack = (n) => { const [y, mo] = (mLast || '2026-01').split('-').map(Number); const d = new Date(y, mo - 1 - (n - 1), 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+    const chip = (label, f, t) => ({
+      label, pick: () => set({ archFrom: f, archTo: t, archYear: label, archOpen: null }),
+      style: `padding:5px 12px; border:2px solid rgba(32,30,29,.4); cursor:pointer; font-family:Archivo,"Noto Sans Thai",sans-serif; font-size:12px; font-weight:800; background:${s.archYear === label ? '#201e1d' : 'transparent'}; color:${s.archYear === label ? '#fff' : '#201e1d'};`,
+    });
+    V.yearChips = [chip('ทั้งหมด', mFirst, mLast), chip('12 เดือน', monthBack(12), mLast), chip('24 เดือน', monthBack(24), mLast),
+      ...years.map(y => chip(y, `${y}-01`, `${y}-12`))];
+    V.archFrom = aFrom; V.archTo = aTo; V.archMin = mFirst; V.archMax = mLast;
+    V.onArchFrom = (e) => set({ archFrom: e.target.value, archYear: 'กำหนดเอง' });
+    V.onArchTo = (e) => set({ archTo: e.target.value, archYear: 'กำหนดเอง' });
+    const scope = arch.filter(a => a.month >= aFrom && a.month <= aTo);
+
+    // daily range across archived months
+    const allDays = scope.flatMap(a => a.byDay);
+    const dFromDef = allDays.length ? allDays[Math.max(0, allDays.length - 30)].date : '';
+    const dToDef = allDays.length ? allDays[allDays.length - 1].date : '';
+    const dFrom = s.archDayFrom || dFromDef, dTo = s.archDayTo || dToDef;
+    V.archDayFrom = dFrom; V.archDayTo = dTo;
+    V.onArchDayFrom = (e) => set({ archDayFrom: e.target.value });
+    V.onArchDayTo = (e) => set({ archDayTo: e.target.value });
+    const rangeDays = allDays.filter(d => d.date >= dFrom && d.date <= dTo);
+    const rSum = (k) => rangeDays.reduce((n, d) => n + (d[k] || 0), 0);
+    const rRate = rSum('slots') ? Math.round(rSum('ok') / rSum('slots') * 1000) / 10 : 0;
+    V.dayRangeLabel = rangeDays.length ? `${dFrom} → ${dTo} (${rangeDays.length} วัน)` : 'ไม่มีข้อมูลในช่วงนี้';
+    V.dayRangeTotals = `Attendance Rate ${rSum('personDays') ? Math.round(rSum('present') / rSum('personDays') * 1000) / 10 : 0}% · ตรงเวลา ${rRate}% · ขาด ${rSum('absent').toLocaleString()} · สาย ${rSum('late').toLocaleString()} · แสกนไม่ครบ ${rSum('inc').toLocaleString()}`;
+    V.archRangeSummary = `${scope.length} เดือนในช่วง (${aFrom} → ${aTo}) · รายวัน ${rangeDays.length} วัน`;
+    V.archRangeDays = rangeDays.slice(-62).map(d => {
+      const col = d.onTime < 88 ? 'red' : d.onTime < 93 ? 'yellow' : 'ok';
+      return { day: d.date.slice(5), rate: Math.round(d.onTime), tip: `${d.date} · ตรงเวลา ${d.onTime}% · ขาด ${d.absent} · สาย ${d.late}`,
+        style: `width:48px; height:44px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:${CMAP[col]}; color:${col === 'red' ? '#fff' : '#201e1d'}; border:1px solid rgba(32,30,29,.2);` };
+    });
+    V.archRangeRows = [...rangeDays].reverse().slice(0, 200).map(d => ({
+      date: d.date, slots: d.slots.toLocaleString(), absent: d.absent, late: d.late, early: d.early, inc: d.inc, leave: d.leave, attRate: (d.attRate ?? 0) + '%',
+      onTime: d.onTime + '%', rateStyle: this.tagStyle(d.onTime < 88 ? 'red' : d.onTime < 93 ? 'yellow' : 'ok'),
+    }));
+    V.exportRangeCSV = () => this.eng.download(`attendance-daily-${dFrom}_${dTo}.csv`, this.eng.toCSV(
+      ['วันที่', 'วันทำงาน', 'ขาด', 'สาย', 'นาทีสาย', 'ออกก่อน', 'แสกนไม่ครบ', 'ลา', 'ตรงเวลา%'],
+      rangeDays.map(d => [d.date, d.slots, d.absent, d.late, d.lateMin, d.early, d.inc, d.leave, d.onTime])), 'text/csv;charset=utf-8');
+    const sum = (k) => scope.reduce((n, a) => n + (a.total[k] || 0), 0);
+    const slotsAll = sum('slots');
+    V.archKpis = [
+      { label: 'ช่วงข้อมูล', value: scope.length ? scope[0].month : '—', sub: scope.length ? `ถึง ${scope[scope.length - 1].month} · ${scope.length} เดือน` : 'ยังไม่มีข้อมูลในคลัง', style: 'padding:14px 16px; border-right:2px solid rgba(32,30,29,.4);' },
+      { label: 'Attendance Rate เฉลี่ย', value: (sum('personDays') ? Math.round(sum('present') / sum('personDays') * 1000) / 10 : 0) + '%', sub: `มาทำงาน ${sum('present').toLocaleString()} วัน-คน`, style: 'padding:14px 16px; border-right:2px solid rgba(32,30,29,.4); background:#201e1d; color:#fff;' },
+      { label: 'อัตราตรงเวลาเฉลี่ย', value: (slotsAll ? Math.round(sum('ok') / slotsAll * 1000) / 10 : 0) + '%', sub: `${slotsAll.toLocaleString()} วันทำงาน`, style: 'padding:14px 16px; border-right:2px solid rgba(32,30,29,.4);' },
+      { label: 'ขาดงานสะสม', value: sum('absent').toLocaleString(), sub: `${slotsAll ? Math.round(sum('absent') / slotsAll * 1000) / 10 : 0}% ของวันทำงาน`, style: 'padding:14px 16px; border-right:2px solid rgba(32,30,29,.4); background:#fff2ef;' },
+      { label: 'มาสายสะสม', value: sum('late').toLocaleString(), sub: `${sum('lateMin').toLocaleString()} นาที`, style: 'padding:14px 16px; border-right:2px solid rgba(32,30,29,.4);' },
+      { label: 'แสกนไม่ครบ', value: sum('inc').toLocaleString(), sub: `ลารวม ${sum('leave').toLocaleString()} วัน`, style: 'padding:14px 16px;' },
+    ];
+    const AX = (i, n) => 48 + i * (980 / Math.max(1, n)), BW = Math.max(4, 980 / Math.max(1, scope.length) - 4);
+    const AY = (v) => 196 - (v / 100) * 186;
+    V.archGrid = [25, 50, 75, 100].map(v => ({ y: AY(v), ty: AY(v) + 4, label: v + '%' }));
+    V.archBars = scope.map((a, i) => {
+      const r = a.total.onTime;
+      return { x: AX(i, scope.length), y: AY(r), w: BW, h: Math.max(1, 196 - AY(r)), lx: AX(i, scope.length) + BW / 2,
+        label: scope.length > 26 && i % 2 ? '' : a.month.slice(5), fill: r < 88 ? RED : r < 93 ? YEL : '#201e1d' };
+    });
+    V.archAbsentPath = scope.map((a, i) => {
+      const pct = a.total.slots ? a.total.absent / a.total.slots * 100 : 0;
+      return `${i ? 'L' : 'M'}${(AX(i, scope.length) + BW / 2).toFixed(1)},${AY(pct * 5).toFixed(1)}`;
+    }).join(' ');
+    V.archYearMarks = years.filter(y => s.archYear === 'ทั้งหมด').map(y => {
+      const i = scope.findIndex(a => a.month.startsWith(y));
+      return i < 0 ? null : { x: AX(i, scope.length) - 3, tx: AX(i, scope.length), label: y };
+    }).filter(Boolean);
+    V.archRows = [...scope].reverse().map(a => ({
+      month: a.month, employees: a.employees, days: a.days, onTime: a.total.onTime + '%', attRate: (a.total.attRate ?? 0) + '%',
+      absent: a.total.absent.toLocaleString(), late: a.total.late.toLocaleString(), early: a.total.early.toLocaleString(), inc: a.total.inc.toLocaleString(),
+      shifts: `${a.byShift.morning.onTime} / ${a.byShift.afternoon.onTime} / ${a.byShift.night.onTime}`,
+      source: a.source === 'demo' ? 'ตัวอย่าง' : a.source === 'upload' ? 'HCM' : a.source,
+      rateStyle: this.tagStyle(a.total.onTime < 88 ? 'red' : a.total.onTime < 93 ? 'yellow' : 'ok'),
+      rowStyle: `cursor:pointer; background:${s.archOpen === a.month ? '#ffe0d9' : 'transparent'};`,
+      open: () => set({ archOpen: s.archOpen === a.month ? null : a.month }),
+      remove: (ev) => { ev.stopPropagation(); this.setState(p => { const arr = p.archive.filter(x => x.month !== a.month); this.writeArchive(arr); return { archive: arr, archOpen: null }; }); },
+    }));
+    const detail = arch.find(a => a.month === s.archOpen);
+    V.hasArchDetail = !!detail;
+    if (detail) {
+      V.archDetailMonth = detail.month;
+      V.archDetailDays = detail.byDay.map(d => {
+        const col = d.onTime < 88 ? 'red' : d.onTime < 93 ? 'yellow' : d.slots ? 'ok' : 'gray';
+        return { day: d.date.slice(-2), rate: d.slots ? Math.round(d.onTime) : '—', tip: `${d.date} · ตรงเวลา ${d.onTime}% · ขาด ${d.absent} · สาย ${d.late}`,
+          style: `width:46px; height:44px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:${CMAP[col]}; color:${col === 'red' ? '#fff' : '#201e1d'}; border:1px solid rgba(32,30,29,.2);` };
+      });
+      V.archDetailBranches = detail.byBranch.map(b => ({ branch: b.branch, heads: b.heads, absent: b.absent, late: b.late, inc: b.inc, onTime: b.onTime + '%' }));
+    }
+    V.saveNow = () => { const sn = this.saveSnapshot(this.state.model, this.state.src); if (sn) this.addLog(`บันทึกเดือน ${sn.month} เข้าคลังแล้ว`); };
+    V.exportArchive = () => this.eng.download(`attendance-archive-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(s.archive, null, 1), 'application/json');
+    V.exportArchiveCSV = () => this.eng.download('attendance-monthly-history.csv', this.eng.toCSV(
+      ['เดือน', 'พนักงาน', 'วัน', 'วันทำงานรวม', 'ตรงเวลา%', 'ขาด', 'สาย', 'นาทีสาย', 'ออกก่อน', 'แสกนไม่ครบ', 'ลา', 'กะเช้า%', 'กะบ่าย%', 'กะดึก%', 'ที่มา'],
+      s.archive.map(a => [a.month, a.employees, a.days, a.total.slots, a.total.onTime, a.total.absent, a.total.late, a.total.lateMin, a.total.early, a.total.inc, a.total.leave, a.byShift.morning.onTime, a.byShift.afternoon.onTime, a.byShift.night.onTime, a.source])), 'text/csv;charset=utf-8');
+
+    if (!m || !E) return V;
+
+    const emps = this.filtered();
+    const dates = m.dates;
+    V.dates = dates;
+    V.filterSummary = `${emps.length} / ${m.employees.length} คน · ${dates.length} วัน`;
+    V.empCount = m.employees.length;
+    V.gridCountLabel = `แสดง ${emps.length} คน`;
+    V.pngHint = emps.length > 400 ? `ตัวกรองปัจจุบัน ${emps.length} คน — ภาพจะถูกตัดที่ 400 แถวแรก` : `ตัวกรองปัจจุบัน ${emps.length} คน × ${dates.length} วัน`;
+    V.branchOpts = ['ทั้งหมด', ...new Set(m.employees.map(e => e.branch).filter(Boolean))];
+    V.posOpts = ['ทั้งหมด', ...new Set(m.employees.map(e => e.position).filter(Boolean))];
+
+    // ── dashboard (masked to the active shift tab)
+    const bk = [...(s.shiftGroups || []).map(g => g.key), 'none', 'other'].includes(s.dashTab) ? s.dashTab : null;
+    const MASK = { color: 'gray', code: 'OFF', tip: '', late: 0, early: 0, leave: null, in: null, out: null, shift: '' };
+    const from = s.dashFrom || dates[0], to = s.dashTo || dates[dates.length - 1];
+    let i0 = dates.findIndex(d => d >= from); if (i0 < 0) i0 = 0;
+    let i1 = -1; dates.forEach((d, i) => { if (d <= to) i1 = i; }); if (i1 < i0) i1 = dates.length - 1;
+    const rDates = dates.slice(i0, i1 + 1);
+    const ranged = i0 > 0 || i1 < dates.length - 1;
+    const demps = (bk || ranged) ? emps.map(e => {
+      const cells = e.cells.map((c, i) => (i >= i0 && i <= i1 && (!bk || this.bucket(c.shift) === bk)) ? c : MASK);
+      return { ...e, cells, stat: this.bucketStat(cells) };
+    }).filter(e => e.cells.some(c => c !== MASK)) : emps;
+    const preset = (k, f, t) => ({
+      label: k === 'today' ? 'วันล่าสุด' : k === '7' ? '7 วัน' : k === '14' ? '14 วัน' : 'ทั้งเดือน',
+      pick: () => set({ rangePreset: k, dashFrom: f, dashTo: t, dayKey: t }),
+      style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.rangePreset === k ? '#201e1d' : 'transparent'}; color:${s.rangePreset === k ? '#fff' : '#201e1d'};`,
+    });
+    const lastD = dates[dates.length - 1];
+    V.rangePresets = [
+      preset('today', lastD, lastD),
+      preset('7', dates[Math.max(0, dates.length - 7)], lastD),
+      preset('14', dates[Math.max(0, dates.length - 14)], lastD),
+      preset('month', dates[0], lastD),
+    ];
+    V.dashFrom = from; V.dashTo = to; V.dateMin = dates[0]; V.dateMax = lastD;
+    V.onDashFrom = (e) => set({ dashFrom: e.target.value, rangePreset: 'custom' });
+    V.onDashTo = (e) => set({ dashTo: e.target.value, rangePreset: 'custom', dayKey: e.target.value });
+    V.rangeSummary = `ช่วงที่ดู ${rDates.length} วัน (${from} → ${to}) · ${demps.length} คน`;
+    const exF = s.exFrom || dates[0], exT = s.exTo || lastD;
+    const exCount = dates.filter(d => d >= exF && d <= exT).length;
+    V.exFrom = exF; V.exTo = exT;
+    V.onExFrom = (e) => set({ exFrom: e.target.value, exPreset: 'custom' });
+    V.onExTo = (e) => set({ exTo: e.target.value, exPreset: 'custom' });
+    V.exPresets = [['ทั้งเดือน', dates[0], lastD], ['7 วันล่าสุด', dates[Math.max(0, dates.length - 7)], lastD],
+      ['15 วันแรก', dates[0], dates[Math.min(dates.length - 1, 14)]], ['วันล่าสุด', lastD, lastD]].map(([label, a, b2]) => ({
+      label, pick: () => set({ exFrom: a, exTo: b2, exPreset: label }),
+      style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.exPreset === label ? '#201e1d' : 'transparent'}; color:${s.exPreset === label ? '#fff' : '#201e1d'};`,
+    }));
+    V.exSummary = `ส่งออก ${exCount} วัน (${exF} → ${exT}) · ${this.gridEmployees().length} คน`;
+    const dayKey = rDates.includes(s.dayKey) ? s.dayKey : rDates[rDates.length - 1];
+    V.dayKey = dayKey;
+    const di = Math.max(0, dates.indexOf(dayKey));
+    let dAbs = 0, dLate = 0, dLeave = 0, dInc = 0, dPresent = 0;
+    const issues = [];
+    demps.forEach(e => {
+      const c = e.cells[di]; if (!c) return;
+      const isLate = c.late > s.grace, isEarly = c.early > s.earlyGrace;
+      if (this.eng.isPresent(c)) dPresent++;
+      if (c.code === 'AB' || c.code === 'NS' || c.code === 'OFF!') dAbs++;
+      else if (isLate || isEarly) dLate++;
+      else if (c.leave) dLeave++;
+      if (c.code === 'INC') dInc++;
+      if (c.color === 'red' || c.color2 === 'red' || isLate || isEarly) {
+        issues.push({
+          name: e.name, position: e.position, branch: e.branch,
+          status: c.code === 'AB' ? 'ขาดงาน' : c.code === 'NS' ? 'ไม่มีการแสกน' : c.code === 'INC' ? 'แสกนไม่ครบ' : c.code === 'NoS' ? 'ไม่มีกะ' : c.code === 'OFF!' ? 'กะในวันหยุด' : isLate ? `สาย ${c.late} น.` : `ออกก่อน ${c.early} น.`,
+          tagStyle: this.tagStyle(c.color === 'red' || c.color2 === 'red' ? 'red' : 'yellow'),
+          shiftName: this.shiftOf(c).name,
+          time: c.in != null ? `${E.fmtMin(c.in)}–${c.out != null ? E.fmtMin(c.out) : '--'}` : '—',
+          sev: c.color === 'red' ? 0 : 1,
+          open: () => this.setState({ screen: 'emp', selId: e.id }),
+        });
+      }
+    });
+    issues.sort((a, b) => a.sev - b.sev);
+    V.dayIssues = issues.slice(0, 120);
+    const cellStat = (label, value) => ({ label, value, style: 'flex:1; padding:10px 14px; border-right:1px solid #d7d3d3;' });
+    const dayAtt = demps.length ? Math.round(dPresent / demps.length * 1000) / 10 : 0;
+    V.dayTotals = [cellStat('Attendance Rate', dayAtt + '%'), cellStat('มาทำงาน (คน)', dPresent), cellStat('ขาด/ไม่แสกน', dAbs), cellStat('สาย/ออกก่อน', dLate), cellStat('ลา', dLeave), cellStat('แสกนไม่ครบ', dInc)];
+
+    let slots = 0, bad = 0, tLate = 0, tAbs = 0, tLeave = 0, tPresent = 0, tPersonDays = 0;
+    demps.forEach(e => {
+      tPresent += e.cells.filter(c => this.eng.isPresent(c)).length;
+      tPersonDays += e.cells.filter(c => c !== MASK).length;
+      slots += e.cells.filter(c => c.code !== 'OFF' && c.code !== 'PH' && !c.leave).length;
+      bad += e.stat.absent + e.stat.late + e.stat.incomplete;
+      tLate += e.stat.late; tAbs += e.stat.absent; tLeave += e.stat.leave;
+    });
+    const onTime = slots ? Math.round((1 - bad / slots) * 1000) / 10 : 100;
+    // สถิติตามรอบนับที่ตั้งไว้ (รายเดือน / รายปี / ย้อนหลัง N วัน) — ใช้ร่วมกันทั้ง KPI, watchlist และ nearList
+    const win = this.warnWindow(dates);
+    const ws = this.windowStats(dates);
+    const wstat = (e) => (ws && ws.get(e.id)) || e.stat;
+    const wsx = wstat;
+    const activeRules = (s.warnRules || []).filter(r => r.on);
+    const warnN = demps.filter(e => E.matchWarnRules(wstat(e), s.warnRules)).length;
+    // ใกล้ถึงเกณฑ์ = ยังไม่เข้ากฎไหนเลย แต่เหลืออีกไม่เกิน nearGap ก็จะเข้ากฎใดกฎหนึ่ง
+    const nearOf = (st) => {
+      let best = null;
+      (s.warnRules || []).filter(r => r.on).forEach(r => {
+        const gap = Number(r.value) - Number(st[r.metric] || 0);
+        if (gap <= 0 || gap > s.nearGap) return;
+        if (!best || gap < best.gap) best = { gap, r };
+      });
+      return best;
+    };
+    V.nearList = demps.map(e0 => ({ e0, st: wsx(e0) }))
+      .filter(({ st }) => !E.matchWarnRules(st, s.warnRules))
+      .map(({ e0, st }) => ({ e0, st, near: nearOf(st) }))
+      .filter(({ near }) => near)
+      .sort((a, b) => a.near.gap - b.near.gap)
+      .slice(0, 15).map(({ e0, st, near }) => {
+        const hist = s.warnings.filter(w => w.id === e0.id);
+        return { name: e0.name, position: e0.position, absent: st.absent, late: st.late,
+          gap: `อีก ${near.gap} ${E.metricUnit(near.r.metric)} → ${near.r.level}`,
+          gapStyle: this.tagStyle(near.gap <= 1 ? 'red' : 'yellow'),
+          history: hist.length ? `${hist.length} ครั้ง (ล่าสุด ${hist[0].date})` : 'ยังไม่เคย',
+          open: () => this.setState({ screen: 'emp', selId: e0.id }) };
+      });
+
+    const attRate = tPersonDays ? Math.round(tPresent / tPersonDays * 1000) / 10 : 0;
+    V.kpis = [
+      { label: 'Attendance Rate', value: attRate + '%', sub: `มาทำงาน ${tPresent.toLocaleString()} ÷ ${tPersonDays.toLocaleString()} วัน-คน (สูตรเดียวกับชีต)`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4); background:#201e1d; color:#fff;' },
+      { label: 'อัตรามาทำงานตรงเวลา', value: onTime + '%', sub: `จาก ${slots.toLocaleString()} วันทำงาน (ตัดวันหยุด/ลา)`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4);' },
+      { label: 'ขาดงานสะสม (วัน)', value: tAbs.toLocaleString(), sub: `${(demps.filter(e => e.stat.absent).length)} คนมีวันขาด`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4); background:#fff2ef;' },
+      { label: 'มาสายสะสม (ครั้ง)', value: tLate.toLocaleString(), sub: `รวม ${demps.reduce((a, e) => a + e.stat.lateMin, 0).toLocaleString()} นาที`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4);' },
+      { label: 'ถึงเกณฑ์หนังสือเตือน', value: warnN.toLocaleString(), sub: `เข้าเกณฑ์ ${activeRules.length} กฎที่ตั้งไว้ · นับรอบ${win.label} · ใกล้ครบอีก ${V.nearList.length} คน`, style: 'padding:16px 18px;' },
+    ];
+
+    const perDay = rDates.map((d, j) => {
+      const i = i0 + j;
+      let a = 0, l = 0, n = 0;
+      demps.forEach(e => { const c = e.cells[i]; if (!c || c.code === 'OFF' || c.code === 'PH') return; n++; if (c.color === 'red') a++; else if (c.color === 'yellow' || c.color2 === 'yellow') l++; });
+      let pres = 0, head = 0;
+      demps.forEach(e => { const c = e.cells[i]; if (!c || c === MASK) return; head++; if (this.eng.isPresent(c)) pres++; });
+      return { d, a: n ? a / n * 100 : 0, l: n ? l / n * 100 : 0, r: head ? pres / head * 100 : 0 };
+    });
+    const maxY = Math.max(12, ...perDay.map(p => Math.max(p.a, p.l, p.r))) * 1.1;
+    const X = (i) => 34 + i * (478 / Math.max(1, rDates.length - 1));
+    const Y = (v) => 152 - (v / maxY) * 142;
+    const path = (k) => perDay.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p[k]).toFixed(1)}`).join(' ');
+    V.trendLate = path('l'); V.trendAbsent = path('a'); V.trendAtt = path('r');
+    V.trendGrid = [0.25, 0.5, 0.75, 1].map(f => ({ y: Y(maxY * f), ty: Y(maxY * f) + 3, label: Math.round(maxY * f) + '%' }));
+    const tickEvery = Math.max(1, Math.ceil(rDates.length / 8));
+    V.trendTicks = rDates.filter((_, i) => i % tickEvery === 0).map((d, j) => ({ x: X(j * tickEvery), label: d.slice(-2) }));
+    V.dates = rDates;
+
+    const hubs = E.hubRollup(demps);
+    const posHubs = s.hShift === 'all' ? hubs : E.hubRollup(this.posEmployees());
+    V.posShiftOpts = [['all', 'ทุกกะ'], ...(s.shiftGroups || []).map(g => [g.key, g.name]), ['none', 'ไม่มีกะ']].map(([k, l]) => ({
+      label: l, pick: () => set({ hShift: k }),
+      style: `padding:0 12px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.hShift === k ? '#201e1d' : 'transparent'}; color:${s.hShift === k ? '#fff' : '#201e1d'};`,
+    }));
+    V.posShiftHint = s.hShift === 'all' ? 'รวมทุกกะ' : 'นับเฉพาะวันที่พนักงานถูกตั้งกะนี้';
+    V.hubRows = posHubs.map(h => ({ ...h, onTime: h.onTime + '%', attRate: h.attRate + '%', openPos: h.branch,
+      attStyle: `display:inline-block; padding:1px 6px; font-family:Archivo; font-weight:800; font-size:11px; background:${h.attRate < 50 ? '#ffe0d9' : 'transparent'};`, open: () => this.setState({ screen: 'grid', fPos: h.branch, scrollTop: 0 }),
+      barStyle: `display:block; height:10px; width:${Math.max(2, h.onTime)}%; background:${h.onTime < 88 ? RED : h.onTime < 94 ? YEL : '#201e1d'};` }));
+    V.hubBars = hubs.slice(0, 6).map(h => ({ branch: h.branch, onTime: h.onTime + '%', open: () => this.setState({ screen: 'grid', fPos: h.branch, scrollTop: 0 }),
+      barStyle: `display:block; height:12px; width:${Math.max(2, h.onTime)}%; background:${h.onTime < 88 ? RED : h.onTime < 94 ? YEL : '#201e1d'};` }));
+
+    V.warnRule = activeRules.length
+      ? `${activeRules.map(r => E.ruleText(r)).join(' · ')} — นับรอบ${win.label}`
+      : `ยังไม่ได้ตั้งกฎ — ไปตั้งที่หน้า 09 ตั้งค่ากฎสี · นับรอบ${win.label}`;
+    V.watchlist = demps.map(e0 => ({ e0, hit: E.matchWarnRules(wstat(e0), s.warnRules) }))
+      .filter(({ hit }) => hit)
+      .sort((a, b) => (Number(b.hit.sev) - Number(a.hit.sev)) ||
+        ((wstat(b.e0).absent * 10 + wstat(b.e0).late) - (wstat(a.e0).absent * 10 + wstat(a.e0).late)))
+      .slice(0, 12)
+      .map(({ e0, hit }) => {
+        const e = { ...e0, stat: wstat(e0) };
+        const month = win.period;
+        const key = `${e.id}|${month}`;
+        const rec = s.warnings.find(w => w.key === key);
+        return { name: e.name, position: e.position, branch: e.branch, absent: e.stat.absent, late: e.stat.late,
+          lateMin: e.stat.lateMin, maxLate: e.stat.maxLate || 0, inc: e.stat.incomplete,
+          level: hit.level, reason: E.ruleText(hit),
+          levelStyle: this.tagStyle(Number(hit.sev) >= 2 ? 'red' : 'yellow'),
+          issued: !!rec, issuedLabel: rec ? `ส่งแล้ว ${rec.date}` : 'ยังไม่ส่ง',
+          stop: (ev) => ev.stopPropagation(),
+          toggleIssue: (ev) => { ev.stopPropagation(); if (ev.target.checked) this.issueWarning(e, hit.level, month); else this.revokeWarning(key); },
+          open: () => this.setState({ screen: 'emp', selId: e.id }) };
+      });
+
+    // ── dashboard: per-shift
+    if (s.dashTab === 'compare') {
+      const g = new Map();
+      const sIssues = [];
+      emps.forEach(e => {
+        const c = e.cells[di]; if (!c) return;
+        const sh = this.shiftOf(c);
+        if (!g.has(sh.key)) g.set(sh.key, { ...sh, headcount: 0, absent: 0, late: 0, early: 0, lateMin: 0, leave: 0, inc: 0, off: 0, ok: 0, present: 0, personDays: 0 });
+        const G = g.get(sh.key);
+        const isLate = c.late > s.grace, isEarly = c.early > s.earlyGrace;
+        G.personDays++;
+        if (this.eng.isPresent(c)) G.present++;
+        if (c.code === 'OFF' || c.code === 'PH') { G.off++; return; }
+        G.headcount++;
+        if (c.leave) G.leave++;
+        if (c.code === 'AB' || c.code === 'NS' || c.code === 'OFF!' || c.code === 'NoS') G.absent++;
+        else if (c.code === 'INC') G.inc++;
+        else if (isLate || isEarly) { if (isLate) { G.late++; G.lateMin += c.late; } if (isEarly) G.early++; }
+        else if (!c.leave) G.ok++;
+        if (c.color === 'red' || c.color2 === 'red' || isLate || isEarly) sIssues.push({
+          shift: sh.name, name: e.name, branch: e.position,
+          status: c.code === 'AB' ? 'ขาดงาน' : c.code === 'NS' ? 'ไม่มีการแสกน' : c.code === 'INC' ? 'แสกนไม่ครบ' : c.code === 'NoS' ? 'ไม่มีกะ' : c.code === 'OFF!' ? 'กะในวันหยุด' : isLate ? `สาย ${c.late} น.` : `ออกก่อน ${c.early} น.`,
+          tagStyle: this.tagStyle(c.color === 'red' || c.color2 === 'red' ? 'red' : 'yellow'), sev: c.color === 'red' ? 0 : 1,
+          open: () => this.setState({ screen: 'emp', selId: e.id }),
+        });
+      });
+      const groups = [...g.values()].filter(x => x.headcount).sort((a, b) => b.headcount - a.headcount);
+      V.shiftCards = groups.map((G, i) => {
+        const rate = G.headcount ? Math.round((G.ok + G.leave) / G.headcount * 1000) / 10 : 100;
+        const att = G.personDays ? Math.round(G.present / G.personDays * 1000) / 10 : 0;
+        return {
+          name: G.name, time: G.time, headcount: G.headcount, onTime: rate + '%', attRate: att + '%',
+          attBarStyle: `display:block; height:10px; width:${Math.max(2, att)}%; background:#201e1d;`,
+          style: `padding:16px 18px; border-right:2px solid rgba(32,30,29,.4); ${i === 0 ? '' : ''}`,
+          barStyle: `display:block; height:10px; width:${Math.max(2, rate)}%; background:${rate < 88 ? RED : rate < 94 ? YEL : '#201e1d'};`,
+          stats: [{ label: 'ขาด', value: G.absent, color: RED }, { label: 'สาย', value: G.late, color: '#8a6400' }, { label: 'ออกก่อน', value: G.early, color: '#8a6400' }, { label: 'ลา', value: G.leave, color: '#605d5d' }],
+          note: `แสกนไม่ครบ ${G.inc} · นาทีสายเฉลี่ย ${G.late ? Math.round(G.lateMin / G.late) : 0} น./ครั้ง · วันหยุดในกะนี้ ${G.off} คน`,
+        };
+      });
+      sIssues.sort((a, b) => a.sev - b.sev);
+      V.shiftIssues = sIssues.slice(0, 120);
+
+      const keys = groups.slice(0, 4).map(x => x.key);
+      const STROKE = [RED, '#201e1d', YEL, '#7d7979'];
+      const series = keys.map(k => rDates.map((_, j2) => {
+        const idx = i0 + j2;
+        let n = 0, good = 0;
+        emps.forEach(e => {
+          const c = e.cells[idx]; if (!c) return;
+          if (this.shiftOf(c).key !== k) return;
+          if (c.code === 'OFF' || c.code === 'PH') return;
+          n++;
+          if (c.color === 'ok' || c.leave) good++;
+        });
+        return n ? good / n * 100 : null;
+      }));
+      const SX = (i) => 34 + i * (478 / Math.max(1, rDates.length - 1));
+      const SY = (v) => 160 - (v / 100) * 150;
+      V.shiftTrendGrid = [25, 50, 75, 100].map(v => ({ y: SY(v), ty: SY(v) + 3, label: v + '%' }));
+      V.shiftTrendLines = series.map((pts, i) => {
+        let d = '', pen = false;
+        pts.forEach((v, idx) => { if (v == null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${SX(idx).toFixed(1)},${SY(v).toFixed(1)} `; pen = true; });
+        return { d: d.trim(), stroke: STROKE[i], dash: i > 1 ? '5 3' : '' };
+      });
+      V.shiftTrendLegend = keys.map((k, i) => ({ x: 40 + i * 118, tx: 54 + i * 118, label: (groups[i] ? groups[i].name : k).slice(0, 12), stroke: STROKE[i] }));
+
+      const sb = new Map();
+      emps.forEach(e => {
+        e.cells.forEach((c, idx) => {
+          if (idx < i0 || idx > i1) return;
+          if (c.code === 'OFF' || c.code === 'PH') return;
+          const sh = this.shiftOf(c), key = sh.key + '|' + e.position;
+          if (!sb.has(key)) sb.set(key, { shift: sh.name, branch: e.position, ids: new Set(), n: 0, ok: 0, absent: 0, late: 0, lateMin: 0, early: 0, present: 0 });
+          const R = sb.get(key);
+          R.ids.add(e.id); R.n++;
+          if (this.eng.isPresent(c)) R.present++;
+          if (c.color === 'ok' || c.leave) R.ok++;
+          if (c.code === 'AB' || c.code === 'NS' || c.code === 'NoS' || c.code === 'OFF!') R.absent++;
+          if (c.late > s.grace) { R.late++; R.lateMin += c.late; }
+          if (c.early > s.earlyGrace) R.early++;
+        });
+      });
+      V.shiftBranchRows = [...sb.values()].map(R => {
+        const rate = R.n ? Math.round(R.ok / R.n * 1000) / 10 : 100;
+        const att = R.n ? Math.round((R.present || 0) / R.n * 1000) / 10 : 0;
+        return { shift: R.shift, branch: R.branch, headcount: R.ids.size, absent: R.absent, late: R.late, attRate: att + '%',
+          avgLate: R.late ? Math.round(R.lateMin / R.late) : 0, early: R.early, onTime: rate + '%',
+          barStyle: `display:block; height:10px; width:${Math.max(2, rate)}%; background:${rate < 88 ? RED : rate < 94 ? YEL : '#201e1d'};`,
+          open: () => this.setState({ screen: 'grid', fPos: R.branch, scrollTop: 0 }), sort: rate };
+      }).sort((a, b) => a.sort - b.sort).slice(0, 24);
+    }
+
+    // ── grid (virtualised, optionally scoped to one shift)
+    const gb = s.gShift === 'all' ? null : s.gShift;
+    const OUT = { color: 'out', code: '', tip: 'กะอื่น (ไม่อยู่ในมุมมองนี้)', late: 0, early: 0, leave: null, in: null, out: null, shift: '' };
+    const gemps = gb ? emps.map(e => {
+      const cells = e.cells.map(c => this.bucket(c.shift) === gb ? c : OUT);
+      return { ...e, cells, stat: this.bucketStat(cells.map(c => c === OUT ? MASK : c)) };
+    }).filter(e => e.cells.some(c => c !== OUT)) : emps;
+    V.gridShiftOpts = [['all', 'ทุกกะ'], ...(s.shiftGroups || []).map(g => [g.key, g.name]), ['none', 'ไม่มีกะ']].map(([k, l]) => ({
+      label: l, pick: () => set({ gShift: k, scrollTop: 0 }),
+      style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.gShift === k ? '#201e1d' : 'transparent'}; color:${s.gShift === k ? '#fff' : '#201e1d'};`,
+    }));
+    V.gridCountLabel = gb ? `แสดง ${gemps.length} คนในกะนี้` : `แสดง ${emps.length} คน`;
+    const CW = dates.length > 24 ? 30 : 38, RH = 26;
+    V.dayCols = dates.map(d => ({ label: d.slice(-2), style: `width:${CW}px; flex:none; background:#201e1d; color:#fff; display:flex; align-items:center; justify-content:center; font-family:Archivo; font-size:10px; border-left:1px solid #444141;` }));
+    const viewport = Math.max(320, s.viewH - 220);
+    const first = Math.max(0, Math.floor(s.scrollTop / RH) - 6);
+    const last = Math.min(gemps.length, first + Math.ceil(viewport / RH) + 12);
+    V.spacerTopStyle = `height:${first * RH}px;`;
+    V.spacerBottomStyle = `height:${Math.max(0, (gemps.length - last) * RH)}px;`;
+    V.visibleRows = gemps.slice(first, last).map((e, i) => ({
+      name: e.name, id: e.id, absent: e.stat.absent || '', late: e.stat.late || '',
+      rate: (e.cells.filter(c => c.color !== 'out').length ? Math.round(e.cells.filter(c => this.eng.isPresent(c)).length / e.cells.filter(c => c.color !== 'out').length * 100) : 0) + '%',
+      rowStyle: `display:flex; height:${RH}px; border-bottom:1px solid #eae7e7; background:${(first + i) % 2 ? '#fbfafa' : '#fff'};`,
+      nameStyle: `width:236px; flex:none; position:sticky; left:0; z-index:1; background:${(first + i) % 2 ? '#fbfafa' : '#fff'}; border-right:1px solid #d7d3d3; display:flex; align-items:center; gap:6px; padding:0 8px; font-size:11.5px; cursor:pointer;`,
+      open: () => this.setState({ screen: 'emp', selId: e.id }),
+      cells: e.cells.map(c => ({ code: this.cellText(c), tip: `${c.tip}`, style: this.cellStyle(c, CW) })),
+    }));
+
+    // ── employee
+    // ถ้าคนที่เลือกไว้ไม่อยู่ในผลค้นหา ให้เด้งไปคนแรกของผลค้นหา
+    // ไม่งั้นค้นรหัสเจอคนเดียวแต่พาเนลขวายังค้างที่คนเก่า
+    const sel = emps.find(e => e.id === s.selId) || emps[0] || m.employees.find(e => e.id === s.selId) || m.employees[0];
+    V.empListCount = s.search.trim()
+      ? `พบ ${emps.length} คน จากคำค้น "${s.search.trim()}"`
+      : `ทั้งหมด ${emps.length} คน`;
+    V.empListShort = emps.slice(0, 300).map(e => ({
+      name: e.name, position: e.position, id: e.id, open: () => this.setState({ selId: e.id }),
+      flagText: `${e.stat.absent}A / ${e.stat.late}L`,
+      style: `display:block; width:100%; text-align:left; padding:8px 12px; border:0; border-bottom:1px solid #eae7e7; cursor:pointer; font-family:inherit; background:${sel && sel.id === e.id ? '#ffe0d9' : 'transparent'};`,
+    }));
+    if (sel) {
+      const st = sel.stat;
+      const workSlots = sel.cells.filter(c => c.code !== 'OFF' && c.code !== 'PH' && !c.leave).length;
+      V.empName = sel.name;
+      V.empMeta = `${sel.id} · ${sel.position}${sel.branch ? ' · ' + sel.branch : ''}`;
+      V.empOnTime = (workSlots ? Math.round((1 - (st.absent + st.late + st.incomplete) / workSlots) * 1000) / 10 : 100) + '%';
+      const box = 'padding:12px 14px; border-right:1px solid #d7d3d3;';
+      V.empStats = [['มาทำงาน (วัน)', st.present], ['ขาดงาน', st.absent], ['มาสาย', st.late], ['นาทีสาย', st.lateMin], ['ออกก่อนเวลา', st.early], ['แสกนไม่ครบ', st.incomplete], ['ลา', st.leave], ['วันหยุด', st.off]]
+        .map(([label, value]) => ({ label, value, style: box }));
+      V.empAttRate = (sel.cells.length ? Math.round(st.present / sel.cells.length * 1000) / 10 : 0) + '%';
+      const codeBox = 'flex:1; padding:8px 10px; border-right:1px solid #d7d3d3; text-align:center;';
+      V.empCodes = [...E.HCM_CODES.map(k => ({ code: k, value: st.codes[k] || 0, style: codeBox })),
+        { code: 'TOTAL', value: E.HCM_CODES.reduce((n, k) => n + (st.codes[k] || 0), 0), style: codeBox + 'background:#eae9e9;' }];
+      V.empStrip = sel.cells.map((c, i) => ({
+        day: dates[i] ? dates[i].slice(-2) : '', code: c.code || '·', tip: `${dates[i]} — ${c.tip}`,
+        style: this.cellStyle(c, 42).replace('height:26px', 'height:46px').replace('font-size:9px', 'font-size:10px') + 'flex-direction:column; gap:1px; justify-content:center;',
+      }));
+      V.empIssues = sel.cells.map((c, i) => ({ c, i })).filter(({ c }) => c.color === 'red' || c.color === 'yellow' || c.color2)
+        .map(({ c, i }) => ({ date: dates[i], shift: c.shift || '—', scan: c.in != null ? `${E.fmtMin(c.in)} – ${c.out != null ? E.fmtMin(c.out) : '--'}` : '—',
+          code: c.code || '—', tip: c.tip, tagStyle: this.tagStyle(c.color2 || c.color) }));
+    }
+    return V;
+  }
+
+  /* ── exports ── */
+  exportCSV() { const { header, rows } = this.exportRows(); const R = this.exportRange(); this.eng.download(`attendance-${R.from}_${R.to}.csv`, this.eng.toCSV(header, rows), 'text/csv;charset=utf-8'); }
+  exportXLS() { const { header, rows, colors } = this.exportRows(); const R2 = this.exportRange(); this.eng.download(`attendance-${R2.from}_${R2.to}.xls`, this.eng.toSpreadsheetML(header, rows, colors.map(r => r.map(c => c)), 'Attendance'), 'application/vnd.ms-excel'); }
+  copyTSV() {
+    const { header, rows } = this.exportRows();
+    navigator.clipboard.writeText([header, ...rows].map(r => r.join('\t')).join('\n'))
+      .then(() => this.pushSync('คัดลอกข้อมูลไปยังคลิปบอร์ดแล้ว — วางในชีตปลายทางได้เลย', 'ok'));
+  }
+  exportHubCSV() {
+    const hubs = this.eng.hubRollup(this.posEmployees());
+    this.eng.download('position-summary.csv', this.eng.toCSV(['ตำแหน่ง', 'พนักงาน', 'ขาด', 'สาย', 'นาทีสาย', 'แสกนไม่ครบ', 'ลา', 'Attendance Rate', 'อัตราตรงเวลา'],
+      hubs.map(h => [h.branch, h.headcount, h.absent, h.late, h.lateMin, h.incomplete, h.leave, h.attRate + '%', h.onTime + '%'])), 'text/csv;charset=utf-8');
+  }
+  exportPNG() {
+    const m = this.state.model; if (!m) return;
+    const R = this.exportRange();
+    const emps = this.gridEmployees().slice(0, 400).map(e => ({ ...e, cells: R.idx.map(i => e.cells[i]) })), dates = R.dates;
+    const NW = 220, CW = 26, RH = 20, HH = 64;
+    const w = NW + dates.length * CW + 20, h = HH + emps.length * RH + 30;
+    const cv = document.createElement('canvas');
+    cv.width = w * 2; cv.height = h * 2;
+    const x = cv.getContext('2d'); x.scale(2, 2);
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#201e1d'; x.font = '800 16px Archivo, sans-serif';
+    x.fillText(`สรุปการมาทำงาน ${dates[0]} – ${dates[dates.length - 1]}`, 10, 22);
+    x.font = '11px Archivo, sans-serif'; x.fillStyle = '#605d5d';
+    x.fillText(`${emps.length} คน · ${this.state.fPos} · สร้างเมื่อ ${new Date().toLocaleString('th-TH')}`, 10, 38);
+    x.fillStyle = '#201e1d'; x.fillRect(0, HH - 18, w, 18);
+    x.fillStyle = '#fff'; x.font = '800 10px Archivo, sans-serif';
+    x.fillText('พนักงาน', 6, HH - 5);
+    dates.forEach((d, i) => x.fillText(d.slice(-2), NW + i * CW + 6, HH - 5));
+    emps.forEach((e, r) => {
+      const y = HH + r * RH;
+      x.fillStyle = r % 2 ? '#fbfafa' : '#ffffff'; x.fillRect(0, y, w, RH);
+      x.fillStyle = '#201e1d'; x.font = '11px "Noto Sans Thai", sans-serif';
+      x.fillText((e.name || '').slice(0, 28), 6, y + 14);
+      e.cells.forEach((c, i) => {
+        const cx = NW + i * CW;
+        x.fillStyle = CMAP[c.color] || '#fbfafa'; x.fillRect(cx, y + 1, CW - 1, RH - 2);
+        if (c.color2) { x.fillStyle = CMAP[c.color2]; x.beginPath(); x.moveTo(cx + CW - 1, y + 1); x.lineTo(cx + CW - 1, y + RH - 1); x.lineTo(cx, y + RH - 1); x.fill(); }
+        if (c.code) { x.fillStyle = c.color === 'red' ? '#fff' : '#201e1d'; x.font = '800 8px Archivo, sans-serif'; x.fillText(c.code.slice(0, 4), cx + 2, y + 13); }
+      });
+    });
+    cv.toBlob(b => { this.eng.download(`attendance-${R.from}_${R.to}.png`, b, 'image/png'); this.pushSync('สร้างไฟล์ PNG แล้ว', 'ok'); });
+  }
+  pushSync(m, kind) {
+    this.setState(s => ({ syncLog: [{ t: now(), m, style: kind === 'ok' ? 'color:#201e1d;' : kind === 'err' ? `color:${RED};` : 'color:#605d5d;' }, ...s.syncLog].slice(0, 12) }));
+  }
+  saveEndpoint(patch) {
+    this.setState(patch, () => {
+      const s = this.state;
+      try { localStorage.setItem('hcm-sync-endpoint-v1', JSON.stringify({ endpoint: s.endpoint, token: s.syncToken, sheetUrl: s.sheetUrl })); } catch (e) {}
+    });
+  }
+  syncPayload() {
+    const s = this.state, m = s.model, E = this.eng;
+    const { header, rows, colors } = this.exportRows();
+    const hubs = E.hubRollup(this.posEmployees());
+    const R = this.exportRange();
+    const daily = R.dates.map((d, j) => {
+      const i = m.dates.indexOf(d);
+      let pres = 0, head = 0, abs = 0, late = 0;
+      this.filtered().forEach(e => {
+        const c = e.cells[i]; if (!c) return;
+        head++;
+        if (this.eng.isPresent(c)) pres++;
+        if (c.code === 'AB' || c.code === 'NS' || c.code === 'NoS') abs++;
+        if (c.late > s.grace) late++;
+      });
+      return [d, head, pres, head ? Math.round(pres / head * 1000) / 10 + '%' : '0%', abs, late];
+    });
+    const warnRows = s.warnings.map(w => [w.date, w.id, w.name, w.position, w.level, w.month, w.absent, w.late, w.lateMin]);
+    return {
+      token: s.syncToken,
+      month: (m.dates[0] || '').slice(0, 7),
+      note: `ช่วง ${R.from} → ${R.to} · ${rows.length} คน`,
+      tabs: {
+        'Matrix': [header, ...rows],
+        'Summary by position': [['ตำแหน่ง', 'พนักงาน', 'ขาด', 'สาย', 'นาทีสาย', 'แสกนไม่ครบ', 'ลา', 'Attendance Rate', 'อัตราตรงเวลา'],
+          ...hubs.map(h => [h.branch, h.headcount, h.absent, h.late, h.lateMin, h.incomplete, h.leave, h.attRate + '%', h.onTime + '%'])],
+        'Daily rate': [['วันที่', 'พนักงาน', 'มาทำงาน', 'Attendance Rate', 'ขาด', 'สาย'], ...daily],
+        'Warning list': [['วันที่ออก', 'รหัส', 'ชื่อ-สกุล', 'ตำแหน่ง', 'ระดับ', 'รอบข้อมูล', 'ขาด', 'สาย', 'นาทีสาย'], ...warnRows],
+      },
+      colors: { 'Matrix': colors },
+      dataset: E.serializeModel(m, { source: s.src }),
+      meta: { shiftGroups: s.shiftGroups, warnAbsent: s.warnAbsent, warnLate: s.warnLate, nearGap: s.nearGap,
+        winMode: s.winMode, winDays: s.winDays, warnings: s.warnings, grace: s.grace, earlyGrace: s.earlyGrace },
+    };
+  }
+  async runSync() {
+    const s = this.state;
+    if (s.syncState === 'running') return;
+    if (!s.model) { this.pushSync('ยังไม่มีข้อมูล — อัปโหลดไฟล์ก่อน', 'err'); return; }
+    if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(s.endpoint)) {
+      this.pushSync('ใส่ Web app URL จาก Apps Script ก่อน (ลงท้ายด้วย /exec)', 'err'); return;
+    }
+    this.setState({ syncState: 'running' });
+    const payload = this.syncPayload();
+    this.pushSync(`ส่งข้อมูลเดือน ${payload.month} → ${s.sheetTab || 'ชีตปลายทาง'}`, 'info');
+    try {
+      const res = await fetch(s.endpoint, { method: 'POST', body: JSON.stringify(payload) });
+      const out = await res.json();
+      if (out.ok) {
+        this.pushSync('เขียนสำเร็จ: ' + (out.written || []).join(' · '), 'ok');
+        this.pushSync('หน้างานจะเห็นข้อมูลชุดนี้ทันทีที่เปิดหรือรีเฟรช', 'ok');
+      } else this.pushSync('ผิดพลาด: ' + (out.error || 'ไม่ทราบสาเหตุ'), 'err');
+    } catch (err) {
+      this.pushSync('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจว่า Deploy เป็น Web app และตั้ง Access = Anyone', 'err');
+    }
+    this.setState({ syncState: 'idle' });
+  }
+}
+</script>
+</body>
+</html>
