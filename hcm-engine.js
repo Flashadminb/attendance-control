@@ -82,6 +82,21 @@ const FIELD_HINTS = [
 const isDateHeader = (h) => /^\d{4}-\d{2}-\d{2}/.test(h) || /^\d{1,2}$/.test(String(h).trim()) ||
   /^\d{1,2}[/-]\d{1,2}([/-]\d{2,4})?$/.test(String(h).trim());
 
+// ไฟล์ attendance กับไฟล์ตารางกะที่ HCM ส่งออกมา ใช้รูปแบบวันที่คนละแบบ
+// (2026-08-01 กับ 01/08/2026) ถ้าไม่ทำให้เป็นแบบเดียวกันก่อน จะจับคู่กะกับวันไม่ได้เลย
+// วันที่ไทยเป็น วัน/เดือน/ปี — ยืนยันจากไฟล์จริงที่มีคอลัมน์ 31/08/2026 (31 เป็นเดือนไม่ได้)
+export function normalizeDateKey(h) {
+  const t = String(h).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+  const m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+  if (m) {
+    let [, d, mo, y] = m;
+    if (y.length === 2) y = '20' + y;
+    return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+  return t;   // เลขวันโดด ๆ (1, 2, 3…) ไม่มีเดือนให้อ้างอิง ปล่อยไว้ตามเดิม
+}
+
 function findHeaderRow(rows) {
   for (let i = 0; i < Math.min(rows.length, 12); i++) {
     const r = rows[i].map(c => String(c || ''));
@@ -95,7 +110,7 @@ export function mapTable(rows) {
   const header = rows[hIdx].map(c => String(c || '').trim());
   const fields = {}, dates = [];
   header.forEach((h, i) => {
-    if (isDateHeader(h)) { dates.push({ i, key: h }); return; }
+    if (isDateHeader(h)) { dates.push({ i, key: normalizeDateKey(h) }); return; }
     for (const [f, re] of FIELD_HINTS) if (fields[f] === undefined && re.test(h)) { fields[f] = i; break; }
   });
   const records = rows.slice(hIdx + 1)
@@ -276,7 +291,17 @@ export function buildModel(attRows, schedRows, cfg) {
   // (วันว่างที่แทรกอยู่กลางช่วงยังเก็บไว้ เพราะนั่นคือข้อมูลขาดจริงที่ต้องเห็น)
   let lastData = -1;
   att.dates.forEach((d, i) => { if (att.records.some(r => (r.days[d] || '').trim())) lastData = i; });
-  const dates = att.dates.slice(0, lastData + 1);
+  // วันสุดท้ายอาจเป็น "วันที่กะยังไม่จบ" — คนสแกนเข้าแล้วแต่ยังไม่ถึงเวลาเลิกงาน
+  // ทั้งวันจึงไม่มีใครสแกนครบสักคน ถ้านับเข้าไปจะกลายเป็นขาดงานยกแผนก
+  // ตัดออกจนกว่าจะมีคนสแกนครบอย่างน้อย 1 คน แล้วรอบอัปวันถัดไปจะดึงกลับมาเอง
+  const hasFullScan = (i) => {
+    const d = att.dates[i];
+    return att.records.some(r => /in\s*:\s*\d{1,2}:\d{2}\s+out\s*:\s*\d{1,2}:\d{2}/i.test(String(r.days[d] || '')));
+  };
+  let lastClosed = lastData;
+  if (cfg.dropOpenDay !== false && lastClosed >= 0 && !hasFullScan(lastClosed)) lastClosed--;
+  const dates = att.dates.slice(0, lastClosed + 1);
+  const openDay = lastClosed < lastData ? att.dates[lastData] : null;
   const employees = att.records.map(r => {
     const shifts = shiftById[r.id] || {};
     const cells = dates.map(d => {
@@ -304,7 +329,7 @@ export function buildModel(attRows, schedRows, cfg) {
     });
     return { ...r, shifts, cells, stat };
   });
-  return { dates, employees, columns: att.columns, hasSchedule: !!sched };
+  return { dates, employees, columns: att.columns, hasSchedule: !!sched, openDay };
 }
 
 export function hubRollup(employees) {

@@ -1117,7 +1117,9 @@ class Component extends DCLogic {
     archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
     search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
     dayKey: '', selId: null, scrollTop: 0, viewH: 600,
-    grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: true, holidays: [],
+    // flagShiftOnHoliday ปิดไว้: ไฟล์ตารางกะที่ HCM ส่งออกมาตั้งกะให้ทุกคนทุกวัน
+    // ไม่เคยเขียนว่า "วันหยุด" กฎนี้จึงยิงธงแดงมั่วทุกวันหยุดจริง เปิดได้ถ้าไฟล์กะแยกวันหยุด
+    grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
     detail: 'code', warnAbsent: 3, warnLate: 5, newHoliday: '',
     sheetUrl: ''  /* วาง URL ชีตของคุณในหน้า Export & Sync ครั้งเดียว แล้วระบบจำให้ */, sheetTab: 'Matrix', syncScope: 'filtered', syncDaily: true,
     syncState: 'idle', syncLog: [], endpoint: '', syncToken: '',
@@ -1146,7 +1148,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount() { window.removeEventListener('resize', this._ro); }
 
-  cfg() { const s = this.state; return { grace: s.grace, earlyGrace: s.earlyGrace, flagNoShift: s.flagNoShift, flagShiftOnHoliday: s.flagShiftOnHoliday, holidays: s.holidays, customCodes: s.customCodes }; }
+  cfg() { const s = this.state; return { grace: s.grace, earlyGrace: s.earlyGrace, flagNoShift: s.flagNoShift, flagShiftOnHoliday: s.flagShiftOnHoliday, holidays: s.holidays, customCodes: s.customCodes, dropOpenDay: s.dropOpenDay }; }
   addLog(m) { this.setState(s => ({ log: [{ t: now(), m }, ...s.log].slice(0, 40) })); }
 
   /* ── archive (localStorage, keeps years of monthly + daily aggregates) ── */
@@ -1379,7 +1381,11 @@ class Component extends DCLogic {
         this.saveSchedule(rows, file.name);
         this.addLog('เก็บตารางกะไว้แล้ว — ครั้งหน้าอัปแค่ไฟล์ attendance ก็พอ');
       }
-      if (this.att) { const m = this.rebuild(this.att, this.sch, 'upload'); this.addLog(`ประมวลผลแล้ว ${m.employees.length} คน × ${m.dates.length} วัน${this.sch ? (this.state.schRemembered ? ' (ใช้ตารางกะที่จำไว้)' : ' (จับคู่ตารางกะแล้ว)') : ' — ยังไม่มีไฟล์ตารางกะ'}`); }
+      if (this.att) {
+        const m = this.rebuild(this.att, this.sch, 'upload');
+        this.addLog(`ประมวลผลแล้ว ${m.employees.length} คน × ${m.dates.length} วัน${this.sch ? (this.state.schRemembered ? ' (ใช้ตารางกะที่จำไว้)' : ' (จับคู่ตารางกะแล้ว)') : ' — ยังไม่มีไฟล์ตารางกะ'}`);
+        if (m.openDay) this.addLog(`ยังไม่นับ ${m.openDay} เพราะกะยังไม่จบ (ยังไม่มีใครสแกนออกครบสักคน) — จะเข้าสถิติเองตอนอัปรอบหน้า`);
+      }
     } catch (e) { this.addLog('อ่านไฟล์ไม่สำเร็จ: ' + e.message); }
   }
 
@@ -1543,7 +1549,8 @@ class Component extends DCLogic {
       nearList: [],
       ruleToggles: [
         ['flagNoShift', 'ไม่มีกะทำงานแต่มีการแสกน → แดง', 'ใช้จับกรณีตารางกะยังไม่ถูกตั้งในระบบ'],
-        ['flagShiftOnHoliday', 'ตั้งกะในวันหยุดแต่ไม่แสกน → แดง', 'ตามคำอธิบายสีในไฟล์ HCM ต้นฉบับ'],
+        ['flagShiftOnHoliday', 'ตั้งกะในวันหยุดแต่ไม่แสกน → แดง', 'เปิดเฉพาะเมื่อไฟล์ตารางกะเขียนคำว่า "วันหยุด" แยกไว้จริง — ถ้าไฟล์ตั้งกะให้ทุกคนทุกวัน กฎนี้จะยิงแดงมั่วทุกวันหยุด'],
+        ['dropOpenDay', 'ไม่นับวันที่กะยังไม่จบ', 'วันสุดท้ายที่ยังไม่มีใครสแกนครบสักคน = คนยังทำงานอยู่ ไม่ใช่ขาดงาน — ตัดออกจากสถิติจนกว่าจะอัปรอบถัดไป'],
       ].map(([k, label, hint]) => ({ label, hint, on: s[k], toggle: (e) => this.setState({ [k]: e.target.checked }, () => this.reprocess()) })),
       warnRuleRows: (s.warnRules || []).map(r => ({
         on: r.on, metric: r.metric, value: r.value, level: r.level, sev: r.sev,
