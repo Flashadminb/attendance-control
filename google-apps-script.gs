@@ -89,12 +89,14 @@ function publicUser_(u) {
    ใช้บัตรใบนี้แทนรหัสผ่าน — รหัสผ่านจริงจึงถูกส่งแค่ครั้งเดียวตอนล็อกอิน
    และไม่ไปโผล่ใน URL หรือประวัติเบราว์เซอร์ ถ้าบัตรหลุดก็ลบทิ้งได้
    (ล็อกอินได้หลายเครื่องพร้อมกัน เพราะแต่ละเครื่องถือบัตรคนละใบ)          */
-var TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+var TOKEN_TTL_MS = 12 * 60 * 60 * 1000;              // ปกติ 12 ชั่วโมง
+var TOKEN_TTL_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // ติ๊ก "จำฉันไว้" 30 วัน
 
 function tokenStore_() { return PropertiesService.getScriptProperties(); }
-function newToken_(user) {
+function newToken_(user, remember) {
   var t = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
-  tokenStore_().setProperty('tk:' + t, JSON.stringify({ user: user, exp: Date.now() + TOKEN_TTL_MS }));
+  var ttl = remember ? TOKEN_TTL_REMEMBER_MS : TOKEN_TTL_MS;
+  tokenStore_().setProperty('tk:' + t, JSON.stringify({ user: user, exp: Date.now() + ttl }));
   return t;
 }
 function userByToken_(token) {
@@ -158,7 +160,8 @@ function doPost(e) {
     if (body.action === 'login') {
       var who = auth_(body.user, body.pass);
       if (!who) return json({ ok: false, error: 'ยูสเซอร์หรือรหัสไม่ถูกต้อง' });
-      return json({ ok: true, me: publicUser_(who), token: newToken_(who.user) });
+      return json({ ok: true, me: publicUser_(who), token: newToken_(who.user, !!body.remember),
+        remember: !!body.remember });
     }
 
     // คำสั่งจัดการผู้ใช้ ยืนยันด้วยบัตรผ่านหรือรหัสของแอดมิน

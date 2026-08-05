@@ -23,6 +23,8 @@
          font-family:inherit;font-weight:800;font-size:15px}
   button:hover{background:#dd2b0f}
   button:disabled{opacity:.5;cursor:not-allowed}
+  .remember{display:flex;gap:8px;align-items:flex-start;margin-top:14px;font-size:12px;color:#605d5d;cursor:pointer;line-height:1.4}
+  .remember input{width:16px;height:16px;min-height:0;flex:none;margin-top:1px;accent-color:#ec3013;cursor:pointer}
   .msg{margin-top:14px;font-size:13px;padding:10px 12px;display:none}
   .msg.err{display:block;background:#ffe0d9;border:1px solid #ec3013;color:#7c1405}
   .msg.ok{display:block;background:#e6f4ec;border:1px solid #5cb87f;color:#1f5c39}
@@ -37,6 +39,18 @@
   <h1>ATTENDANCE CONTROL</h1>
   <div class="kick">HCM Daily Processing</div>
 
+  <!-- ถ้าเคยล็อกอินค้างไว้ ไม่ต้องกรอกซ้ำ — แต่ยังเปลี่ยนไปใช้ชื่ออื่นได้ -->
+  <div id="back" style="display:none;border:2px solid rgba(32,30,29,.4);background:#eae9e9;padding:20px;">
+    <div style="font-size:12px;color:#605d5d;">เข้าสู่ระบบค้างไว้ในชื่อ</div>
+    <div id="backwho" style="font-weight:800;font-size:20px;margin:4px 0 2px;"></div>
+    <div id="backrole" style="font-size:12px;color:#605d5d;"></div>
+    <button id="cont" type="button">เข้าใช้งานต่อ</button>
+    <button id="switch" type="button"
+      style="background:transparent;color:#ae1800;border:1px solid rgba(32,30,29,.4);margin-top:8px;">
+      ออกจากระบบ / เข้าด้วยชื่ออื่น
+    </button>
+  </div>
+
   <form id="f" autocomplete="on">
     <div class="field">
       <label for="u">ยูสเซอร์</label>
@@ -46,6 +60,10 @@
       <label for="p">รหัสผ่าน</label>
       <input id="p" name="password" type="password" autocomplete="current-password" required>
     </div>
+    <label class="remember" for="rm">
+      <input id="rm" type="checkbox" checked>
+      <span>ให้จำการเข้าสู่ระบบไว้ 30 วัน (ไม่ต้องล็อกอินใหม่ทุกครั้ง)</span>
+    </label>
     <button id="go" type="submit">เข้าสู่ระบบ</button>
     <div id="m" class="msg"></div>
 
@@ -73,6 +91,33 @@
     if (saved.endpoint) ep.value = saved.endpoint; else cfg.open = true;
   } catch (e) { cfg.open = true; }
 
+  function home(me) { return me.isAdmin ? './Attendance%20Admin.dc.html' : './Attendance%20Viewer.dc.html'; }
+
+  // ── ล็อกอินค้างไว้ ──────────────────────────────────────────────────
+  var sess = null;
+  try { sess = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) {}
+  if (sess && sess.me && sess.token) {
+    var back = document.getElementById('back');
+    document.getElementById('backwho').textContent = sess.me.name || sess.me.user;
+    document.getElementById('backrole').textContent =
+      sess.me.isAdmin ? 'แอดมิน — เห็นทุกกะ' : ('หัวหน้ากะ — ดูแล ' + (sess.me.shiftText || '—'));
+    back.style.display = 'block';
+    f.style.display = 'none';
+    document.getElementById('cont').onclick = function () { location.href = home(sess.me); };
+    document.getElementById('switch').onclick = function () {
+      // แจ้งเซิร์ฟเวอร์ให้ทิ้งบัตรผ่านใบเดิมด้วย ไม่ใช่ลบแค่ในเครื่อง
+      try {
+        if (sess.endpoint && sess.token) {
+          fetch(sess.endpoint + (sess.endpoint.indexOf('?') >= 0 ? '&' : '?')
+            + 'action=logout&token=' + encodeURIComponent(sess.token)).catch(function () {});
+        }
+      } catch (e) {}
+      try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+      back.style.display = 'none';
+      f.style.display = 'block';
+    };
+  }
+
   f.addEventListener('submit', async function (e) {
     e.preventDefault();
     var url = endpoint();
@@ -88,7 +133,8 @@
       var r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'login', user: user, pass: pass })
+        body: JSON.stringify({ action: 'login', user: user, pass: pass,
+          remember: document.getElementById('rm').checked })
       });
       var d = await r.json();
       if (!d.ok) { say(d.error || 'เข้าสู่ระบบไม่สำเร็จ'); go.disabled = false; return; }

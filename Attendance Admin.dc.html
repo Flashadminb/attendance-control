@@ -1098,6 +1098,58 @@
     </div>
     </sc-if>
 
+    <!-- ══ 10 · USERS ══ -->
+    <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:22px 28px 60px; display:flex; flex-direction:column; gap:22px; max-width:960px;">
+      <p style="margin:0; color:#605d5d; max-width:660px;">รายชื่อนี้เก็บอยู่ในชีต <strong>DATA</strong> เพิ่มหรือลบที่นี่แล้วระบบเขียนลงชีตให้ทันที · ใครดูแลกะไหนจะเห็นเฉพาะข้อมูลกะนั้น · ใส่คำว่า <strong>ทั้งหมด</strong> ในช่องกะ = เป็นแอดมิน เห็นทุกกะและจัดการผู้ใช้ได้</p>
+
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary" onClick="{{ reloadUsers }}" style="height:34px;">ดึงรายชื่อจากชีต</button>
+        <span style="font-size:12px; color:#605d5d;">{{ usersMsg }}</span>
+      </div>
+
+      <section>
+        <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">เพิ่มผู้ใช้ / แก้ไขคนเดิม</h4>
+        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr 1.2fr auto; gap:10px; align-items:flex-end;">
+          <div class="field" style="margin:0;"><label>ชื่อ</label>
+            <input class="input" value="{{ nuName }}" onInput="{{ onNuName }}" placeholder="ชื่อ-สกุล" style="height:36px;"></div>
+          <div class="field" style="margin:0;"><label>ยูสเซอร์</label>
+            <input class="input" value="{{ nuUser }}" onInput="{{ onNuUser }}" placeholder="username" style="height:36px;"></div>
+          <div class="field" style="margin:0;"><label>รหัสผ่าน</label>
+            <input class="input" value="{{ nuPass }}" onInput="{{ onNuPass }}" placeholder="รหัส" style="height:36px;"></div>
+          <div class="field" style="margin:0;"><label>กะที่ดูแล</label>
+            <input class="input" value="{{ nuShift }}" onInput="{{ onNuShift }}" placeholder="เช่น กะเช้า, กะบ่าย หรือ ทั้งหมด" style="height:36px;"></div>
+          <button type="button" class="btn btn-primary" onClick="{{ saveUser }}" style="height:36px;">บันทึกลงชีต</button>
+        </div>
+        <div style="font-size:11px; color:#7d7979; margin-top:8px;">ถ้ายูสเซอร์ซ้ำกับที่มีอยู่ ระบบจะเขียนทับข้อมูลเดิม (ใช้เปลี่ยนรหัสหรือย้ายกะได้)</div>
+      </section>
+
+      <section>
+        <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ผู้ใช้ทั้งหมด</h4>
+        <table class="table" style="width:100%; font-size:13px;">
+          <thead><tr><th style="text-align:left;">ชื่อ</th><th style="text-align:left;">ยูสเซอร์</th><th style="text-align:left;">กะที่ดูแล</th><th style="text-align:left;">สิทธิ์</th><th style="text-align:right; width:90px;"></th></tr></thead>
+          <tbody>
+            <sc-for list="{{ userRows }}" as="u" hint-placeholder-count="3">
+              <tr>
+                <td style="font-weight:600;">{{ u.name }}</td>
+                <td style="font-family:Archivo;">{{ u.user }}</td>
+                <td>{{ u.shiftText }}</td>
+                <td><span style="{{ u.tag }}">{{ u.role }}</span></td>
+                <td style="text-align:right;">
+                  <button type="button" class="btn btn-ghost" onClick="{{ u.edit }}" style="height:26px; font-size:11px;">แก้</button>
+                  <button type="button" class="btn btn-ghost" onClick="{{ u.del }}" style="height:26px; font-size:11px; color:#ae1800;">ลบ</button>
+                </td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+        <div style="font-size:11px; color:#7d7979; margin-top:10px; border-top:1px solid #d7d3d3; padding-top:10px;">
+          รหัสผ่านเก็บเป็นข้อความธรรมดาในชีต ใครเปิดชีตได้ก็เห็นรหัสทุกคน — ควรจำกัดสิทธิ์การแชร์ชีต DATA ไว้เฉพาะแอดมิน
+        </div>
+      </section>
+    </div>
+    </sc-if>
+
   </main>
 </div>
 </x-dc>
@@ -1122,6 +1174,7 @@ const NAV = [
   ['archive', 'คลังสถิติย้อนหลัง', 'Archive', 'สถิติย้อนหลังรายวัน / รายเดือน / รายปี'],
   ['export', 'Export & Sync', 'Distribute', 'ส่งออกและ sync'],
   ['rules', 'ตั้งค่ากฎสี', 'Rules', 'เกณฑ์และการแปลงสี'],
+  ['users', 'ผู้ใช้และสิทธิ์', 'Access', 'ใครเข้าได้ เห็นกะไหนบ้าง'],
 ];
 const now = () => new Date().toLocaleTimeString('th-TH', { hour12: false });
 
@@ -1131,7 +1184,7 @@ class Component extends DCLogic {
     attName: '', schName: '', dragA: false, dragB: false, schRemembered: false,
     dashTab: 'all', exPreset: 'ทั้งเดือน', archive: [], archYear: 'ทั้งหมด', archOpen: null,
     datasets: [], curMonth: '', exFrom: '', exTo: '',
-    warnings: [], warnRules: [], customCodes: [], warnSearch: '', warnSort: 'count', nearGap: 1, hShift: 'all', winMode: 'month', winDays: 30, shiftGroups: [], shiftEditOpen: false,
+    warnings: [], warnRules: [], customCodes: [], users: [], usersMsg: '', nuName: '', nuUser: '', nuPass: '', nuShift: '', warnSearch: '', warnSort: 'count', nearGap: 1, hShift: 'all', winMode: 'month', winDays: 30, shiftGroups: [], shiftEditOpen: false,
     dashFrom: '', dashTo: '', rangePreset: 'month', gShift: 'all',
     archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
     search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
@@ -1314,6 +1367,62 @@ class Component extends DCLogic {
     { id: 'w' + Date.now(), metric: 'late', value: 5, level: 'เตือนครั้งที่ 1', sev: 1, on: true }]);
   removeRule(id) { this.saveWarnRules(this.state.warnRules.filter(r => r.id !== id)); }
   resetRules = () => this.saveWarnRules(this.eng.DEFAULT_WARN_RULES.map(x => ({ ...x })));
+
+  /* ── ผู้ใช้และสิทธิ์ ───────────────────────────────────────────────────
+     รายชื่ออยู่ในชีต DATA ฝั่ง Apps Script การเพิ่ม/ลบทำผ่าน POST พร้อมบัตรผ่าน
+     ของแอดมิน สคริปต์ตรวจสิทธิ์อีกชั้นก่อนเขียนชีตเสมอ                     */
+  session() { return window.HCM_SESSION || null; }
+  syncUrl() {
+    const s = this.session();
+    return (s && s.endpoint) || this.state.endpoint || '';
+  }
+  async callSync(payload) {
+    const url = this.syncUrl();
+    if (!url) throw new Error('ยังไม่ได้ตั้งค่า Web app URL');
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    return r.json();
+  }
+  reloadUsers = async () => {
+    const s = this.session();
+    const url = this.syncUrl();
+    if (!url || !s) { this.setState({ usersMsg: 'ยังไม่ได้ตั้งค่าการเชื่อมต่อ หรือยังไม่ได้ล็อกอิน' }); return; }
+    this.setState({ usersMsg: 'กำลังดึงรายชื่อ…' });
+    try {
+      const q = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=users&token=' + encodeURIComponent(s.token);
+      const d = await (await fetch(q)).json();
+      if (!d.ok) { this.setState({ usersMsg: d.error || 'ดึงรายชื่อไม่สำเร็จ' }); return; }
+      this.setState({ users: d.users || [], usersMsg: `มีผู้ใช้ ${(d.users || []).length} คน` });
+    } catch (e) { this.setState({ usersMsg: 'ต่อกับเซิร์ฟเวอร์ไม่ได้ — ตรวจ Web app URL' }); }
+  };
+  saveUser = async () => {
+    const s = this.session();
+    const { nuUser, nuPass, nuName, nuShift } = this.state;
+    if (!nuUser.trim() || !nuPass.trim()) { this.setState({ usersMsg: 'ต้องกรอกยูสเซอร์และรหัสผ่าน' }); return; }
+    this.setState({ usersMsg: 'กำลังบันทึกลงชีต…' });
+    try {
+      const d = await this.callSync({ action: 'addUser', token: s && s.token,
+        name: nuName, user: nuUser, pass: nuPass, shiftText: nuShift });
+      if (!d.ok) { this.setState({ usersMsg: d.error || 'บันทึกไม่สำเร็จ' }); return; }
+      this.setState({ nuName: '', nuUser: '', nuPass: '', nuShift: '',
+        usersMsg: d.updated ? `แก้ไข ${d.user} แล้ว` : `เพิ่ม ${d.user} แล้ว` });
+      this.reloadUsers();
+    } catch (e) { this.setState({ usersMsg: 'ต่อกับเซิร์ฟเวอร์ไม่ได้' }); }
+  };
+  delUser = async (u) => {
+    if (!window.confirm(`ลบผู้ใช้ ${u.user} (${u.name || '-'}) ออกจากชีต?\n\nคนนี้จะเข้าระบบไม่ได้ทันที`)) return;
+    const s = this.session();
+    this.setState({ usersMsg: 'กำลังลบ…' });
+    try {
+      const d = await this.callSync({ action: 'delUser', token: s && s.token, user: u.user });
+      if (!d.ok) { this.setState({ usersMsg: d.error || 'ลบไม่สำเร็จ' }); return; }
+      this.setState({ usersMsg: `ลบ ${d.user} แล้ว` });
+      this.reloadUsers();
+    } catch (e) { this.setState({ usersMsg: 'ต่อกับเซิร์ฟเวอร์ไม่ได้' }); }
+  };
 
   /* ── ตารางแปลงรหัสที่แอดมินเพิ่มเอง ─────────────────────────────────── */
   CODES_KEY = 'hcm-custom-codes-v1';
@@ -1567,12 +1676,28 @@ class Component extends DCLogic {
       })),
       screenTitle: scr[3], screenKicker: scr[2],
       isUpload: s.screen === 'upload', isDash: s.screen === 'dash', isGrid: s.screen === 'grid',
-      isEmp: s.screen === 'emp', isHub: s.screen === 'hub', isExport: s.screen === 'export', isRules: s.screen === 'rules',
+      isEmp: s.screen === 'emp', isHub: s.screen === 'hub', isExport: s.screen === 'export', isRules: s.screen === 'rules', isUsers: s.screen === 'users',
       goExport: go('export'),
       goRules: go('rules'),
       periodLabel: m && m.dates.length ? m.dates[0].slice(0, 7) : '—',
       empCount: m ? m.employees.length : 0,
       sourceLabel: s.src === 'demo' ? 'ตัวอย่าง' : s.src === 'upload' ? 'HCM' : '—',
+      reloadUsers: this.reloadUsers,
+      saveUser: this.saveUser,
+      usersMsg: s.usersMsg,
+      nuName: s.nuName, nuUser: s.nuUser, nuPass: s.nuPass, nuShift: s.nuShift,
+      onNuName: (e) => set({ nuName: e.target.value }),
+      onNuUser: (e) => set({ nuUser: e.target.value }),
+      onNuPass: (e) => set({ nuPass: e.target.value }),
+      onNuShift: (e) => set({ nuShift: e.target.value }),
+      userRows: (s.users || []).map(u => ({
+        name: u.name || '—', user: u.user, shiftText: u.shiftText || '—',
+        role: u.isAdmin ? 'แอดมิน' : 'หัวหน้ากะ',
+        tag: this.tagStyle(u.isAdmin ? 'red' : 'gray'),
+        edit: () => set({ nuName: u.name || '', nuUser: u.user, nuPass: '', nuShift: u.shiftText || '' ,
+          usersMsg: `กำลังแก้ ${u.user} — ใส่รหัสใหม่แล้วกดบันทึก` }),
+        del: () => this.delUser(u),
+      })),
       wipeAll: this.wipeAll,
       storageInfo: (() => {
         const n = (s.datasets || []).length;
