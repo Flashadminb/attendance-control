@@ -17,7 +17,7 @@
   var s = null;
   try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { s = null; }
 
-  if (!s || !s.me || !s.me.user) { location.replace(LOGIN_PAGE); return; }
+  if (!s || !s.me || !s.me.user || !s.token) { location.replace(LOGIN_PAGE); return; }
   if (need === 'admin' && !s.me.isAdmin) { location.replace('./Attendance%20Viewer.dc.html'); return; }
 
   window.HCM_SESSION = s;
@@ -41,6 +41,13 @@
     out.style.cssText = 'flex:none;border:1px solid #f3f2f2;background:transparent;color:#f3f2f2;cursor:pointer;'
       + 'font-family:inherit;font-size:11px;padding:4px 8px;';
     out.onclick = function () {
+      // บอกเซิร์ฟเวอร์ให้ทิ้งบัตรผ่านใบนี้ด้วย ไม่ใช่แค่ลบในเครื่อง
+      try {
+        if (s.endpoint && s.token) {
+          fetch(s.endpoint + (s.endpoint.indexOf('?') >= 0 ? '&' : '?')
+            + 'action=logout&token=' + encodeURIComponent(s.token)).catch(function () {});
+        }
+      } catch (e) {}
       try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
       location.replace(LOGIN_PAGE);
     };

@@ -84,6 +84,42 @@ function publicUser_(u) {
     shifts: splitShifts_(u.shiftText), isAdmin: isAdminShifts_(u.shiftText) };
 }
 
+/* ── บัตรผ่านชั่วคราว (token) ───────────────────────────────────────────
+   ล็อกอินสำเร็จแล้วได้บัตรผ่านสุ่มไป 1 ใบ อายุ 12 ชั่วโมง คำขอหลังจากนั้น
+   ใช้บัตรใบนี้แทนรหัสผ่าน — รหัสผ่านจริงจึงถูกส่งแค่ครั้งเดียวตอนล็อกอิน
+   และไม่ไปโผล่ใน URL หรือประวัติเบราว์เซอร์ ถ้าบัตรหลุดก็ลบทิ้งได้
+   (ล็อกอินได้หลายเครื่องพร้อมกัน เพราะแต่ละเครื่องถือบัตรคนละใบ)          */
+var TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+
+function tokenStore_() { return PropertiesService.getScriptProperties(); }
+function newToken_(user) {
+  var t = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
+  tokenStore_().setProperty('tk:' + t, JSON.stringify({ user: user, exp: Date.now() + TOKEN_TTL_MS }));
+  return t;
+}
+function userByToken_(token) {
+  var t = norm_(token);
+  if (!t) return null;
+  var raw = tokenStore_().getProperty('tk:' + t);
+  if (!raw) return null;
+  var rec;
+  try { rec = JSON.parse(raw); } catch (e) { return null; }
+  if (!rec || !rec.exp || Date.now() > rec.exp) { tokenStore_().deleteProperty('tk:' + t); return null; }
+  var list = readUsers_();
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].user.toLowerCase() === String(rec.user).toLowerCase()) return list[i];
+  }
+  return null;   // ผู้ใช้ถูกลบออกจากชีตแล้ว บัตรใช้ไม่ได้ทันที
+}
+function dropToken_(token) {
+  var t = norm_(token);
+  if (t) tokenStore_().deleteProperty('tk:' + t);
+}
+// รับได้ทั้งบัตรผ่าน และรหัสผ่านตรง ๆ (เผื่อเรียกจากที่อื่น)
+function whoIs_(p) {
+  return p.token ? userByToken_(p.token) : auth_(p.user, p.pass);
+}
+
 // เหลือเฉพาะพนักงานในกะที่คนนี้ดูแล — ตัดข้อมูลกะอื่นทิ้งตั้งแต่ที่เซิร์ฟเวอร์
 function filterDataset_(ds, who) {
   if (!ds || who.isAdmin) return ds;
@@ -116,7 +152,16 @@ var COLOR_HEX = {
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
-    // คำสั่งจัดการผู้ใช้ใช้รหัสแอดมินยืนยัน ไม่ต้องใช้ TOKEN
+
+    // ── ล็อกอิน ─────────────────────────────────────────────────────────
+    // ใช้ POST เพื่อไม่ให้รหัสผ่านไปโผล่ใน URL, log ของเซิร์ฟเวอร์ หรือประวัติเบราว์เซอร์
+    if (body.action === 'login') {
+      var who = auth_(body.user, body.pass);
+      if (!who) return json({ ok: false, error: 'ยูสเซอร์หรือรหัสไม่ถูกต้อง' });
+      return json({ ok: true, me: publicUser_(who), token: newToken_(who.user) });
+    }
+
+    // คำสั่งจัดการผู้ใช้ ยืนยันด้วยบัตรผ่านหรือรหัสของแอดมิน
     if (body.action === 'addUser' || body.action === 'delUser') return manageUsers_(body);
     if (body.token !== TOKEN) return json({ ok: false, error: 'token ไม่ถูกต้อง' });
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -177,16 +222,15 @@ function doGet(e) {
     var p = (e && e.parameter) || {};
     var action = p.action || 'months';
 
-    // ── ล็อกอิน ─────────────────────────────────────────────────────────
-    if (action === 'login') {
-      var who = auth_(p.user, p.pass);
-      if (!who) return json({ ok: false, error: 'ยูสเซอร์หรือรหัสไม่ถูกต้อง' });
-      return json({ ok: true, me: publicUser_(who) });
-    }
+    // เช็คว่าเว็บแอปเปิดให้เข้าถึงได้จริงไหม ใช้ตอนตั้งค่าครั้งแรก
+    if (action === 'ping') return json({ ok: true, message: 'เชื่อมต่อได้', needsLogin: true });
+
+    // ออกจากระบบ — ทิ้งบัตรผ่านใบนั้น
+    if (action === 'logout') { dropToken_(p.token); return json({ ok: true }); }
 
     // ── รายชื่อผู้ใช้ (เฉพาะแอดมิน) ────────────────────────────────────
     if (action === 'users') {
-      var admin = auth_(p.user, p.pass);
+      var admin = whoIs_(p);
       if (!admin || !isAdminShifts_(admin.shiftText)) return json({ ok: false, error: 'ต้องเป็นแอดมินเท่านั้น' });
       return json({ ok: true, users: readUsers_().map(function (u) {
         return { name: u.name, user: u.user, shiftText: u.shiftText, isAdmin: isAdminShifts_(u.shiftText) };
@@ -194,7 +238,7 @@ function doGet(e) {
     }
 
     // ── ทุก action ที่เหลือต้องล็อกอินก่อน ─────────────────────────────
-    var me = auth_(p.user, p.pass);
+    var me = whoIs_(p);
     if (!me) return json({ ok: false, error: 'ต้องล็อกอินก่อน', needLogin: true });
     var pub = publicUser_(me);
 
@@ -216,7 +260,7 @@ function doGet(e) {
 /* ── แอดมินเพิ่ม/ลบ/แก้ผู้ใช้จากหน้าเว็บ ────────────────────────────────
    เรียกด้วย POST { adminUser, adminPass, action, ... }                    */
 function manageUsers_(body) {
-  var admin = auth_(body.adminUser, body.adminPass);
+  var admin = body.token ? userByToken_(body.token) : auth_(body.adminUser, body.adminPass);
   if (!admin || !isAdminShifts_(admin.shiftText)) return json({ ok: false, error: 'ต้องเป็นแอดมินเท่านั้น' });
   var sh = userSheet_();
   var act = body.action;

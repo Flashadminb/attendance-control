@@ -83,26 +83,30 @@
     go.disabled = true; say('กำลังตรวจสอบ…', 'ok');
 
     try {
-      var q = url + (url.indexOf('?') >= 0 ? '&' : '?')
-        + 'action=login&user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass);
-      var r = await fetch(q);
+      // ส่งด้วย POST รหัสผ่านจะได้ไม่ไปโผล่ใน URL หรือ log
+      // ใช้ Content-Type text/plain เพื่อเลี่ยง preflight ที่ Apps Script ไม่รองรับ
+      var r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'login', user: user, pass: pass })
+      });
       var d = await r.json();
       if (!d.ok) { say(d.error || 'เข้าสู่ระบบไม่สำเร็จ'); go.disabled = false; return; }
 
-      // เก็บ endpoint ไว้ใช้ครั้งหน้า และเก็บว่าใครล็อกอินอยู่
+      // เก็บ endpoint กับบัตรผ่าน — ไม่เก็บรหัสผ่านไว้ในเครื่อง
       try {
         var cur = JSON.parse(localStorage.getItem(EP_KEY) || 'null') || {};
         cur.endpoint = url;
         localStorage.setItem(EP_KEY, JSON.stringify(cur));
         localStorage.setItem(SESSION_KEY, JSON.stringify({
-          me: d.me, user: user, pass: pass, at: new Date().toISOString()
+          me: d.me, token: d.token, endpoint: url, at: new Date().toISOString()
         }));
       } catch (e2) {}
 
       say('ยินดีต้อนรับ ' + (d.me.name || d.me.user), 'ok');
       location.href = d.me.isAdmin ? './Attendance%20Admin.dc.html' : './Attendance%20Viewer.dc.html';
     } catch (err) {
-      say('ต่อกับเซิร์ฟเวอร์ไม่ได้ — ตรวจว่า Web app URL ถูกต้องและตั้ง Who has access เป็น Anyone');
+      say('ต่อกับเซิร์ฟเวอร์ไม่ได้ — ตรวจว่า Web app URL ถูกต้อง และตั้ง Who has access เป็น Anyone');
       go.disabled = false;
     }
   });
