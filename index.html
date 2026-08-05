@@ -6,6 +6,7 @@
 <title>Attendance Control — เข้าสู่ระบบ</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+<script src="./config.js"></script>
 <style>
   *,*::before,*::after{box-sizing:border-box}
   body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;
@@ -67,9 +68,11 @@
     <button id="go" type="submit">เข้าสู่ระบบ</button>
     <div id="m" class="msg"></div>
 
-    <details class="setup" id="cfg">
-      <summary>ตั้งค่าการเชื่อมต่อ (ทำครั้งแรกครั้งเดียว)</summary>
-      <div style="margin-top:8px;">วาง <strong>Web app URL</strong> ที่ได้จาก Apps Script (ลงท้าย <code>/exec</code>) ระบบจะจำไว้ในเครื่องนี้</div>
+    <!-- ปกติซ่อนไว้ — โผล่เฉพาะตอนยังไม่ได้ตั้งค่าใน config.js หรือต่อไม่ติด -->
+    <details class="setup" id="cfg" style="display:none;">
+      <summary>ตั้งค่าการเชื่อมต่อ (สำหรับแอดมิน)</summary>
+      <div style="margin-top:8px;">ปกติค่านี้ตั้งไว้ในไฟล์ <code>config.js</code> แล้ว ไม่ต้องกรอกเอง<br>
+        ช่องนี้ใช้ตอนยังไม่ได้ตั้ง หรือ URL เปลี่ยนแล้วยังไม่ได้แก้ในโค้ด</div>
       <input id="ep" placeholder="https://script.google.com/macros/s/..../exec">
     </details>
   </form>
@@ -85,11 +88,13 @@
   function endpoint() { return (ep.value || '').trim(); }
   function say(text, kind) { m.textContent = text; m.className = 'msg ' + (kind || 'err'); }
 
-  // ดึง endpoint ที่เคยตั้งไว้ ถ้ายังไม่มีให้กางกล่องตั้งค่าให้เห็นเลย
-  try {
-    var saved = JSON.parse(localStorage.getItem(EP_KEY) || 'null') || {};
-    if (saved.endpoint) ep.value = saved.endpoint; else cfg.open = true;
-  } catch (e) { cfg.open = true; }
+  // ลำดับความสำคัญ: ค่าที่ตั้งไว้กลางใน config.js → ค่าที่เครื่องนี้เคยใช้
+  // ตั้งไว้ใน config.js แล้วผู้ใช้ทั่วไปจะไม่เห็นช่องกรอก URL เลย
+  var central = (window.HCM_CONFIG && window.HCM_CONFIG.endpoint || '').trim();
+  var local = '';
+  try { local = ((JSON.parse(localStorage.getItem(EP_KEY) || 'null') || {}).endpoint || '').trim(); } catch (e) {}
+  ep.value = central || local;
+  if (!ep.value) { cfg.style.display = 'block'; cfg.open = true; }
 
   function home(me) { return me.isAdmin ? './Attendance%20Admin.dc.html' : './Attendance%20Viewer.dc.html'; }
 
@@ -121,7 +126,11 @@
   f.addEventListener('submit', async function (e) {
     e.preventDefault();
     var url = endpoint();
-    if (!url) { cfg.open = true; say('ยังไม่ได้ตั้งค่าการเชื่อมต่อ — วาง Web app URL ในช่องด้านล่างก่อน'); return; }
+    if (!url) {
+      cfg.style.display = 'block'; cfg.open = true;
+      say('ยังไม่ได้ตั้งค่าการเชื่อมต่อ — แอดมินต้องใส่ Web app URL ใน config.js หรือกรอกในช่องด้านล่าง');
+      return;
+    }
 
     var user = document.getElementById('u').value.trim();
     var pass = document.getElementById('p').value;
@@ -152,6 +161,8 @@
       say('ยินดีต้อนรับ ' + (d.me.name || d.me.user), 'ok');
       location.href = d.me.isAdmin ? './Attendance%20Admin.dc.html' : './Attendance%20Viewer.dc.html';
     } catch (err) {
+      // ต่อไม่ติด — กางช่องตั้งค่าให้แอดมินแก้ URL ได้ทันที
+      cfg.style.display = 'block';
       say('ต่อกับเซิร์ฟเวอร์ไม่ได้ — ตรวจว่า Web app URL ถูกต้อง และตั้ง Who has access เป็น Anyone');
       go.disabled = false;
     }

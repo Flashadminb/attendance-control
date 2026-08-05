@@ -35,7 +35,7 @@ var CHUNK = 40000;                   // ขนาดต่อเซลล์ (�
    ความปลอดภัย: การตรวจรหัสทำที่นี่ทั้งหมด รหัสผ่านไม่เคยถูกส่งไปที่เบราว์เซอร์
    และผู้ใช้ทั่วไปจะได้รับเฉพาะข้อมูลของกะที่ตัวเองดูแลเท่านั้น              */
 var USER_SHEET = 'DATA';
-var USER_SHEET_ID = '';              // เช่น '1mA69kP1t3AQysSgdBpx57MPdFIlH9xttAvM25Fw1T0w'
+var USER_SHEET_ID = '';              // วาง ID ของไฟล์ที่มีชีต DATA (ตัวอักษรยาว ๆ กลาง URL ของชีต)
 
 function userBook_() {
   return USER_SHEET_ID ? SpreadsheetApp.openById(USER_SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./config.js"></script>
 <script src="./auth-guard.js" data-require="admin"></script>
 <script src="./support.js"></script>
 </head>
@@ -1374,7 +1375,8 @@ class Component extends DCLogic {
   session() { return window.HCM_SESSION || null; }
   syncUrl() {
     const s = this.session();
-    return (s && s.endpoint) || this.state.endpoint || '';
+    const central = (window.HCM_CONFIG && window.HCM_CONFIG.endpoint || '').trim();
+    return central || (s && s.endpoint) || this.state.endpoint || '';
   }
   async callSync(payload) {
     const url = this.syncUrl();
