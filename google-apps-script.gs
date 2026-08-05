@@ -21,6 +21,92 @@ var TOKEN = 'CHANGE-ME-1234';        // ตั้งรหัสเอง แล
 var DATA_SHEET = '_data';            // แท็บซ่อนสำหรับเก็บข้อมูลดิบ (ห้ามลบ)
 var CHUNK = 40000;                   // ขนาดต่อเซลล์ (ลิมิตชีตคือ 50,000 ตัวอักษร)
 
+/* ── ผู้ใช้และสิทธิ์การเข้าถึง ──────────────────────────────────────────
+   รายชื่อผู้ใช้อยู่ในชีตชื่อ DATA เรียงคอลัมน์ตามนี้ (แถวแรกเป็นหัวตาราง)
+
+     A: ชื่อ            B: ยูสเซอร์         C: รหัส          D: กะที่ดูแล
+
+   ช่อง "กะที่ดูแล" ใส่ได้หลายกะคั่นด้วยจุลภาค เช่น  กะเช้า, กะบ่าย
+   ถ้าใส่คำว่า  ทั้งหมด  หรือ  ALL  คนนั้นจะเป็นแอดมิน เห็นทุกกะและจัดการผู้ใช้ได้
+
+   ถ้าชีต DATA อยู่คนละไฟล์กับชีตนี้ ให้ใส่ ID ของไฟล์นั้นที่ USER_SHEET_ID
+   (เว้นว่างไว้ = ใช้ชีตเดียวกับที่ติดตั้งสคริปต์นี้)
+
+   ความปลอดภัย: การตรวจรหัสทำที่นี่ทั้งหมด รหัสผ่านไม่เคยถูกส่งไปที่เบราว์เซอร์
+   และผู้ใช้ทั่วไปจะได้รับเฉพาะข้อมูลของกะที่ตัวเองดูแลเท่านั้น              */
+var USER_SHEET = 'DATA';
+var USER_SHEET_ID = '';              // เช่น '1mA69kP1t3AQysSgdBpx57MPdFIlH9xttAvM25Fw1T0w'
+
+function userBook_() {
+  return USER_SHEET_ID ? SpreadsheetApp.openById(USER_SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+}
+function userSheet_() {
+  var ss = userBook_();
+  var sh = ss.getSheetByName(USER_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(USER_SHEET);
+    sh.appendRow(['ชื่อ', 'ยูสเซอร์', 'รหัส', 'กะที่ดูแล']);
+    sh.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#201e1d').setFontColor('#ffffff');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function norm_(v) { return String(v == null ? '' : v).trim(); }
+function isAdminShifts_(s) { return /ทั้งหมด|^all$/i.test(norm_(s)); }
+function splitShifts_(s) {
+  return norm_(s).split(/[,;/|]/).map(function (x) { return x.trim(); }).filter(String);
+}
+
+function readUsers_() {
+  var sh = userSheet_();
+  var v = sh.getDataRange().getValues();
+  var out = [];
+  for (var i = 1; i < v.length; i++) {
+    var u = norm_(v[i][1]);
+    if (!u) continue;
+    out.push({ row: i + 1, name: norm_(v[i][0]), user: u, pass: norm_(v[i][2]), shiftText: norm_(v[i][3]) });
+  }
+  return out;
+}
+
+// ตรวจรหัส — คืน null ถ้าไม่ผ่าน ไม่บอกว่าผิดที่ยูสเซอร์หรือรหัส
+function auth_(user, pass) {
+  var u = norm_(user), p = norm_(pass);
+  if (!u || !p) return null;
+  var list = readUsers_();
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].user.toLowerCase() === u.toLowerCase() && list[i].pass === p) return list[i];
+  }
+  return null;
+}
+function publicUser_(u) {
+  return { name: u.name, user: u.user, shiftText: u.shiftText,
+    shifts: splitShifts_(u.shiftText), isAdmin: isAdminShifts_(u.shiftText) };
+}
+
+// เหลือเฉพาะพนักงานในกะที่คนนี้ดูแล — ตัดข้อมูลกะอื่นทิ้งตั้งแต่ที่เซิร์ฟเวอร์
+function filterDataset_(ds, who) {
+  if (!ds || who.isAdmin) return ds;
+  var allow = who.shifts.map(function (s) { return s.toLowerCase(); });
+  if (!allow.length) return { v: ds.v, month: ds.month, dates: ds.dates, shifts: ds.shifts, employees: [], savedAt: ds.savedAt };
+  var shiftNames = (ds.shifts || []).map(function (s) { return String(s || '').toLowerCase(); });
+  var okIdx = {};
+  for (var i = 0; i < shiftNames.length; i++) {
+    for (var j = 0; j < allow.length; j++) {
+      if (allow[j] && shiftNames[i].indexOf(allow[j]) >= 0) { okIdx[i] = true; break; }
+    }
+  }
+  var emps = (ds.employees || []).filter(function (e) {
+    var cells = e.c || [];
+    for (var k = 0; k < cells.length; k++) if (okIdx[cells[k][3]]) return true;
+    return false;
+  });
+  var out = {};
+  for (var key in ds) out[key] = ds[key];
+  out.employees = emps;
+  return out;
+}
+
 var COLOR_HEX = {
   red: '#ec3013', yellow: '#e8a400', gray: '#d7d3d3',
   'gray-half': '#eae7e7', ok: '#ffffff', out: '#f3f2f2'
@@ -30,6 +116,8 @@ var COLOR_HEX = {
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
+    // คำสั่งจัดการผู้ใช้ใช้รหัสแอดมินยืนยัน ไม่ต้องใช้ TOKEN
+    if (body.action === 'addUser' || body.action === 'delUser') return manageUsers_(body);
     if (body.token !== TOKEN) return json({ ok: false, error: 'token ไม่ถูกต้อง' });
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var written = [];
@@ -88,18 +176,73 @@ function doGet(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var p = (e && e.parameter) || {};
     var action = p.action || 'months';
-    if (action === 'months') return json({ ok: true, months: listMonths_(ss) });
-    if (action === 'meta') return json({ ok: true, meta: readMeta_(ss) });
+
+    // ── ล็อกอิน ─────────────────────────────────────────────────────────
+    if (action === 'login') {
+      var who = auth_(p.user, p.pass);
+      if (!who) return json({ ok: false, error: 'ยูสเซอร์หรือรหัสไม่ถูกต้อง' });
+      return json({ ok: true, me: publicUser_(who) });
+    }
+
+    // ── รายชื่อผู้ใช้ (เฉพาะแอดมิน) ────────────────────────────────────
+    if (action === 'users') {
+      var admin = auth_(p.user, p.pass);
+      if (!admin || !isAdminShifts_(admin.shiftText)) return json({ ok: false, error: 'ต้องเป็นแอดมินเท่านั้น' });
+      return json({ ok: true, users: readUsers_().map(function (u) {
+        return { name: u.name, user: u.user, shiftText: u.shiftText, isAdmin: isAdminShifts_(u.shiftText) };
+      }) });
+    }
+
+    // ── ทุก action ที่เหลือต้องล็อกอินก่อน ─────────────────────────────
+    var me = auth_(p.user, p.pass);
+    if (!me) return json({ ok: false, error: 'ต้องล็อกอินก่อน', needLogin: true });
+    var pub = publicUser_(me);
+
+    if (action === 'months') return json({ ok: true, months: listMonths_(ss), me: pub });
+    if (action === 'meta') return json({ ok: true, meta: readMeta_(ss), me: pub });
     if (action === 'dataset') {
       var months = listMonths_(ss);
       var month = p.month || (months.length ? months[months.length - 1].month : '');
       if (!month) return json({ ok: false, error: 'ยังไม่มีข้อมูลในชีต' });
-      return json({ ok: true, month: month, dataset: readDataset_(ss, month) });
+      // กรองที่นี่ ไม่ส่งข้อมูลกะอื่นออกไปเลย
+      return json({ ok: true, month: month, me: pub, dataset: filterDataset_(readDataset_(ss, month), pub) });
     }
-    return json({ ok: true, message: 'Attendance sync endpoint พร้อมใช้งาน' });
+    return json({ ok: true, message: 'Attendance sync endpoint พร้อมใช้งาน', me: pub });
   } catch (err) {
     return json({ ok: false, error: String(err) });
   }
+}
+
+/* ── แอดมินเพิ่ม/ลบ/แก้ผู้ใช้จากหน้าเว็บ ────────────────────────────────
+   เรียกด้วย POST { adminUser, adminPass, action, ... }                    */
+function manageUsers_(body) {
+  var admin = auth_(body.adminUser, body.adminPass);
+  if (!admin || !isAdminShifts_(admin.shiftText)) return json({ ok: false, error: 'ต้องเป็นแอดมินเท่านั้น' });
+  var sh = userSheet_();
+  var act = body.action;
+
+  if (act === 'addUser') {
+    var u = norm_(body.user);
+    if (!u || !norm_(body.pass)) return json({ ok: false, error: 'ต้องมียูสเซอร์และรหัส' });
+    var exists = readUsers_().filter(function (x) { return x.user.toLowerCase() === u.toLowerCase(); });
+    if (exists.length) {
+      sh.getRange(exists[0].row, 1, 1, 4).setValues([[norm_(body.name), u, norm_(body.pass), norm_(body.shiftText)]]);
+      return json({ ok: true, updated: true, user: u });
+    }
+    sh.appendRow([norm_(body.name), u, norm_(body.pass), norm_(body.shiftText)]);
+    return json({ ok: true, added: true, user: u });
+  }
+
+  if (act === 'delUser') {
+    var t = norm_(body.user).toLowerCase();
+    if (t === norm_(admin.user).toLowerCase()) return json({ ok: false, error: 'ลบตัวเองไม่ได้' });
+    var found = readUsers_().filter(function (x) { return x.user.toLowerCase() === t; });
+    if (!found.length) return json({ ok: false, error: 'ไม่พบยูสเซอร์นี้' });
+    sh.deleteRow(found[0].row);
+    return json({ ok: true, deleted: true, user: found[0].user });
+  }
+
+  return json({ ok: false, error: 'ไม่รู้จักคำสั่ง ' + act });
 }
 
 /* ── เก็บ/อ่านข้อมูลดิบในแท็บซ่อน ────────────────────────────────────── */

@@ -3,22 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Attendance Control</title>
+<title>Attendance Control — เข้าสู่ระบบ</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+Thai:wght@400;600;800&display=swap">
 <style>
   *,*::before,*::after{box-sizing:border-box}
   body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;
        font-family:"Archivo","Noto Sans Thai",system-ui,sans-serif;background:#f3f2f2;color:#201e1d}
-  .wrap{width:min(600px,100%)}
-  h1{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:0}
-  .kick{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#7d7979;margin:8px 0 28px}
-  a{display:block;border:2px solid rgba(32,30,29,.4);padding:20px;margin-bottom:14px;
-    text-decoration:none;color:inherit;background:#eae9e9;transition:background .12s,border-color .12s}
-  a:hover,a:focus-visible{background:#ffe0d9;border-color:#ec3013;outline:none}
-  .t{font-weight:800;font-size:clamp(17px,4vw,21px)}
-  .d{font-size:13px;color:#605d5d;margin-top:6px;line-height:1.5}
-  footer{font-size:11px;color:#7d7979;margin-top:22px;line-height:1.7;border-top:2px solid rgba(32,30,29,.4);padding-top:14px}
+  .wrap{width:min(430px,100%)}
+  h1{font-size:clamp(26px,6vw,34px);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:0}
+  .kick{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#7d7979;margin:8px 0 26px}
+  form{border:2px solid rgba(32,30,29,.4);background:#eae9e9;padding:20px}
+  label{display:block;font-size:12px;color:#605d5d;margin-bottom:5px}
+  input{width:100%;min-height:40px;padding:8px 10px;font:inherit;font-size:15px;color:#201e1d;
+        background:#fff;border:1px solid rgba(32,30,29,.4);border-radius:0}
+  input:focus-visible{outline:none;border-color:#ec3013}
+  .field+.field{margin-top:14px}
+  button{width:100%;margin-top:18px;min-height:44px;border:0;cursor:pointer;background:#ec3013;color:#f3f2f2;
+         font-family:inherit;font-weight:800;font-size:15px}
+  button:hover{background:#dd2b0f}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .msg{margin-top:14px;font-size:13px;padding:10px 12px;display:none}
+  .msg.err{display:block;background:#ffe0d9;border:1px solid #ec3013;color:#7c1405}
+  .msg.ok{display:block;background:#e6f4ec;border:1px solid #5cb87f;color:#1f5c39}
+  .setup{margin-top:18px;border-top:2px solid rgba(32,30,29,.4);padding-top:14px;font-size:12px;color:#605d5d;line-height:1.6}
+  .setup summary{cursor:pointer;font-weight:600;color:#201e1d}
+  .setup input{margin-top:8px;font-size:13px;min-height:34px}
+  code{font-family:ui-monospace,monospace;font-size:11px;background:#f8f4f4;padding:1px 4px}
 </style>
 </head>
 <body>
@@ -26,20 +37,76 @@
   <h1>ATTENDANCE CONTROL</h1>
   <div class="kick">HCM Daily Processing</div>
 
-  <a href="./Attendance%20Admin.dc.html">
-    <div class="t">แอดมิน — Attendance Admin</div>
-    <div class="d">อัปโหลดไฟล์ประจำวัน ตั้งค่ากฎสี ตั้งค่ากะ กฎหนังสือเตือน Export &amp; Sync</div>
-  </a>
+  <form id="f" autocomplete="on">
+    <div class="field">
+      <label for="u">ยูสเซอร์</label>
+      <input id="u" name="username" autocomplete="username" required autocapitalize="none" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="p">รหัสผ่าน</label>
+      <input id="p" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <button id="go" type="submit">เข้าสู่ระบบ</button>
+    <div id="m" class="msg"></div>
 
-  <a href="./Attendance%20Viewer.dc.html">
-    <div class="t">หน้างาน — Attendance Viewer</div>
-    <div class="d">ดูอย่างเดียว ดึงข้อมูลส่วนกลางอัตโนมัติ ไม่มีหน้าอัปโหลดหรือตั้งค่า</div>
-  </a>
-
-  <footer>
-    ไฟล์ทั้งหมดถูกประมวลผลในเบราว์เซอร์ของคุณเอง ไม่มีการอัปโหลดข้อมูลพนักงานออกนอกเครื่อง<br>
-    ข้อมูลเก็บอยู่ในเครื่องที่เปิด และในชีต Google ของคุณเท่านั้น
-  </footer>
+    <details class="setup" id="cfg">
+      <summary>ตั้งค่าการเชื่อมต่อ (ทำครั้งแรกครั้งเดียว)</summary>
+      <div style="margin-top:8px;">วาง <strong>Web app URL</strong> ที่ได้จาก Apps Script (ลงท้าย <code>/exec</code>) ระบบจะจำไว้ในเครื่องนี้</div>
+      <input id="ep" placeholder="https://script.google.com/macros/s/..../exec">
+    </details>
+  </form>
 </main>
+
+<script>
+(function () {
+  var EP_KEY = 'hcm-sync-endpoint-v1';
+  var SESSION_KEY = 'hcm-session-v1';
+  var f = document.getElementById('f'), m = document.getElementById('m'),
+      go = document.getElementById('go'), ep = document.getElementById('ep'), cfg = document.getElementById('cfg');
+
+  function endpoint() { return (ep.value || '').trim(); }
+  function say(text, kind) { m.textContent = text; m.className = 'msg ' + (kind || 'err'); }
+
+  // ดึง endpoint ที่เคยตั้งไว้ ถ้ายังไม่มีให้กางกล่องตั้งค่าให้เห็นเลย
+  try {
+    var saved = JSON.parse(localStorage.getItem(EP_KEY) || 'null') || {};
+    if (saved.endpoint) ep.value = saved.endpoint; else cfg.open = true;
+  } catch (e) { cfg.open = true; }
+
+  f.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var url = endpoint();
+    if (!url) { cfg.open = true; say('ยังไม่ได้ตั้งค่าการเชื่อมต่อ — วาง Web app URL ในช่องด้านล่างก่อน'); return; }
+
+    var user = document.getElementById('u').value.trim();
+    var pass = document.getElementById('p').value;
+    go.disabled = true; say('กำลังตรวจสอบ…', 'ok');
+
+    try {
+      var q = url + (url.indexOf('?') >= 0 ? '&' : '?')
+        + 'action=login&user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass);
+      var r = await fetch(q);
+      var d = await r.json();
+      if (!d.ok) { say(d.error || 'เข้าสู่ระบบไม่สำเร็จ'); go.disabled = false; return; }
+
+      // เก็บ endpoint ไว้ใช้ครั้งหน้า และเก็บว่าใครล็อกอินอยู่
+      try {
+        var cur = JSON.parse(localStorage.getItem(EP_KEY) || 'null') || {};
+        cur.endpoint = url;
+        localStorage.setItem(EP_KEY, JSON.stringify(cur));
+        localStorage.setItem(SESSION_KEY, JSON.stringify({
+          me: d.me, user: user, pass: pass, at: new Date().toISOString()
+        }));
+      } catch (e2) {}
+
+      say('ยินดีต้อนรับ ' + (d.me.name || d.me.user), 'ok');
+      location.href = d.me.isAdmin ? './Attendance%20Admin.dc.html' : './Attendance%20Viewer.dc.html';
+    } catch (err) {
+      say('ต่อกับเซิร์ฟเวอร์ไม่ได้ — ตรวจว่า Web app URL ถูกต้องและตั้ง Who has access เป็น Anyone');
+      go.disabled = false;
+    }
+  });
+})();
+</script>
 </body>
 </html>
