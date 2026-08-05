@@ -236,6 +236,47 @@ function doGet(e) {
     // เช็คว่าเว็บแอปเปิดให้เข้าถึงได้จริงไหม ใช้ตอนตั้งค่าครั้งแรก
     if (action === 'ping') return json({ ok: true, message: 'เชื่อมต่อได้', needsLogin: true });
 
+    /* ── เครื่องมือวินิจฉัยตอนตั้งค่า ────────────────────────────────────
+       บอกว่าสคริปต์กำลังอ่านไฟล์ไหน แท็บไหน เจอกี่แถว และยูสเซอร์ที่ถามหา
+       มีอยู่ไหม โดยไม่เปิดเผยรหัสผ่าน ต้องใส่ TOKEN ถึงจะเรียกได้
+       เรียกแบบ: ...exec?action=diag&t=TOKEN ของคุณ&user=ยูสเซอร์ที่จะเช็ค    */
+    if (action === 'diag') {
+      if (norm_(p.t) !== TOKEN) return json({ ok: false, error: 'ต้องใส่ TOKEN ให้ถูกต้อง' });
+      var book = userBook_();
+      var tab = book.getSheetByName(USER_SHEET);
+      var head = tab ? tab.getRange(1, 1, 1, 4).getValues()[0].map(norm_) : [];
+      var list = readUsers_();
+      var out = {
+        ok: true,
+        ไฟล์ที่อ่าน: book.getName(),
+        idไฟล์: book.getId(),
+        อ่านจากไฟล์เดียวกับสคริปต์: !USER_SHEET_ID,
+        มีแท็บDATA: !!tab,
+        หัวตารางแถว1: head,
+        จำนวนแถวที่อ่านได้: list.length,
+        ยูสเซอร์ทั้งหมด: list.map(function (u) { return u.user; })
+      };
+      var want = norm_(p.user);
+      if (want) {
+        var hit = null;
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].user.toLowerCase() === want.toLowerCase()) { hit = list[i]; break; }
+        }
+        out.เช็คยูสเซอร์ = want;
+        out.เจอยูสเซอร์นี้ = !!hit;
+        if (hit) {
+          var rawPass = String(tab.getRange(hit.row, 3).getValue());
+          out.ช่องรหัสมีค่า = !!hit.pass;
+          out.รหัสมีช่องว่างหัวท้าย = rawPass !== rawPass.trim();
+          out.ช่องชื่อ = hit.name;
+          out.ช่องกะที่ดูแล = hit.shiftText;
+          out.เป็นแอดมิน = isAdminShifts_(hit.shiftText);
+          out.อยู่แถวที่ = hit.row;
+        }
+      }
+      return json(out);
+    }
+
     // ออกจากระบบ — ทิ้งบัตรผ่านใบนั้น
     if (action === 'logout') { dropToken_(p.token); return json({ ok: true }); }
 
