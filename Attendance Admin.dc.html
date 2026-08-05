@@ -1209,7 +1209,10 @@ class Component extends DCLogic {
     let seen = null;
     try { seen = localStorage.getItem(this.RESET_KEY); } catch (e) { return 0; }
     if (seen === this.DATA_VERSION) return 0;
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-') && k !== this.RESET_KEY);
+    // เก็บการล็อกอินกับที่อยู่เซิร์ฟเวอร์ไว้ — สองอย่างนี้ไม่ใช่ข้อมูลการมาทำงาน
+    // ถ้าลบไปด้วยผู้ใช้จะโดนเตะออกจากระบบทุกครั้งที่สั่งล้าง
+    const KEEP = [this.RESET_KEY, 'hcm-session-v1', 'hcm-sync-endpoint-v1'];
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-') && KEEP.indexOf(k) < 0);
     keys.forEach(k => localStorage.removeItem(k));
     try { localStorage.setItem(this.RESET_KEY, this.DATA_VERSION); } catch (e) {}
     return keys.length;
@@ -1500,6 +1503,7 @@ class Component extends DCLogic {
   wipeAll = () => {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-'));
     const ds = this.eng ? this.eng.listDatasets() : [];
+    // หมายเหตุ: การล็อกอินและที่อยู่เซิร์ฟเวอร์ถูกกันไว้ ไม่ถูกลบไปด้วย
     const msg = 'ลบข้อมูลทั้งหมดในเครื่องนี้?\n\n'
       + `• ข้อมูลรายเดือนที่เก็บไว้ ${ds.length} เดือน\n`
       + '• คลังสถิติย้อนหลัง\n'
@@ -1508,7 +1512,9 @@ class Component extends DCLogic {
       + '• ตารางกะที่จำไว้ และการตั้งค่ากะ\n\n'
       + 'กู้คืนไม่ได้ — ไฟล์ต้นฉบับใน HCM ไม่ได้รับผลกระทบ อัปใหม่ได้ตลอด';
     if (!window.confirm(msg)) return;
-    keys.forEach(k => localStorage.removeItem(k));
+    // ไม่ลบการล็อกอินกับที่อยู่เซิร์ฟเวอร์ ผู้ใช้จะได้ไม่ต้องล็อกอินใหม่หลังกดล้าง
+    const KEEP = ['hcm-session-v1', 'hcm-sync-endpoint-v1', this.RESET_KEY];
+    keys.filter(k => KEEP.indexOf(k) < 0).forEach(k => localStorage.removeItem(k));
     this.att = null; this.sch = null; this.rememberedSch = null; this.schFromUpload = false;
     this.setState({
       model: null, attName: '', schName: '', schRemembered: false, src: 'none',

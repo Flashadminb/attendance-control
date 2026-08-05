@@ -843,8 +843,9 @@ class Component extends DCLogic {
     let seen = null;
     try { seen = localStorage.getItem(this.RESET_KEY); } catch (e) { return 0; }
     if (seen === this.DATA_VERSION) return 0;
-    const keep = 'hcm-sync-endpoint-v1';
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-') && k !== this.RESET_KEY && k !== keep);
+    // เก็บการล็อกอินกับที่อยู่เซิร์ฟเวอร์ไว้ ไม่งั้นหน้างานโดนเตะออกทุกครั้งที่สั่งล้าง
+    const KEEP = [this.RESET_KEY, 'hcm-session-v1', 'hcm-sync-endpoint-v1'];
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-') && KEEP.indexOf(k) < 0);
     keys.forEach(k => localStorage.removeItem(k));
     try { localStorage.setItem(this.RESET_KEY, this.DATA_VERSION); } catch (e) {}
     return keys.length;
