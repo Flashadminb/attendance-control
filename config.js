@@ -8,5 +8,5 @@
    URL นี้ไม่ใช่ความลับ — ทุก action ต้องล็อกอินก่อนเสมอ รู้ URL เฉย ๆ
    ทำอะไรไม่ได้ แต่ก็ไม่ควรเผยแพร่ออกไปโดยไม่จำเป็น                        */
 window.HCM_CONFIG = {
-  endpoint: '',   // เช่น 'https://script.google.com/macros/s/AKfy..../exec'
+  endpoint: 'https://script.google.com/macros/s/AKfycbxh-sHgwznKpAmA_vFejYw05WWqMKYcd5DBAW9Ob_xONWp9YVsw62gtdF_ehKx2cfdw/exec',   // เช่น 'https://script.google.com/macros/s/AKfy..../exec'
 };
