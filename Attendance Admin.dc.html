@@ -99,11 +99,13 @@
         </label>
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center;">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <button type="button" class="btn btn-secondary" onClick="{{ loadDemo }}" style="height:36px;">โหลดข้อมูลตัวอย่าง</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ clearAll }}" style="height:36px;">ล้างข้อมูลทั้งหมด</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ clearAll }}" style="height:36px;">ล้างไฟล์ที่เพิ่งอัป</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ wipeAll }}" style="height:36px; color:#ae1800;">ลบข้อมูลทั้งหมดในเครื่อง</button>
         <span style="font-size:12px; color:#605d5d;">ไฟล์ถูกประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดออกนอกเครื่อง</span>
       </div>
+      <div style="font-size:11px; color:#7d7979; margin-top:-10px;">{{ storageInfo }}</div>
 
       <hr class="hr">
       <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:24px;">
@@ -1333,7 +1335,31 @@ class Component extends DCLogic {
     const m = this.rebuild(att, sch, 'demo');
     this.addLog(`โหลดข้อมูลตัวอย่าง ${m.employees.length} คน × ${m.dates.length} วัน`);
   };
+  /* ล้างเฉพาะไฟล์ที่เพิ่งอัป — ของที่เก็บไว้ในเครื่องยังอยู่ครบ */
   clearAll = () => { this.att = null; this.sch = null; this.setState({ model: null, attName: '', schName: '', src: 'none', log: [] }); };
+
+  /* ── ลบข้อมูลทุกอย่างที่แอปเก็บไว้ในเครื่องนี้ ─────────────────────────
+     ใช้ตอนอยากเริ่มใหม่หมด กู้คืนไม่ได้ จึงถามยืนยันก่อนเสมอ
+     (ข้อมูลเก็บแยกตามเบราว์เซอร์และแยกตามลิงก์ ลบเครื่องนี้ไม่กระทบเครื่องอื่น) */
+  wipeAll = () => {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-'));
+    const ds = this.eng ? this.eng.listDatasets() : [];
+    const msg = 'ลบข้อมูลทั้งหมดในเครื่องนี้?\n\n'
+      + `• ข้อมูลรายเดือนที่เก็บไว้ ${ds.length} เดือน\n`
+      + '• คลังสถิติย้อนหลัง\n'
+      + '• ประวัติหนังสือเตือนที่ติ๊กว่าส่งแล้ว\n'
+      + '• กฎหนังสือเตือน และรหัสที่เพิ่มเอง\n'
+      + '• ตารางกะที่จำไว้ และการตั้งค่ากะ\n\n'
+      + 'กู้คืนไม่ได้ — ไฟล์ต้นฉบับใน HCM ไม่ได้รับผลกระทบ อัปใหม่ได้ตลอด';
+    if (!window.confirm(msg)) return;
+    keys.forEach(k => localStorage.removeItem(k));
+    this.att = null; this.sch = null; this.rememberedSch = null; this.schFromUpload = false;
+    this.setState({
+      model: null, attName: '', schName: '', schRemembered: false, src: 'none',
+      datasets: [], archive: [], warnings: [], curMonth: '', unknownList: [], log: [],
+      warnRules: this.eng.DEFAULT_WARN_RULES.map(x => ({ ...x })), customCodes: [], shiftGroups: [],
+    }, () => this.addLog(`ลบข้อมูลในเครื่องแล้ว ${keys.length} รายการ — พร้อมเริ่มใหม่`));
+  };
 
   /* ── ตารางกะที่จำไว้ ───────────────────────────────────────────────────
      แอดมินอัปไฟล์ attendance ทุกวัน แต่อัปตารางกะเฉพาะตอนมีพนักงานใหม่หรือเปลี่ยนกะ
@@ -1495,6 +1521,14 @@ class Component extends DCLogic {
       periodLabel: m && m.dates.length ? m.dates[0].slice(0, 7) : '—',
       empCount: m ? m.employees.length : 0,
       sourceLabel: s.src === 'demo' ? 'ตัวอย่าง' : s.src === 'upload' ? 'HCM' : '—',
+      wipeAll: this.wipeAll,
+      storageInfo: (() => {
+        const n = (s.datasets || []).length;
+        const w = (s.warnings || []).length;
+        return n || w
+          ? `ตอนนี้เก็บไว้ในเครื่องนี้: ข้อมูล ${n} เดือน · ประวัติหนังสือเตือน ${w} รายการ${s.schRemembered ? ' · ตารางกะที่จำไว้' : ''}`
+          : 'ยังไม่มีข้อมูลเก็บไว้ในเครื่องนี้';
+      })(),
       attStatus: s.attName || 'ยังไม่ได้เลือกไฟล์',
       schStatus: s.schName || 'ยังไม่ได้เลือกไฟล์',
       schRemembered: s.schRemembered,
