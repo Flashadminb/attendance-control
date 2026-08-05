@@ -843,7 +843,8 @@ class Component extends DCLogic {
         const idx = this.eng.listDatasets();
         this.setState({ datasets: idx, endpoint: saved });
         const last = idx[idx.length - 1];
-        if (last) this.openMonth(last.month); else this.loadDemo();
+        // ไม่มีข้อมูลจริง ก็ปล่อยว่างไว้ รอดึงจากส่วนกลาง — ไม่ยัดข้อมูลตัวอย่างให้หน้างานเห็น
+        if (last) this.openMonth(last.month);
         if (saved) this.refreshCloud();
         this._poll = setInterval(() => { if (this.state.endpoint) this.refreshCloud(); }, 5 * 60 * 1000);
       });

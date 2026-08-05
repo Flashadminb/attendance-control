@@ -1052,11 +1052,11 @@
           <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">รหัสที่เพิ่มเอง</h4>
           <p style="font-size:12px; color:#605d5d; margin:0 0 10px;">ถ้า HCM ส่งคำใหม่ที่ระบบยังไม่รู้จัก เพิ่มที่นี่ได้เลย — ระบบจะหาคำนี้ในช่อง แล้วบังคับรหัส/สี/การนับตามที่ตั้ง กฎที่เพิ่มเองมาก่อนกฎมาตรฐานเสมอ</p>
           <div style="border:2px solid rgba(32,30,29,.4);">
-            <div style="display:grid; grid-template-columns:26px 1.4fr 62px 1.2fr 1fr 54px 30px; gap:6px; padding:8px 10px; background:#201e1d; color:#fff; font-size:10px; letter-spacing:.06em; text-transform:uppercase;">
-              <span>ใช้</span><span>คำที่พบในไฟล์</span><span>รหัส</span><span>ความหมาย</span><span>สี</span><span>นับมา</span><span></span>
+            <div style="display:grid; grid-template-columns:26px 1.3fr 60px 1.1fr 92px 40px 54px 30px; gap:6px; padding:8px 10px; background:#201e1d; color:#fff; font-size:10px; letter-spacing:.06em; text-transform:uppercase;">
+              <span>ใช้</span><span>คำที่พบในไฟล์</span><span>รหัส</span><span>ความหมาย</span><span>สีสำเร็จรูป</span><span>สีเอง</span><span>นับมา</span><span></span>
             </div>
             <sc-for list="{{ customCodeRows }}" as="c" hint-placeholder-count="2">
-              <div style="display:grid; grid-template-columns:26px 1.4fr 62px 1.2fr 1fr 54px 30px; gap:6px; padding:6px 10px; border-bottom:1px solid #d7d3d3; align-items:center;">
+              <div style="display:grid; grid-template-columns:26px 1.3fr 60px 1.1fr 92px 40px 54px 30px; gap:6px; padding:6px 10px; border-bottom:1px solid #d7d3d3; align-items:center;">
                 <input type="checkbox" checked="{{ c.on }}" onChange="{{ c.toggle }}" style="accent-color:#ec3013;">
                 <input class="input" value="{{ c.match }}" onInput="{{ c.setMatch }}" placeholder="เช่น ทำงานนอกสถานที่" style="height:30px; font-size:12px; padding:0 6px;">
                 <input class="input" value="{{ c.code }}" onInput="{{ c.setCode }}" placeholder="WFH" style="height:30px; font-size:12px; padding:0 6px;">
@@ -1064,9 +1064,17 @@
                 <select class="input" value="{{ c.color }}" onChange="{{ c.setColor }}" style="height:30px; font-size:12px;">
                   <sc-for list="{{ c.colorOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.key }}">{{ o.label }}</option></sc-for>
                 </select>
+                <input type="color" value="{{ c.hex }}" onInput="{{ c.setHex }}" title="เลือกสีเอง — ทับสีสำเร็จรูป" style="height:30px; width:100%; padding:2px; border:1px solid rgba(32,30,29,.4); background:#fff; cursor:pointer;">
                 <input type="checkbox" checked="{{ c.present }}" onChange="{{ c.setPresent }}" style="accent-color:#5cb87f;">
                 <button type="button" class="btn btn-ghost" onClick="{{ c.remove }}" style="height:30px; padding:0; font-size:14px;">✕</button>
               </div>
+              <sc-if value="{{ c.hasHex }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:0 10px 8px; font-size:11px; color:#605d5d; display:flex; gap:8px; align-items:center;">
+                  <span style="{{ c.swatch }}">{{ c.code }}</span>
+                  <span>ใช้สีที่เลือกเอง {{ c.hex }}</span>
+                  <button type="button" class="btn btn-ghost" onClick="{{ c.clearHex }}" style="height:22px; font-size:11px;">กลับไปใช้สีสำเร็จรูป</button>
+                </div>
+              </sc-if>
             </sc-for>
           </div>
           <div style="display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap;">
@@ -1095,6 +1103,14 @@
 <script type="text/x-dc" data-dc-script data-props="{&quot;grace&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:30,&quot;unit&quot;:&quot;นาที&quot;,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;earlyGrace&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:30,&quot;unit&quot;:&quot;นาที&quot;,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;warnAbsent&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:10,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;warnLate&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:20,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;cellDetail&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;code&quot;,&quot;options&quot;:[&quot;code&quot;,&quot;plain&quot;,&quot;time&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;การแสดงผล&quot;},&quot;demoSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:640,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:50,&quot;max&quot;:2000,&quot;step&quot;:10,&quot;section&quot;:&quot;การแสดงผล&quot;}}">
 const RED = '#ec3013', YEL = '#e8a400', GRY = '#d7d3d3', GRY2 = '#eae7e7', OK = '#5cb87f';   // เขียว = มาทำงานปกติ
 const CMAP = { red: RED, yellow: YEL, gray: GRY, 'gray-half': GRY2, ok: OK, out: '#f3f2f2' };
+
+/* สีตัวอักษรที่อ่านออกบนพื้นสีที่แอดมินเลือกเอง — พื้นเข้มใช้ตัวขาว พื้นอ่อนใช้ตัวดำ */
+function readableOn(hex) {
+  const h = String(hex || '').replace('#', '');
+  if (h.length !== 6) return '#201e1d';
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (r * 0.299 + g * 0.587 + b * 0.114) > 150 ? '#201e1d' : '#ffffff';
+}
 const NAV = [
   ['upload', 'อัปโหลดไฟล์', 'Ingest', 'อัปโหลดไฟล์ประจำวัน'],
   ['dash', 'แดชบอร์ด', 'Overview', 'ภาพรวมการมาทำงาน'],
@@ -1132,7 +1148,18 @@ class Component extends DCLogic {
     this.eng = eng;
     this.setState({ eng: true, grace: this.props.grace ?? 5, earlyGrace: this.props.earlyGrace ?? 5,
       warnAbsent: this.props.warnAbsent ?? 3, warnLate: this.props.warnLate ?? 5, detail: this.props.cellDetail ?? 'code' },
-      () => this.loadDemo());
+      () => {
+        // เปิดมาแล้วเอาข้อมูลจริงเดือนล่าสุดที่เคยอัปไว้ขึ้นมาก่อน
+        // ถ้ายังไม่เคยอัปเลย ปล่อยว่างไว้ ไม่ยัดข้อมูลตัวอย่างให้ — กดปุ่มเองได้ถ้าอยากดูตัวอย่าง
+        const idx = this.eng.listDatasets();
+        if (!idx.length) { this.addLog('ยังไม่มีข้อมูล — อัปโหลดไฟล์ attendance เพื่อเริ่มใช้งาน'); return; }
+        const last = idx[idx.length - 1].month;
+        const m = this.eng.loadDataset(last);
+        if (!m) return;
+        this.setState({ model: m, curMonth: last, src: m.source || 'stored',
+          dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null });
+        this.addLog(`เปิดข้อมูลเดือน ${last} ที่เก็บไว้ (${m.employees.length} คน)`);
+      });
     this.loadArchive();
     this.loadSchedule();
     this.setState({ datasets: this.eng.listDatasets() });
@@ -1156,13 +1183,11 @@ class Component extends DCLogic {
   /* ── archive (localStorage, keeps years of monthly + daily aggregates) ── */
   ARCH_KEY = 'hcm-attendance-archive-v2';
   loadArchive() {
+    // เดิมถ้าคลังว่างจะสร้างสถิติปลอมย้อนหลัง 30 เดือนให้เอง ทำให้ลบข้อมูลเท่าไหร่
+    // ก็มีตัวเลขโผล่กลับมาตลอด ตอนนี้เริ่มจากศูนย์จริง คลังจะโตขึ้นเองจากไฟล์ที่อัปแต่ละเดือน
     let arr = [];
     try { arr = JSON.parse(localStorage.getItem(this.ARCH_KEY) || '[]'); } catch (e) { arr = []; }
-    if (!Array.isArray(arr) || !arr.length) {
-      const d = new Date();
-      arr = this.eng.demoArchive(2026, 8, 30);
-      this.writeArchive(arr);
-    }
+    if (!Array.isArray(arr)) arr = [];
     this.setState({ archive: arr.sort((a, b) => a.month.localeCompare(b.month)) });
   }
   writeArchive(arr) { try { localStorage.setItem(this.ARCH_KEY, JSON.stringify(arr)); } catch (e) { this.addLog('บันทึกคลังไม่สำเร็จ: พื้นที่เก็บเต็ม'); } }
@@ -1431,9 +1456,16 @@ class Component extends DCLogic {
     });
   }
 
+  /* สีของรหัสที่แอดมินเพิ่มเอง — หาจากรายการกฎตอนวาด ไม่ได้เก็บลงในเซลล์
+     เปลี่ยนสีในหน้า 09 แล้วตารางเปลี่ยนตามทันที และข้อมูลเก่าที่บันทึกไว้ก็ใช้สีใหม่ด้วย */
+  customHex(code) {
+    if (!code) return null;
+    const r = (this.state.customCodes || []).find(x => x.on !== false && x.code === code && x.hex);
+    return r ? r.hex : null;
+  }
   cellStyle(c, w) {
-    const base = CMAP[c.color] || OK;
-    const fg = c.color === 'red' ? '#fff' : '#201e1d';
+    const base = this.customHex(c.code) || CMAP[c.color] || OK;
+    const fg = this.customHex(c.code) ? readableOn(base) : (c.color === 'red' ? '#fff' : '#201e1d');
     const bg = c.color2
       ? `background-color:${base}; background-image:linear-gradient(135deg, ${base} 50%, ${CMAP[c.color2]} 50%);`
       : `background-color:${base};`;
@@ -1611,6 +1643,11 @@ class Component extends DCLogic {
         .map(({ code, label, color }) => ({ code, label, sw: `display:inline-block; width:34px; height:12px; background:${CMAP[color]}; border:1px solid rgba(32,30,29,.35);` })),
       customCodeRows: (s.customCodes || []).map(c => ({
         on: c.on !== false, match: c.match, code: c.code, label: c.label, color: c.color, present: !!c.present,
+        hex: c.hex || CMAP[c.color] || '#d7d3d3',
+        hasHex: !!c.hex,
+        swatch: `display:inline-flex; align-items:center; justify-content:center; min-width:38px; height:20px; padding:0 6px; font-family:Archivo; font-weight:800; font-size:10px; background:${c.hex || '#d7d3d3'}; color:${readableOn(c.hex || '#d7d3d3')}; border:1px solid rgba(32,30,29,.35);`,
+        setHex: (e) => this.patchCode(c.id, { hex: e.target.value }),
+        clearHex: () => this.patchCode(c.id, { hex: '' }),
         colorOpts: COLOR_OPTS,
         toggle: (e) => this.patchCode(c.id, { on: e.target.checked }),
         setMatch: (e) => this.patchCode(c.id, { match: e.target.value }),
