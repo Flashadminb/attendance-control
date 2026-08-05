@@ -832,7 +832,24 @@ class Component extends DCLogic {
     syncState: 'idle', syncLog: [],
   };
 
+  /* ── สั่งล้างข้อมูลทุกเครื่องจากส่วนกลาง ───────────────────────────────
+     ต้องใช้เลขรุ่นเดียวกับฝั่งแอดมิน เครื่องหน้างานจะได้ล้างพร้อมกัน
+     เก็บ endpoint ส่วนกลางไว้ ไม่ต้องให้หน้างานมาวาง URL ใหม่ทุกครั้งที่สั่งล้าง */
+  DATA_VERSION = '2026-08-05-reset-1';
+  RESET_KEY = 'hcm-data-version';
+  applyGlobalReset() {
+    let seen = null;
+    try { seen = localStorage.getItem(this.RESET_KEY); } catch (e) { return 0; }
+    if (seen === this.DATA_VERSION) return 0;
+    const keep = 'hcm-sync-endpoint-v1';
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-') && k !== this.RESET_KEY && k !== keep);
+    keys.forEach(k => localStorage.removeItem(k));
+    try { localStorage.setItem(this.RESET_KEY, this.DATA_VERSION); } catch (e) {}
+    return keys.length;
+  }
+
   async componentDidMount() {
+    this.applyGlobalReset();
     const eng = await import('./hcm-engine.js');
     this.eng = eng;
     this.setState({ eng: true, grace: this.props.grace ?? 5, earlyGrace: this.props.earlyGrace ?? 5,

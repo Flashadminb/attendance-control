@@ -1143,9 +1143,28 @@ class Component extends DCLogic {
     syncState: 'idle', syncLog: [], endpoint: '', syncToken: '',
   };
 
+  /* ── สั่งล้างข้อมูลทุกเครื่องจากส่วนกลาง ───────────────────────────────
+     แอปเก็บข้อมูลไว้ในเครื่องของแต่ละคน ไม่มีเซิร์ฟเวอร์ให้สั่งลบทีเดียวจบ
+     จึงใช้เลขรุ่นนี้แทน: ขยับเลขแล้ว push ขึ้นเว็บ เครื่องไหนเปิดเว็บครั้งถัดไป
+     จะเห็นว่าเลขไม่ตรงกับที่ตัวเองจำไว้ แล้วล้างข้อมูลตัวเองทิ้งอัตโนมัติ
+     (มีผลกับทุกเครื่องทุกคน แต่ต้องรอให้เครื่องนั้นเปิดเว็บก่อน)          */
+  DATA_VERSION = '2026-08-05-reset-1';
+  RESET_KEY = 'hcm-data-version';
+  applyGlobalReset() {
+    let seen = null;
+    try { seen = localStorage.getItem(this.RESET_KEY); } catch (e) { return 0; }
+    if (seen === this.DATA_VERSION) return 0;
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-') && k !== this.RESET_KEY);
+    keys.forEach(k => localStorage.removeItem(k));
+    try { localStorage.setItem(this.RESET_KEY, this.DATA_VERSION); } catch (e) {}
+    return keys.length;
+  }
+
   async componentDidMount() {
+    const wiped = this.applyGlobalReset();
     const eng = await import('./hcm-engine.js');
     this.eng = eng;
+    if (wiped) setTimeout(() => this.addLog(`ล้างข้อมูลเก่าออก ${wiped} รายการ ตามคำสั่งล้างจากส่วนกลาง — เริ่มนับหนึ่งใหม่`), 0);
     this.setState({ eng: true, grace: this.props.grace ?? 5, earlyGrace: this.props.earlyGrace ?? 5,
       warnAbsent: this.props.warnAbsent ?? 3, warnLate: this.props.warnLate ?? 5, detail: this.props.cellDetail ?? 'code' },
       () => {
