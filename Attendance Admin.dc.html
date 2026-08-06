@@ -109,6 +109,16 @@
       </div>
       <div style="font-size:11px; color:#7d7979; margin-top:-10px;">{{ storageInfo }}</div>
 
+      <sc-if value="{{ hasUndo }}" hint-placeholder-val="{{ true }}">
+        <div style="border:2px solid #ec3013; background:#fff2ef; padding:12px 14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <div style="flex:1; min-width:220px; font-size:12px;">
+            <strong>อัปผิดไฟล์?</strong> ย้อนข้อมูลกลับเป็นชุดก่อนหน้าได้<br>
+            <span style="color:#605d5d;">{{ undoText }}</span>
+          </div>
+          <button type="button" class="btn btn-secondary" onClick="{{ undoUpload }}" style="height:34px; flex:none;">ยกเลิกการอัปล่าสุด</button>
+        </div>
+      </sc-if>
+
       <hr class="hr">
       <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:24px;">
         <div>
@@ -1207,7 +1217,7 @@ const now = () => new Date().toLocaleTimeString('th-TH', { hour12: false });
 class Component extends DCLogic {
   state = {
     screen: 'dash', eng: null, model: null, src: 'demo', log: [], columns: [],
-    attName: '', schName: '', dragA: false, dragB: false, schRemembered: false,
+    attName: '', schName: '', dragA: false, dragB: false, schRemembered: false, undoInfo: null,
     dashTab: 'all', exPreset: 'ทั้งเดือน', archive: [], archYear: 'ทั้งหมด', archOpen: null,
     datasets: [], curMonth: '', exFrom: '', exTo: '',
     warnings: [], warnRules: [], customCodes: [], users: [], usersMsg: '', nuName: '', nuUser: '', nuPass: '', nuShift: '', warnSearch: '', warnSort: 'count', nearGap: 1, hShift: 'all', winMode: 'month', winDays: 30, shiftGroups: [], shiftEditOpen: false,
@@ -1269,6 +1279,7 @@ class Component extends DCLogic {
     this.loadWarnRules();
     this.loadCustomCodes();
     this.loadBackupCfg();
+    this.loadUndo();
     this.loadThresholds();
     this.loadShiftGroups();
     try {
@@ -1596,10 +1607,69 @@ class Component extends DCLogic {
     if (this.att) this.rebuild(this.att, null, 'upload');
   };
 
+  /* ── ยกเลิกการอัปล่าสุด ─────────────────────────────────────────────────
+     ก่อนเขียนทับข้อมูลเดือนไหน เก็บของเดิมไว้หนึ่งชุด กดยกเลิกแล้วได้คืน
+     เผื่ออัปผิดไฟล์หรือผิดเดือน                                            */
+  UNDO_KEY = 'hcm-undo-v1';
+  keepUndo(month) {
+    if (!month) return;
+    try {
+      const raw = localStorage.getItem('hcm-ds-v2:' + month);
+      localStorage.setItem(this.UNDO_KEY, JSON.stringify({
+        month, raw, at: new Date().toISOString(), had: !!raw,
+      }));
+      this.setState({ undoInfo: { month, at: new Date().toLocaleString('th-TH'), had: !!raw } });
+    } catch (e) {}
+  }
+  loadUndo() {
+    try {
+      const u = JSON.parse(localStorage.getItem(this.UNDO_KEY) || 'null');
+      if (u && u.month) this.setState({ undoInfo: { month: u.month, at: new Date(u.at).toLocaleString('th-TH'), had: u.had } });
+    } catch (e) {}
+  }
+  undoUpload = async () => {
+    let u = null;
+    try { u = JSON.parse(localStorage.getItem(this.UNDO_KEY) || 'null'); } catch (e) {}
+    if (!u || !u.month) return;
+    const msg = u.had
+      ? `ย้อนข้อมูลเดือน ${u.month} กลับเป็นชุดก่อนหน้า?\n\nข้อมูลที่เพิ่งอัปจะถูกแทนที่ด้วยของเดิม`
+      : `เดือน ${u.month} ก่อนหน้านี้ยังไม่มีข้อมูล\n\nยกเลิกแล้วเดือนนี้จะว่างเปล่า`;
+    if (!window.confirm(msg)) return;
+    try {
+      if (u.had) localStorage.setItem('hcm-ds-v2:' + u.month, u.raw);
+      else this.eng.deleteDataset(u.month);
+      localStorage.removeItem(this.UNDO_KEY);
+      this.att = null; this.sch = null;
+      const m = u.had ? this.eng.loadDataset(u.month) : null;
+      this.setState({ model: m, curMonth: u.had ? u.month : '', attName: '', undoInfo: null,
+        datasets: this.eng.listDatasets(), src: m ? (m.source || 'stored') : 'none',
+        dayKey: m ? (m.dates[m.dates.length - 1] || '') : '',
+        selId: m && m.employees[0] ? m.employees[0].id : null });
+      this.addLog(`ย้อนข้อมูลเดือน ${u.month} กลับแล้ว`);
+      if (m) setTimeout(() => this.autoSync(), 0);   // ส่งของเดิมขึ้นชีตทับกลับด้วย
+    } catch (e) { this.addLog('ย้อนข้อมูลไม่สำเร็จ: ' + e.message); }
+  };
+
   async ingest(file, which) {
     try {
       this.addLog(`กำลังอ่าน ${file.name}…`);
       const rows = await this.eng.readSheet(file);
+
+      // ถามยืนยันก่อนเสมอ เผื่อหยิบไฟล์ผิดหรือผิดเดือน
+      const t = this.eng.mapTable(rows);
+      const from = t.dates[0] || '-', to = t.dates[t.dates.length - 1] || '-';
+      const month = String(from).slice(0, 7);
+      const kind = which === 'att' ? 'ไฟล์เวลาทำงาน (Attendance)' : 'ไฟล์ตารางกะ (Schedule)';
+      const dup = which === 'att' && month && this.eng.listDatasets().some(x => x.month === month);
+      const ok = window.confirm(
+        `ยืนยันอัปโหลด ${kind}?\n\n`
+        + `ไฟล์: ${file.name}\n`
+        + `พนักงาน: ${t.records.length} คน\n`
+        + `ช่วงวันที่: ${from} → ${to}\n\n`
+        + (dup ? `มีข้อมูลเดือน ${month} อยู่แล้ว — จะถูกเขียนทับ\n(ยกเลิกย้อนกลับได้ที่ปุ่มด้านล่าง)`
+               : 'กด OK เพื่อประมวลผลและส่งขึ้นชีต'));
+      if (!ok) { this.addLog(`ยกเลิกการอัปโหลด ${file.name}`); return; }
+      if (which === 'att' && month) this.keepUndo(month);
       if (which === 'att') {
         this.att = rows;
         // ถ้ายังไม่ได้อัปตารางกะในรอบนี้ ให้หยิบตารางกะที่จำไว้มาใช้
@@ -1618,6 +1688,8 @@ class Component extends DCLogic {
         const m = this.rebuild(this.att, this.sch, 'upload');
         this.addLog(`ประมวลผลแล้ว ${m.employees.length} คน × ${m.dates.length} วัน${this.sch ? (this.state.schRemembered ? ' (ใช้ตารางกะที่จำไว้)' : ' (จับคู่ตารางกะแล้ว)') : ' — ยังไม่มีไฟล์ตารางกะ'}`);
         if (m.openDay) this.addLog(`ยังไม่นับ ${m.openDay} เพราะกะยังไม่จบ (ยังไม่มีใครสแกนออกครบสักคน) — จะเข้าสถิติเองตอนอัปรอบหน้า`);
+        // ล้างชื่อไฟล์ออกจากช่อง ให้พร้อมรับไฟล์ถัดไปทันที ไม่ค้างว่ายังเลือกอยู่
+        this.setState({ attName: '' });
         setTimeout(() => this.autoSync(), 0);   // ส่งขึ้นชีตต่อทันที ไม่ต้องกดปุ่มเอง
       }
     } catch (e) { this.addLog('อ่านไฟล์ไม่สำเร็จ: ' + e.message); }
@@ -1758,6 +1830,12 @@ class Component extends DCLogic {
           usersMsg: `กำลังแก้ ${u.user} — ใส่รหัสใหม่แล้วกดบันทึก` }),
         del: () => this.delUser(u),
       })),
+      hasUndo: !!s.undoInfo,
+      undoText: s.undoInfo
+        ? (s.undoInfo.had ? `จะย้อนเดือน ${s.undoInfo.month} กลับเป็นชุดก่อนหน้า (อัปล่าสุด ${s.undoInfo.at})`
+                          : `เดือน ${s.undoInfo.month} ก่อนหน้านี้ยังไม่มีข้อมูล — ยกเลิกแล้วจะว่าง`)
+        : '',
+      undoUpload: this.undoUpload,
       wipeAll: this.wipeAll,
       storageInfo: (() => {
         const n = (s.datasets || []).length;
