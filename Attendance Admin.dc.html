@@ -904,6 +904,19 @@
             <div style="font-size:12px; color:#605d5d; border-left:3px solid #5cb87f; padding-left:10px;">
               ไม่ต้องตั้งรหัสอะไรเพิ่ม — ระบบใช้การล็อกอินแอดมินของคุณยืนยันตัวให้อัตโนมัติ
             </div>
+
+            <div style="border:2px solid rgba(32,30,29,.4); padding:12px 14px; background:#eae9e9;">
+              <div style="font-weight:600; font-size:13px; margin-bottom:4px;">ชีตสำรองแยกไฟล์ (ไม่บังคับ)</div>
+              <div style="font-size:11px; color:#605d5d; margin-bottom:10px;">วาง URL ครั้งเดียว ระบบจำไว้ฝั่ง Google · ตอน Sync จะเขียนข้อมูลแบบย่อลงไปให้ แยกแท็บตามปี ขึ้นปีใหม่สร้างแท็บใหม่เอง</div>
+              <div class="field" style="margin:0 0 10px;"><label>ชีตสำรอง — ตารางกะ</label>
+                <input class="input" value="{{ bkSch }}" onInput="{{ onBkSch }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:34px; font-size:12px;"></div>
+              <div class="field" style="margin:0 0 10px;"><label>ชีตสำรอง — Attendance</label>
+                <input class="input" value="{{ bkAtt }}" onInput="{{ onBkAtt }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:34px; font-size:12px;"></div>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary" onClick="{{ saveBackupCfg }}" style="height:32px;">บันทึกที่อยู่ชีต</button>
+                <span style="font-size:11px; color:#605d5d;">{{ bkMsg }}</span>
+              </div>
+            </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div class="field" style="margin:0;"><label>ชื่อแท็บ</label><input class="input" value="{{ sheetTab }}" onInput="{{ onSheetTab }}" style="height:36px;"></div>
               <div class="field" style="margin:0;"><label>ขอบเขตข้อมูล</label>
@@ -1196,7 +1209,7 @@ class Component extends DCLogic {
     grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
     detail: 'code', warnAbsent: 3, warnLate: 5, newHoliday: '',
     sheetUrl: ''  /* วาง URL ชีตของคุณในหน้า Export & Sync ครั้งเดียว แล้วระบบจำให้ */, sheetTab: 'Matrix', syncScope: 'filtered', syncDaily: true,
-    syncState: 'idle', syncLog: [], endpoint: '', syncToken: '',
+    syncState: 'idle', syncLog: [], endpoint: '', syncToken: '', bkSch: '', bkAtt: '', bkMsg: '',
   };
 
   /* ── สั่งล้างข้อมูลทุกเครื่องจากส่วนกลาง ───────────────────────────────
@@ -1244,6 +1257,7 @@ class Component extends DCLogic {
     this.loadWarnings();
     this.loadWarnRules();
     this.loadCustomCodes();
+    this.loadBackupCfg();
     this.loadThresholds();
     this.loadShiftGroups();
     try {
@@ -1392,6 +1406,25 @@ class Component extends DCLogic {
     });
     return r.json();
   }
+  /* ที่อยู่ชีตสำรอง เก็บไว้ฝั่ง Apps Script ไม่ได้อยู่ในโค้ดหรือในเครื่อง */
+  loadBackupCfg = async () => {
+    const s = this.session();
+    if (!s || !s.token) return;
+    try {
+      const d = await this.callSync({ action: 'getBackup', token: s.token });
+      if (d.ok) this.setState({ bkSch: d.sch || '', bkAtt: d.att || '' });
+    } catch (e) {}
+  };
+  saveBackupCfg = async () => {
+    const s = this.session();
+    this.setState({ bkMsg: 'กำลังบันทึก…' });
+    try {
+      const d = await this.callSync({ action: 'setBackup', token: s && s.token,
+        sch: this.state.bkSch, att: this.state.bkAtt });
+      this.setState({ bkMsg: d.ok ? 'บันทึกแล้ว — Sync ครั้งต่อไปจะเขียนลงชีตสำรองให้' : (d.error || 'บันทึกไม่สำเร็จ') });
+    } catch (e) { this.setState({ bkMsg: 'ต่อกับเซิร์ฟเวอร์ไม่ได้' }); }
+  };
+
   reloadUsers = async () => {
     const s = this.session();
     const url = this.syncUrl();
@@ -1750,6 +1783,9 @@ class Component extends DCLogic {
       sheetUrl: s.sheetUrl, sheetTab: s.sheetTab, syncScope: s.syncScope, syncDaily: s.syncDaily,
       onSheetUrl: (e) => this.saveEndpoint({ sheetUrl: e.target.value }),
       endpoint: s.endpoint, syncToken: s.syncToken,
+      bkSch: s.bkSch, bkAtt: s.bkAtt, bkMsg: s.bkMsg,
+      onBkSch: (e) => set({ bkSch: e.target.value }), onBkAtt: (e) => set({ bkAtt: e.target.value }),
+      saveBackupCfg: this.saveBackupCfg,
       onEndpoint: (e) => this.saveEndpoint({ endpoint: e.target.value.trim() }),
       onSyncToken: (e) => this.saveEndpoint({ syncToken: e.target.value.trim() }), onSheetTab: (e) => set({ sheetTab: e.target.value }),
       onSyncScope: (e) => set({ syncScope: e.target.value }), onSyncDaily: (e) => set({ syncDaily: e.target.checked }),
@@ -2419,9 +2455,34 @@ class Component extends DCLogic {
       return [d, head, pres, head ? Math.round(pres / head * 1000) / 10 + '%' : '0%', abs, late];
     });
     const warnRows = s.warnings.map(w => [w.date, w.id, w.name, w.position, w.level, w.month, w.absent, w.late, w.lateMin]);
+    /* ข้อมูลสำรองแบบย่อ — ไฟล์ต้นฉบับมีข้อความยาวอย่าง
+       "in:08:45 out:20:32 ลาพักร้อนครึ่งวันเช้า" ซึ่งเก็บลงชีตแล้วอ่านยากและไฟล์บวม
+       จึงเหลือไว้แค่รหัสสั้น ๆ ที่จำเป็นต่อการย้อนดู                          */
+    const backup = {
+      att: m.employees.map(e => {
+        const days = {};
+        e.cells.forEach((c, i) => {
+          const d = m.dates[i];
+          if (!d) return;
+          days[d] = c.code || (c.color === 'ok' ? 'มา' : '');
+        });
+        return { id: e.id, name: e.name, position: e.position, days };
+      }),
+      sch: m.employees.map(e => {
+        const days = {};
+        e.cells.forEach((c, i) => {
+          const d = m.dates[i];
+          if (!d || !c.shift) return;
+          days[d] = c.shift;                 // ชื่อกะ+เวลาตามที่อยู่ในไฟล์ตารางกะ
+        });
+        return { id: e.id, name: e.name, position: e.position, days };
+      }).filter(r => Object.keys(r.days).length),
+    };
+
     return {
       // ยืนยันตัวด้วยบัตรผ่านของแอดมินที่ล็อกอินอยู่ ไม่ต้องตั้ง TOKEN แยกอีก
       token: (this.session() && this.session().token) || s.syncToken,
+      backup,
       month: (m.dates[0] || '').slice(0, 7),
       note: `ช่วง ${R.from} → ${R.to} · ${rows.length} คน`,
       tabs: {

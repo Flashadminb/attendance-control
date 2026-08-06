@@ -186,6 +186,16 @@ function doPost(e) {
     if (!sender || !isAdminShifts_(sender.shiftText)) {
       return json({ ok: false, error: 'ต้องล็อกอินเป็นแอดมินก่อนจึงจะส่งข้อมูลขึ้นชีตได้', needLogin: true });
     }
+
+    // ตั้งค่าชีตสำรอง — แอดมินวาง URL ในหน้าเว็บ เก็บไว้ฝั่ง Google ไม่อยู่ในโค้ด
+    if (body.action === 'setBackup') {
+      if (body.sch !== undefined) cfgSet_(CFG_KEYS.sch, sheetIdOf_(body.sch));
+      if (body.att !== undefined) cfgSet_(CFG_KEYS.att, sheetIdOf_(body.att));
+      return json({ ok: true, sch: cfgGet_(CFG_KEYS.sch), att: cfgGet_(CFG_KEYS.att) });
+    }
+    if (body.action === 'getBackup') {
+      return json({ ok: true, sch: cfgGet_(CFG_KEYS.sch), att: cfgGet_(CFG_KEYS.att) });
+    }
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var written = [];
 
@@ -222,6 +232,20 @@ function doPost(e) {
       saveDataset_(ss, body.month, body.dataset);
       written.push('dataset ' + body.month);
     }
+
+    // 3) สำรองแบบย่อลงชีตแยก แบ่งแท็บตามปี (ขึ้นปีใหม่สร้างแท็บใหม่เอง)
+    var year = String(body.month || '').slice(0, 4) || String(new Date().getFullYear());
+    ['att', 'sch'].forEach(function (kind) {
+      var rows = body.backup && body.backup[kind];
+      if (!rows || !rows.length) return;
+      try {
+        var r = saveBackup_(kind, year, rows);
+        if (r) written.push('สำรอง ' + (kind === 'att' ? 'attendance' : 'ตารางกะ')
+          + ' → ' + r.ไฟล์ + ' แท็บ ' + r.แท็บ + ' (' + r.ผล.แถว + ' แถว)');
+      } catch (err2) {
+        written.push('สำรอง ' + kind + ' ไม่สำเร็จ: ' + String(err2));
+      }
+    });
     if (body.meta) saveMeta_(ss, body.meta);
 
     var log = ss.getSheetByName('Sync log') || ss.insertSheet('Sync log');
@@ -400,6 +424,96 @@ function readDataset_(ss, month) {
 function listMonths_(ss) { return JSON.parse(readKey_(dataSheet_(ss), 'index') || '[]'); }
 function saveMeta_(ss, meta) { writeKey_(dataSheet_(ss), 'meta', JSON.stringify(meta)); }
 function readMeta_(ss) { return JSON.parse(readKey_(dataSheet_(ss), 'meta') || 'null'); }
+
+/* ── ชีตสำรองแยกไฟล์ แบ่งแท็บตามปี ──────────────────────────────────────
+   เก็บ ID ของชีตสำรองไว้ใน Script Properties ฝั่ง Google ไม่ได้อยู่ในโค้ด
+   แอดมินกรอก URL ชีตในหน้า Export & Sync ครั้งเดียว ระบบจำให้เอง
+
+   แต่ละไฟล์จะมีแท็บชื่อเป็นปี เช่น 2026, 2027 ขึ้นปีใหม่สร้างแท็บใหม่เอง
+   ข้อมูลที่เขียนลงเป็นแบบย่อ เก็บเฉพาะที่จำเป็น ไม่เอาข้อความยาว ๆ
+   จากไฟล์ต้นฉบับ เช่น "in:08:45 out:20:32 ลาพักร้อนครึ่งวันเช้า"
+   จะเหลือแค่รหัสสั้น ๆ อ่านง่ายและไฟล์ไม่บวม                              */
+var CFG_KEYS = { sch: 'backup_sheet_sch', att: 'backup_sheet_att' };
+
+function cfgGet_(k) { return PropertiesService.getScriptProperties().getProperty(k) || ''; }
+function cfgSet_(k, v) { PropertiesService.getScriptProperties().setProperty(k, String(v || '')); }
+
+// รับได้ทั้ง URL เต็มและ ID เปล่า ๆ
+function sheetIdOf_(s) {
+  var t = norm_(s);
+  var m = t.match(/\/d\/([a-zA-Z0-9-_]{20,})/);
+  return m ? m[1] : t;
+}
+
+function yearTab_(ss, year) {
+  var name = String(year);
+  var sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    ss.setActiveSheet(sh);
+    ss.moveActiveSheet(1);          // ปีล่าสุดอยู่ซ้ายสุด หาง่าย
+  }
+  return sh;
+}
+
+/* รวมข้อมูลใหม่เข้ากับของเดิมในแท็บปีนั้น
+   rows = [{ id, name, position, days: { '2026-08-01': 'รหัส', ... } }]
+   เขียนทับเฉพาะวันที่ส่งมา วันอื่นในแท็บยังอยู่ครบ                        */
+function mergeYear_(sh, rows) {
+  var old = sh.getDataRange().getValues();
+  var byId = {}, dates = {};
+  if (old.length > 1) {
+    var head = old[0];
+    for (var c = 3; c < head.length; c++) { var d = norm_(head[c]); if (d) dates[d] = true; }
+    for (var r = 1; r < old.length; r++) {
+      var id = norm_(old[r][0]);
+      if (!id) continue;
+      var rec = { id: id, name: norm_(old[r][1]), position: norm_(old[r][2]), days: {} };
+      for (var c2 = 3; c2 < head.length; c2++) {
+        var dd = norm_(head[c2]), vv = norm_(old[r][c2]);
+        if (dd && vv) rec.days[dd] = vv;
+      }
+      byId[id] = rec;
+    }
+  }
+  (rows || []).forEach(function (n) {
+    var id = norm_(n.id);
+    if (!id) return;
+    if (!byId[id]) byId[id] = { id: id, name: norm_(n.name), position: norm_(n.position), days: {} };
+    if (n.name) byId[id].name = norm_(n.name);
+    if (n.position) byId[id].position = norm_(n.position);
+    Object.keys(n.days || {}).forEach(function (d) {
+      dates[d] = true;
+      byId[id].days[d] = String(n.days[d] == null ? '' : n.days[d]);
+    });
+  });
+
+  var allDates = Object.keys(dates).sort();
+  var header = ['รหัสพนักงาน', 'ชื่อ', 'ตำแหน่ง'].concat(allDates);
+  var out = [header];
+  Object.keys(byId).sort().forEach(function (id) {
+    var rec = byId[id];
+    var line = [rec.id, rec.name, rec.position];
+    allDates.forEach(function (d) { line.push(rec.days[d] || ''); });
+    out.push(line);
+  });
+
+  sh.clear();
+  sh.getRange(1, 1, out.length, header.length).setValues(out);
+  sh.getRange(1, 1, 1, header.length).setFontWeight('bold')
+    .setBackground('#201e1d').setFontColor('#ffffff');
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(3);
+  return { แถว: out.length - 1, คอลัมน์วันที่: allDates.length };
+}
+
+function saveBackup_(kind, year, rows) {
+  var id = sheetIdOf_(cfgGet_(CFG_KEYS[kind]));
+  if (!id) return null;                       // ยังไม่ได้ตั้งชีตสำรองไว้ ข้ามไป
+  var ss = SpreadsheetApp.openById(id);
+  var res = mergeYear_(yearTab_(ss, year), rows);
+  return { ไฟล์: ss.getName(), แท็บ: String(year), ผล: res };
+}
 
 function json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
