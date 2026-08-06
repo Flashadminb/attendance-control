@@ -905,18 +905,6 @@
               ไม่ต้องตั้งรหัสอะไรเพิ่ม — ระบบใช้การล็อกอินแอดมินของคุณยืนยันตัวให้อัตโนมัติ
             </div>
 
-            <div style="border:2px solid rgba(32,30,29,.4); padding:12px 14px; background:#eae9e9;">
-              <div style="font-weight:600; font-size:13px; margin-bottom:4px;">ชีตสำรองแยกไฟล์ (ไม่บังคับ)</div>
-              <div style="font-size:11px; color:#605d5d; margin-bottom:10px;">วาง URL ครั้งเดียว ระบบจำไว้ฝั่ง Google · ตอน Sync จะเขียนข้อมูลแบบย่อลงไปให้ แยกแท็บตามปี ขึ้นปีใหม่สร้างแท็บใหม่เอง</div>
-              <div class="field" style="margin:0 0 10px;"><label>ชีตสำรอง — ตารางกะ</label>
-                <input class="input" value="{{ bkSch }}" onInput="{{ onBkSch }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:34px; font-size:12px;"></div>
-              <div class="field" style="margin:0 0 10px;"><label>ชีตสำรอง — Attendance</label>
-                <input class="input" value="{{ bkAtt }}" onInput="{{ onBkAtt }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:34px; font-size:12px;"></div>
-              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <button type="button" class="btn btn-secondary" onClick="{{ saveBackupCfg }}" style="height:32px;">บันทึกที่อยู่ชีต</button>
-                <span style="font-size:11px; color:#605d5d;">{{ bkMsg }}</span>
-              </div>
-            </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div class="field" style="margin:0;"><label>ชื่อแท็บ</label><input class="input" value="{{ sheetTab }}" onInput="{{ onSheetTab }}" style="height:36px;"></div>
               <div class="field" style="margin:0;"><label>ขอบเขตข้อมูล</label>
@@ -1053,6 +1041,19 @@
           </div>
         </div>
         <div>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ชีตสำรองหลังบ้าน</h4>
+          <p style="font-size:12px; color:#605d5d; margin:0 0 10px;">วาง URL ครั้งเดียว ระบบจำไว้ฝั่ง Google · ทุกครั้งที่อัปไฟล์ ระบบจะเขียนข้อมูลแบบย่อลงให้เอง แยกแท็บตามปี ขึ้นปีใหม่สร้างแท็บใหม่อัตโนมัติ</p>
+          <div class="field" style="margin:0 0 10px;"><label>ชีตสำรอง — ตารางกะ</label>
+            <input class="input" value="{{ bkSch }}" onInput="{{ onBkSch }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:34px; font-size:12px;"></div>
+          <div class="field" style="margin:0 0 10px;"><label>ชีตสำรอง — Attendance</label>
+            <input class="input" value="{{ bkAtt }}" onInput="{{ onBkAtt }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:34px; font-size:12px;"></div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary" onClick="{{ saveBackupCfg }}" style="height:32px;">บันทึกที่อยู่ชีต</button>
+            <span style="font-size:11px; color:#605d5d;">{{ bkMsg }}</span>
+          </div>
+        </div>
+
+        <div>
           <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ตารางแปลงรหัส</h4>
           <table class="table" style="width:100%; font-size:12px;">
             <thead><tr><th style="text-align:left; width:70px;">รหัส</th><th style="text-align:left;">ความหมาย</th><th style="text-align:left; width:80px;">สี</th></tr></thead>
@@ -1187,7 +1188,8 @@ const NAV = [
   ['hub', 'รายตำแหน่ง', 'Position', 'สรุปตามตำแหน่งงาน'],
   ['warn', 'หนังสือเตือน', 'Warnings', 'สถิติการออกหนังสือเตือน'],
   ['archive', 'คลังสถิติย้อนหลัง', 'Archive', 'สถิติย้อนหลังรายวัน / รายเดือน / รายปี'],
-  ['export', 'Export & Sync', 'Distribute', 'ส่งออกและ sync'],
+  // ไม่มี Export & Sync ในเมนูแล้ว — ระบบส่งข้อมูลขึ้นชีตเองตอนอัปไฟล์
+  // หน้าจอยังอยู่ เข้าได้จากปุ่ม "ส่งออก" มุมขวาบน ไว้โหลดไฟล์ Excel/PNG
   ['rules', 'ตั้งค่ากฎสี', 'Rules', 'เกณฑ์และการแปลงสี'],
   ['users', 'ผู้ใช้และสิทธิ์', 'Access', 'ใครเข้าได้ เห็นกะไหนบ้าง'],
 ];
@@ -1607,6 +1609,7 @@ class Component extends DCLogic {
         const m = this.rebuild(this.att, this.sch, 'upload');
         this.addLog(`ประมวลผลแล้ว ${m.employees.length} คน × ${m.dates.length} วัน${this.sch ? (this.state.schRemembered ? ' (ใช้ตารางกะที่จำไว้)' : ' (จับคู่ตารางกะแล้ว)') : ' — ยังไม่มีไฟล์ตารางกะ'}`);
         if (m.openDay) this.addLog(`ยังไม่นับ ${m.openDay} เพราะกะยังไม่จบ (ยังไม่มีใครสแกนออกครบสักคน) — จะเข้าสถิติเองตอนอัปรอบหน้า`);
+        setTimeout(() => this.autoSync(), 0);   // ส่งขึ้นชีตต่อทันที ไม่ต้องกดปุ่มเอง
       }
     } catch (e) { this.addLog('อ่านไฟล์ไม่สำเร็จ: ' + e.message); }
   }
@@ -2498,11 +2501,33 @@ class Component extends DCLogic {
         winMode: s.winMode, winDays: s.winDays, warnings: s.warnings, grace: s.grace, earlyGrace: s.earlyGrace },
     };
   }
+  /* ส่งข้อมูลขึ้นชีตเองหลังอัปไฟล์เสร็จ — แอดมินไม่ต้องกดปุ่มอะไรเพิ่ม
+     เงียบ ๆ ไม่ขึ้น error ถ้ายังไม่ได้ตั้งค่าเชื่อมต่อ แค่จดไว้ในบันทึก */
+  async autoSync() {
+    const url = this.syncUrl();
+    if (!url || !this.state.model) return;
+    if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(url)) return;
+    this.addLog('กำลังส่งข้อมูลขึ้นชีต…');
+    try {
+      const out = await (await fetch(url, { method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(this.syncPayload()) })).json();
+      if (out.ok) {
+        this.addLog('ส่งขึ้นชีตแล้ว — ' + ((out.written || []).join(' · ') || 'สำเร็จ'));
+        this.addLog('หน้างานจะเห็นข้อมูลชุดนี้ทันทีที่เปิดหรือรีเฟรช');
+      } else {
+        this.addLog('ส่งขึ้นชีตไม่สำเร็จ: ' + (out.error || 'ไม่ทราบสาเหตุ'));
+      }
+    } catch (err) {
+      this.addLog('ส่งขึ้นชีตไม่สำเร็จ: ' + err.message);
+    }
+  }
+
   async runSync() {
     const s = this.state;
     if (s.syncState === 'running') return;
     if (!s.model) { this.pushSync('ยังไม่มีข้อมูล — อัปโหลดไฟล์ก่อน', 'err'); return; }
-    if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(s.endpoint)) {
+    if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(this.syncUrl())) {
       this.pushSync('ใส่ Web app URL จาก Apps Script ก่อน (ลงท้ายด้วย /exec)', 'err'); return;
     }
     this.setState({ syncState: 'running' });
