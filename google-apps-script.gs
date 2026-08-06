@@ -137,11 +137,20 @@ function filterDataset_(ds, who) {
   if (!ds || who.isAdmin) return ds;
   var allow = who.shifts.map(function (s) { return s.toLowerCase(); });
   if (!allow.length) return { v: ds.v, month: ds.month, dates: ds.dates, shifts: ds.shifts, employees: [], savedAt: ds.savedAt };
-  var shiftNames = (ds.shifts || []).map(function (s) { return String(s || '').toLowerCase(); });
+  /* เทียบชื่อกะแบบตรงตัว ไม่ใช่แค่มีคำนั้นอยู่ข้างใน
+     เพราะชื่อกะเป็นช่วงเวลา ถ้าเทียบแบบมีคำอยู่ข้างใน คนที่ดูแล "03:00"
+     จะไปตรงกับ "18:00-03:00" ด้วย ทำให้เห็นข้อมูลเกินสิทธิ์
+     ยังเผื่อกรณีพิมพ์ชื่อเดิมจากไฟล์มา จึงยอมให้ตรงแบบมีคำอยู่ข้างในได้
+     ต่อเมื่อคำที่พิมพ์ยาวพอจะไม่กำกวม (ไม่ใช่แค่เวลาเดียว)               */
+  var shiftNames = (ds.shifts || []).map(function (s) { return String(s || '').toLowerCase().trim(); });
   var okIdx = {};
   for (var i = 0; i < shiftNames.length; i++) {
     for (var j = 0; j < allow.length; j++) {
-      if (allow[j] && shiftNames[i].indexOf(allow[j]) >= 0) { okIdx[i] = true; break; }
+      var want = String(allow[j] || '').toLowerCase().trim();
+      if (!want) continue;
+      var hit = shiftNames[i] === want;
+      if (!hit && want.length >= 8 && shiftNames[i].indexOf(want) >= 0) hit = true;
+      if (hit) { okIdx[i] = true; break; }
     }
   }
   var emps = (ds.employees || []).filter(function (e) {

@@ -1119,6 +1119,15 @@
     <div style="padding:22px 28px 60px; display:flex; flex-direction:column; gap:22px; max-width:960px;">
       <p style="margin:0; color:#605d5d; max-width:660px;">รายชื่อนี้เก็บอยู่ในชีต <strong>DATA</strong> เพิ่มหรือลบที่นี่แล้วระบบเขียนลงชีตให้ทันที · ใครดูแลกะไหนจะเห็นเฉพาะข้อมูลกะนั้น · ใส่คำว่า <strong>ทั้งหมด</strong> ในช่องกะ = เป็นแอดมิน เห็นทุกกะและจัดการผู้ใช้ได้</p>
 
+      <div style="border:2px solid rgba(32,30,29,.4); background:#eae9e9; padding:10px 12px; font-size:12px;">
+        <strong>ชื่อกะที่พิมพ์ได้</strong> — ต้องพิมพ์ให้ตรงตัว ดูแลหลายกะให้คั่นด้วยจุลภาค
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+          <sc-for list="{{ shiftNameChips }}" as="n" hint-placeholder-count="5">
+            <span class="tag tag-outline" style="font-family:Archivo;">{{ n }}</span>
+          </sc-for>
+        </div>
+      </div>
+
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <button type="button" class="btn btn-secondary" onClick="{{ reloadUsers }}" style="height:34px;">ดึงรายชื่อจากชีต</button>
         <span style="font-size:12px; color:#605d5d;">{{ usersMsg }}</span>
@@ -1732,6 +1741,7 @@ class Component extends DCLogic {
       periodLabel: m && m.dates.length ? m.dates[0].slice(0, 7) : '—',
       empCount: m ? m.employees.length : 0,
       sourceLabel: s.src === 'demo' ? 'ตัวอย่าง' : s.src === 'upload' ? 'HCM' : '—',
+      shiftNameChips: (s.shiftGroups || []).map(g => g.name),
       reloadUsers: this.reloadUsers,
       saveUser: this.saveUser,
       usersMsg: s.usersMsg,
@@ -2496,7 +2506,18 @@ class Component extends DCLogic {
         'Warning list': [['วันที่ออก', 'รหัส', 'ชื่อ-สกุล', 'ตำแหน่ง', 'ระดับ', 'รอบข้อมูล', 'ขาด', 'สาย', 'นาทีสาย'], ...warnRows],
       },
       colors: { 'Matrix': colors },
-      dataset: E.serializeModel(m, { source: s.src }),
+      // แปลงชื่อกะเป็นชื่อกลุ่มที่ตั้งไว้ก่อนส่ง (เช่น "กะดึก03:00-12:00" → "03:00-12:00")
+      // เพราะฝั่ง Google ใช้ค่านี้ตัดสินว่าใครเห็นข้อมูลของใคร ถ้าส่งชื่อดิบไป
+      // คำว่า "กะดึก" ในไฟล์จะครอบคลุมหลายช่วงเวลา ทำให้เห็นกว้างเกินสิทธิ์
+      dataset: (() => {
+        const ds = E.serializeModel(m, { source: s.src });
+        ds.shifts = (ds.shifts || []).map(raw => {
+          if (!raw) return '';
+          const g = (s.shiftGroups || []).find(x => x.key === this.bucket(raw));
+          return g ? g.name : raw;
+        });
+        return ds;
+      })(),
       meta: { shiftGroups: s.shiftGroups, warnAbsent: s.warnAbsent, warnLate: s.warnLate, nearGap: s.nearGap,
         winMode: s.winMode, winDays: s.winDays, warnings: s.warnings, grace: s.grace, earlyGrace: s.earlyGrace },
     };
