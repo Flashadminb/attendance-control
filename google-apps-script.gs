@@ -15,7 +15,7 @@
  *
  * ── ติดตั้ง (ทำครั้งเดียว) ─────────────────────────────────────────────
  * 1. เปิดชีตที่มีแท็บ DATA → Extensions → Apps Script
- * 2. วางไฟล์นี้ทับ Code.gs → เปลี่ยนค่า TOKEN ด้านล่างเป็นรหัสของคุณเอง → Save
+ * 2. วางไฟล์นี้ทับ Code.gs → Save (ไม่ต้องแก้อะไรเลย)
  * 3. Deploy → New deployment → type: Web app
  *      Execute as: Me          Who has access: Anyone
  * 4. คัดลอก Web app URL (ลงท้าย /exec) ไปวางในหน้า "Export & Sync" ของ Attendance Admin
@@ -24,7 +24,9 @@
  * หมายเหตุ: ทุกครั้งที่แก้ไฟล์นี้ ต้อง Deploy → Manage deployments → Edit → Version: New
  */
 
-var TOKEN = 'CHANGE-ME-1234';        // ตั้งรหัสเอง แล้วใส่ให้ตรงกันในเว็บแอพ
+// ไม่ต้องแก้บรรทัดนี้แล้ว — ระบบใช้การล็อกอินแอดมินยืนยันตัวแทน TOKEN
+// เก็บไว้เผื่อเครื่องมือเก่าที่ยังส่ง token แบบเดิมมาเท่านั้น
+var TOKEN = 'CHANGE-ME-1234';
 var DATA_SHEET = '_data';            // แท็บซ่อนสำหรับเก็บข้อมูลดิบ (ห้ามลบ)
 var CHUNK = 40000;                   // ขนาดต่อเซลล์ (ลิมิตชีตคือ 50,000 ตัวอักษร)
 
@@ -174,12 +176,16 @@ function doPost(e) {
 
     // คำสั่งจัดการผู้ใช้ ยืนยันด้วยบัตรผ่านหรือรหัสของแอดมิน
     if (body.action === 'addUser' || body.action === 'delUser') return manageUsers_(body);
-    // การเขียนข้อมูลลงชีตต้องใช้ TOKEN — ถ้ายังเป็นค่าเริ่มต้นถือว่าไม่ปลอดภัย
-    // เพราะค่านั้นเปิดเผยอยู่ในโค้ดสาธารณะ ใครก็ส่งข้อมูลปลอมเข้ามาได้
-    if (TOKEN === 'CHANGE-ME-1234') {
-      return json({ ok: false, error: 'ยังไม่ได้เปลี่ยน TOKEN — แก้บรรทัด var TOKEN ในสคริปต์เป็นรหัสของคุณเองก่อน แล้ว Deploy ใหม่' });
+
+    /* ── ใครส่งข้อมูลเข้ามาเขียนลงชีตได้บ้าง ────────────────────────────
+       ใช้บัตรผ่านของแอดมินที่ล็อกอินอยู่เป็นตัวยืนยัน ไม่ต้องตั้งรหัสแยกอีก
+       บัตรผ่านเกิดตอนล็อกอิน หมดอายุเองได้ และไม่เคยอยู่ในโค้ดสาธารณะ
+       จึงปลอดภัยกว่าการฝังรหัสตายตัวไว้ในไฟล์                            */
+    var sender = body.token ? userByToken_(body.token) : null;
+    if (!sender && TOKEN !== 'CHANGE-ME-1234' && body.token === TOKEN) sender = { shiftText: 'ทั้งหมด' };
+    if (!sender || !isAdminShifts_(sender.shiftText)) {
+      return json({ ok: false, error: 'ต้องล็อกอินเป็นแอดมินก่อนจึงจะส่งข้อมูลขึ้นชีตได้', needLogin: true });
     }
-    if (body.token !== TOKEN) return json({ ok: false, error: 'token ไม่ถูกต้อง' });
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var written = [];
 
@@ -246,12 +252,11 @@ function doGet(e) {
        มีอยู่ไหม โดยไม่เปิดเผยรหัสผ่าน ต้องใส่ TOKEN ถึงจะเรียกได้
        เรียกแบบ: ...exec?action=diag&t=TOKEN ของคุณ&user=ยูสเซอร์ที่จะเช็ค    */
     if (action === 'diag') {
-      // ปิดตัวเองถ้ายังไม่ได้เปลี่ยน TOKEN เพราะค่าเริ่มต้นเปิดเผยอยู่ในโค้ดสาธารณะ
-      // ใครก็เรียกดูรายชื่อยูสเซอร์ได้ ต้องตั้ง TOKEN ของตัวเองก่อน
-      if (TOKEN === 'CHANGE-ME-1234') {
-        return json({ ok: false, error: 'ยังไม่ได้เปลี่ยน TOKEN — แก้บรรทัด var TOKEN ในสคริปต์เป็นรหัสของคุณเองก่อน แล้ว Deploy ใหม่' });
+      // ใช้บัตรผ่านของแอดมิน หรือยูสเซอร์+รหัสแอดมิน ไม่ผูกกับ TOKEN อีกแล้ว
+      var dadmin = whoIs_(p);
+      if (!dadmin || !isAdminShifts_(dadmin.shiftText)) {
+        return json({ ok: false, error: 'ต้องเป็นแอดมินเท่านั้น' });
       }
-      if (norm_(p.t) !== TOKEN) return json({ ok: false, error: 'ต้องใส่ TOKEN ให้ถูกต้อง' });
       var book = userBook_();
       var tab = book.getSheetByName(USER_SHEET);
       var head = tab ? tab.getRange(1, 1, 1, 4).getValues()[0].map(norm_) : [];

@@ -901,8 +901,9 @@
               <input class="input" value="{{ sheetUrl }}" onInput="{{ onSheetUrl }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:36px;"></div>
             <div class="field" style="margin:0;"><label>Web app URL จาก Apps Script (ลงท้าย /exec)</label>
               <input class="input" value="{{ endpoint }}" onInput="{{ onEndpoint }}" placeholder="https://script.google.com/macros/s/AKfy.../exec" style="height:36px;"></div>
-            <div class="field" style="margin:0;"><label>TOKEN (ต้องตรงกับที่ตั้งใน Apps Script)</label>
-              <input class="input" value="{{ syncToken }}" onInput="{{ onSyncToken }}" placeholder="CHANGE-ME-1234" style="height:36px;"></div>
+            <div style="font-size:12px; color:#605d5d; border-left:3px solid #5cb87f; padding-left:10px;">
+              ไม่ต้องตั้งรหัสอะไรเพิ่ม — ระบบใช้การล็อกอินแอดมินของคุณยืนยันตัวให้อัตโนมัติ
+            </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div class="field" style="margin:0;"><label>ชื่อแท็บ</label><input class="input" value="{{ sheetTab }}" onInput="{{ onSheetTab }}" style="height:36px;"></div>
               <div class="field" style="margin:0;"><label>ขอบเขตข้อมูล</label>
@@ -2419,7 +2420,8 @@ class Component extends DCLogic {
     });
     const warnRows = s.warnings.map(w => [w.date, w.id, w.name, w.position, w.level, w.month, w.absent, w.late, w.lateMin]);
     return {
-      token: s.syncToken,
+      // ยืนยันตัวด้วยบัตรผ่านของแอดมินที่ล็อกอินอยู่ ไม่ต้องตั้ง TOKEN แยกอีก
+      token: (this.session() && this.session().token) || s.syncToken,
       month: (m.dates[0] || '').slice(0, 7),
       note: `ช่วง ${R.from} → ${R.to} · ${rows.length} คน`,
       tabs: {
