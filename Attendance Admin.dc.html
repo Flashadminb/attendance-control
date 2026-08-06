@@ -1238,7 +1238,7 @@ class Component extends DCLogic {
      จึงใช้เลขรุ่นนี้แทน: ขยับเลขแล้ว push ขึ้นเว็บ เครื่องไหนเปิดเว็บครั้งถัดไป
      จะเห็นว่าเลขไม่ตรงกับที่ตัวเองจำไว้ แล้วล้างข้อมูลตัวเองทิ้งอัตโนมัติ
      (มีผลกับทุกเครื่องทุกคน แต่ต้องรอให้เครื่องนั้นเปิดเว็บก่อน)          */
-  DATA_VERSION = '2026-08-06-shiftnames-2';
+  DATA_VERSION = '2026-08-06-freshstart-3';
   RESET_KEY = 'hcm-data-version';
   applyGlobalReset() {
     let seen = null;
@@ -1560,14 +1560,25 @@ class Component extends DCLogic {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-'));
     const ds = this.eng ? this.eng.listDatasets() : [];
     // หมายเหตุ: การล็อกอินและที่อยู่เซิร์ฟเวอร์ถูกกันไว้ ไม่ถูกลบไปด้วย
-    const msg = 'ลบข้อมูลทั้งหมดในเครื่องนี้?\n\n'
+    const msg = 'ลบข้อมูลทั้งหมด?\n\n'
+      + 'ในเครื่องนี้\n'
       + `• ข้อมูลรายเดือนที่เก็บไว้ ${ds.length} เดือน\n`
-      + '• คลังสถิติย้อนหลัง\n'
-      + '• ประวัติหนังสือเตือนที่ติ๊กว่าส่งแล้ว\n'
-      + '• กฎหนังสือเตือน และรหัสที่เพิ่มเอง\n'
-      + '• ตารางกะที่จำไว้ และการตั้งค่ากะ\n\n'
+      + '• คลังสถิติ · ประวัติหนังสือเตือน · กฎ · รหัสที่เพิ่มเอง · ตารางกะที่จำไว้\n\n'
+      + 'บน Google Sheet (ถ้าเชื่อมต่ออยู่)\n'
+      + '• ข้อมูลที่หน้างานดึงไปแสดง\n'
+      + '• ตาราง Matrix / Summary / Daily rate / Warning list\n'
+      + '• ชีตสำรองรายปีทั้งสองไฟล์\n\n'
       + 'กู้คืนไม่ได้ — ไฟล์ต้นฉบับใน HCM ไม่ได้รับผลกระทบ อัปใหม่ได้ตลอด';
     if (!window.confirm(msg)) return;
+
+    // ล้างฝั่งเซิร์ฟเวอร์ด้วย ไม่งั้นลบแต่ในเครื่อง เปิดหน้างานก็ยังเห็นข้อมูลเดิม
+    const s0 = this.session();
+    if (s0 && s0.token && this.syncUrl()) {
+      this.addLog('กำลังล้างข้อมูลบนชีต…');
+      this.callSync({ action: 'resetAll', token: s0.token })
+        .then(r => this.addLog(r && r.ok ? 'ล้างบนชีตแล้ว — ' + (r.wiped || []).join(' · ') : 'ล้างบนชีตไม่สำเร็จ: ' + ((r && r.error) || '')))
+        .catch(e => this.addLog('ล้างบนชีตไม่สำเร็จ: ' + e.message));
+    }
     // ไม่ลบการล็อกอินกับที่อยู่เซิร์ฟเวอร์ ผู้ใช้จะได้ไม่ต้องล็อกอินใหม่หลังกดล้าง
     const KEEP = ['hcm-session-v1', 'hcm-sync-endpoint-v1', this.RESET_KEY];
     keys.filter(k => KEEP.indexOf(k) < 0).forEach(k => localStorage.removeItem(k));

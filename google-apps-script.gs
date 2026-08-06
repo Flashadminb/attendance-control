@@ -196,6 +196,38 @@ function doPost(e) {
       return json({ ok: false, error: 'ต้องล็อกอินเป็นแอดมินก่อนจึงจะส่งข้อมูลขึ้นชีตได้', needLogin: true });
     }
 
+    /* ── ล้างข้อมูลฝั่งเซิร์ฟเวอร์ทั้งหมด ────────────────────────────────
+       ข้อมูลกระจายอยู่หลายที่ (แท็บ _data, ตารางที่คนอ่านได้, ชีตสำรองรายปี)
+       ถ้าไม่มีคำสั่งเดียวจบ แอดมินต้องไล่ลบเองทีละที่แล้วลืมบางที่เสมอ      */
+    if (body.action === 'resetAll') {
+      var wiped = [];
+      // 1) ข้อมูลดิบที่หน้างานดึงไปแสดง
+      var dsh = dataSheet_(ss);
+      listMonths_(ss).forEach(function (x) { deleteKey_(dsh, 'ds:' + x.month); });
+      deleteKey_(dsh, 'index');
+      wiped.push('ข้อมูลที่หน้างานดึงไปแสดง');
+      // 2) ตารางที่คนเปิดอ่านได้ในชีตนี้
+      ['Matrix', 'Summary by position', 'Daily rate', 'Warning list', 'Sync log'].forEach(function (n) {
+        var t = ss.getSheetByName(n);
+        if (t) { t.clear(); wiped.push(n); }
+      });
+      // 3) ชีตสำรองรายปีทั้งสองไฟล์ — ลบทุกแท็บที่ชื่อเป็นตัวเลขปี
+      ['sch', 'att'].forEach(function (kind) {
+        var id = sheetIdOf_(cfgGet_(CFG_KEYS[kind]));
+        if (!id) return;
+        try {
+          var bk = SpreadsheetApp.openById(id);
+          bk.getSheets().forEach(function (t) {
+            if (/^\d{4}$/.test(t.getName())) {
+              if (bk.getSheets().length > 1) bk.deleteSheet(t); else t.clear();
+              wiped.push(bk.getName() + ' แท็บ ' + t.getName());
+            }
+          });
+        } catch (e2) { wiped.push('ชีตสำรอง ' + kind + ' ลบไม่สำเร็จ: ' + String(e2)); }
+      });
+      return json({ ok: true, wiped: wiped });
+    }
+
     // ตั้งค่าชีตสำรอง — แอดมินวาง URL ในหน้าเว็บ เก็บไว้ฝั่ง Google ไม่อยู่ในโค้ด
     if (body.action === 'setBackup') {
       if (body.sch !== undefined) cfgSet_(CFG_KEYS.sch, sheetIdOf_(body.sch));
