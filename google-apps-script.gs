@@ -200,15 +200,18 @@ function doPost(e) {
        ข้อมูลกระจายอยู่หลายที่ (แท็บ _data, ตารางที่คนอ่านได้, ชีตสำรองรายปี)
        ถ้าไม่มีคำสั่งเดียวจบ แอดมินต้องไล่ลบเองทีละที่แล้วลืมบางที่เสมอ      */
     if (body.action === 'resetAll') {
+      // หยิบชีตปัจจุบันตรงนี้เอง เพราะตัวแปร ss ถูกประกาศไว้ท้ายฟังก์ชัน
+      // ถ้าอ้างก่อนจะได้ค่าว่างแล้วพังทั้งคำสั่ง
+      var rss = SpreadsheetApp.getActiveSpreadsheet();
       var wiped = [];
       // 1) ข้อมูลดิบที่หน้างานดึงไปแสดง
-      var dsh = dataSheet_(ss);
-      listMonths_(ss).forEach(function (x) { deleteKey_(dsh, 'ds:' + x.month); });
+      var dsh = dataSheet_(rss);
+      listMonths_(rss).forEach(function (x) { deleteKey_(dsh, 'ds:' + x.month); });
       deleteKey_(dsh, 'index');
       wiped.push('ข้อมูลที่หน้างานดึงไปแสดง');
       // 2) ตารางที่คนเปิดอ่านได้ในชีตนี้
       ['Matrix', 'Summary by position', 'Daily rate', 'Warning list', 'Sync log'].forEach(function (n) {
-        var t = ss.getSheetByName(n);
+        var t = rss.getSheetByName(n);
         if (t) { t.clear(); wiped.push(n); }
       });
       // 3) ชีตสำรองรายปีทั้งสองไฟล์ — ลบทุกแท็บที่ชื่อเป็นตัวเลขปี
