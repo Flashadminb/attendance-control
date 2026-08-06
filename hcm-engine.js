@@ -450,11 +450,11 @@ export function download(name, content, type) {
    และ 18:00 ว่า "กะดึก" เหมือนกันหมด ทำให้แยกกันไม่ออก
    แก้ชื่อหรือเวลาได้ที่หน้า 09 ตั้งค่ากฎสี → หัวข้อกะทำงาน                */
 export const DEFAULT_SHIFT_GROUPS = [
-  { key: 'dawn', name: 'กะเช้ามืด', start: '03:00', end: '12:00' },
-  { key: 'morning', name: 'กะเช้า', start: '09:00', end: '18:00' },
-  { key: 'afternoon', name: 'กะบ่าย', start: '12:00', end: '21:00' },
-  { key: 'evening', name: 'กะเย็น', start: '15:00', end: '00:00' },
-  { key: 'night', name: 'กะดึก', start: '18:00', end: '03:00' },
+  { key: 'g0300', name: '03:00-12:00', start: '03:00', end: '12:00' },
+  { key: 'g0900', name: '09:00-18:00', start: '09:00', end: '18:00' },
+  { key: 'g1200', name: '12:00-21:00', start: '12:00', end: '21:00' },
+  { key: 'g1500', name: '15:00-00:00', start: '15:00', end: '00:00' },
+  { key: 'g1800', name: '18:00-03:00', start: '18:00', end: '03:00' },
 ];
 
 /* ── shift buckets ───────────────────────────────────────────────────────
