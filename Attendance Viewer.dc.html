@@ -837,7 +837,7 @@ class Component extends DCLogic {
   /* ── สั่งล้างข้อมูลทุกเครื่องจากส่วนกลาง ───────────────────────────────
      ต้องใช้เลขรุ่นเดียวกับฝั่งแอดมิน เครื่องหน้างานจะได้ล้างพร้อมกัน
      เก็บ endpoint ส่วนกลางไว้ ไม่ต้องให้หน้างานมาวาง URL ใหม่ทุกครั้งที่สั่งล้าง */
-  DATA_VERSION = '2026-08-05-reset-1';
+  DATA_VERSION = '2026-08-06-golive-1';
   RESET_KEY = 'hcm-data-version';
   applyGlobalReset() {
     let seen = null;
@@ -1099,12 +1099,16 @@ class Component extends DCLogic {
     if (this.state.detail === 'time') return c.in != null ? this.eng.fmtMin(c.in) : c.code;
     return c.code;
   }
+  /* ใช้ชื่อกะที่ตั้งไว้ ไม่ใช้ชื่อที่ติดมากับไฟล์ เพราะไฟล์เรียกหลายช่วงเวลา
+     ว่า "กะดึก" เหมือนกันหมด ถ้าใช้ชื่อจากไฟล์จะถูกยุบรวมเป็นกะเดียว */
   shiftOf(c) {
     const raw = (c && c.shift) || '';
-    if (!raw) return { name: 'ไม่ได้ตั้งกะ', time: '—', key: 'ไม่ได้ตั้งกะ' };
+    if (!raw) return { name: 'ไม่ได้ตั้งกะ', time: '—', key: 'none' };
+    const key = this.bucket(raw);
+    const g = (this.state.shiftGroups || []).find(x => x.key === key);
+    if (g) return { name: g.name, time: `${g.start}-${g.end}`, key: g.key };
     const m = raw.match(/(\d{1,2}[:.]\d{2})\s*[-–]\s*(\d{1,2}[:.]\d{2})/);
-    const name = (m ? raw.replace(m[0], '') : raw).trim() || 'กะ';
-    return { name, time: m ? m[0] : '—', key: name + (m ? ' ' + m[0] : '') };
+    return { name: (m ? raw.replace(m[0], '') : raw).trim() || 'กะอื่น', time: m ? m[0] : '—', key: 'other' };
   }
   tagStyle(color) {
     const bg = CMAP[color] || GRY2;

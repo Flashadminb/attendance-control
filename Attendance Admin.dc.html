@@ -1203,7 +1203,7 @@ class Component extends DCLogic {
      จึงใช้เลขรุ่นนี้แทน: ขยับเลขแล้ว push ขึ้นเว็บ เครื่องไหนเปิดเว็บครั้งถัดไป
      จะเห็นว่าเลขไม่ตรงกับที่ตัวเองจำไว้ แล้วล้างข้อมูลตัวเองทิ้งอัตโนมัติ
      (มีผลกับทุกเครื่องทุกคน แต่ต้องรอให้เครื่องนั้นเปิดเว็บก่อน)          */
-  DATA_VERSION = '2026-08-05-reset-1';
+  DATA_VERSION = '2026-08-06-golive-1';
   RESET_KEY = 'hcm-data-version';
   applyGlobalReset() {
     let seen = null;
@@ -1613,12 +1613,17 @@ class Component extends DCLogic {
     if (this.state.detail === 'time') return c.in != null ? this.eng.fmtMin(c.in) : c.code;
     return c.code;
   }
+  /* จัดกะจากเวลาเข้างาน แล้วใช้ชื่อกะที่ตั้งไว้เป็นตัวแสดงผล
+     ไม่ใช้ชื่อที่ติดมากับไฟล์ เพราะไฟล์เรียก 03:00, 15:00 และ 18:00
+     ว่า "กะดึก" เหมือนกันหมด ถ้าใช้ชื่อจากไฟล์จะถูกยุบรวมเป็นกะเดียว */
   shiftOf(c) {
     const raw = (c && c.shift) || '';
-    if (!raw) return { name: 'ไม่ได้ตั้งกะ', time: '—', key: 'ไม่ได้ตั้งกะ' };
+    if (!raw) return { name: 'ไม่ได้ตั้งกะ', time: '—', key: 'none' };
+    const key = this.bucket(raw);
+    const g = (this.state.shiftGroups || []).find(x => x.key === key);
+    if (g) return { name: g.name, time: `${g.start}-${g.end}`, key: g.key };
     const m = raw.match(/(\d{1,2}[:.]\d{2})\s*[-–]\s*(\d{1,2}[:.]\d{2})/);
-    const name = (m ? raw.replace(m[0], '') : raw).trim() || 'กะ';
-    return { name, time: m ? m[0] : '—', key: name + (m ? ' ' + m[0] : '') };
+    return { name: (m ? raw.replace(m[0], '') : raw).trim() || 'กะอื่น', time: m ? m[0] : '—', key: 'other' };
   }
   tagStyle(color) {
     const bg = CMAP[color] || GRY2;

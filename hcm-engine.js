@@ -445,16 +445,26 @@ export function download(name, content, type) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-/* ── shift buckets ───────────────────────────────────────────────────────── */
-export const BUCKETS = [['morning', 'กะเช้า'], ['afternoon', 'กะบ่าย'], ['night', 'กะดึก'], ['none', 'ไม่ได้ตั้งกะ']];
+/* ── กะทำงานของสาขา ─────────────────────────────────────────────────────
+   ตั้งชื่อแยกตามเวลาเข้างาน เพราะไฟล์ตารางกะจาก HCM เรียกทั้ง 03:00, 15:00
+   และ 18:00 ว่า "กะดึก" เหมือนกันหมด ทำให้แยกกันไม่ออก
+   แก้ชื่อหรือเวลาได้ที่หน้า 09 ตั้งค่ากฎสี → หัวข้อกะทำงาน                */
+export const DEFAULT_SHIFT_GROUPS = [
+  { key: 'dawn', name: 'กะเช้ามืด', start: '03:00', end: '12:00' },
+  { key: 'morning', name: 'กะเช้า', start: '09:00', end: '18:00' },
+  { key: 'afternoon', name: 'กะบ่าย', start: '12:00', end: '21:00' },
+  { key: 'evening', name: 'กะเย็น', start: '15:00', end: '00:00' },
+  { key: 'night', name: 'กะดึก', start: '18:00', end: '03:00' },
+];
+
+/* ── shift buckets ───────────────────────────────────────────────────────
+   เดิมแบ่งกะแบบตายตัวเป็นเช้า/บ่าย/ดึกด้วยช่วงชั่วโมงกว้าง ๆ ทำให้กะ 03:00
+   กับ 18:00 ตกไปอยู่ถังเดียวกัน ตอนนี้ใช้กะจริงที่ตั้งไว้เป็นตัวตัดสินแทน
+   คลังสถิติจะได้แยกกะตรงกับที่เห็นในแดชบอร์ด                              */
+export const BUCKETS = [...DEFAULT_SHIFT_GROUPS.map(g => [g.key, g.name]),
+  ['other', 'กะอื่น'], ['none', 'ไม่ได้ตั้งกะ']];
 export function shiftBucket(raw) {
-  if (!raw) return 'none';
-  const m = String(raw).match(/(\d{1,2})[:.](\d{2})/);
-  if (!m) return 'none';
-  const h = +m[1];
-  if (h >= 4 && h < 12) return 'morning';
-  if (h >= 12 && h < 18) return 'afternoon';
-  return 'night';
+  return bucketWith(raw, DEFAULT_SHIFT_GROUPS);
 }
 
 /* ── monthly snapshot for the archive ────────────────────────────────────── */
@@ -737,11 +747,6 @@ export function matchWarnRules(stat, rules) {
 }
 
 /* ── configurable shift groups (admin can rename / add) ─────────────────── */
-export const DEFAULT_SHIFT_GROUPS = [
-  { key: 'morning', name: 'กะเช้า', start: '09:00', end: '18:00' },
-  { key: 'afternoon', name: 'กะบ่าย', start: '13:00', end: '22:00' },
-  { key: 'night', name: 'กะดึก', start: '21:00', end: '06:00' },
-];
 const hourOf = (t) => { const m = String(t || '').match(/(\d{1,2})[:.](\d{2})/); return m ? +m[1] + (+m[2]) / 60 : null; };
 export function normalizeGroups(groups) {
   return (groups || []).map(g => g.start != null ? g

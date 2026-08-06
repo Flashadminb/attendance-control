@@ -174,6 +174,11 @@ function doPost(e) {
 
     // คำสั่งจัดการผู้ใช้ ยืนยันด้วยบัตรผ่านหรือรหัสของแอดมิน
     if (body.action === 'addUser' || body.action === 'delUser') return manageUsers_(body);
+    // การเขียนข้อมูลลงชีตต้องใช้ TOKEN — ถ้ายังเป็นค่าเริ่มต้นถือว่าไม่ปลอดภัย
+    // เพราะค่านั้นเปิดเผยอยู่ในโค้ดสาธารณะ ใครก็ส่งข้อมูลปลอมเข้ามาได้
+    if (TOKEN === 'CHANGE-ME-1234') {
+      return json({ ok: false, error: 'ยังไม่ได้เปลี่ยน TOKEN — แก้บรรทัด var TOKEN ในสคริปต์เป็นรหัสของคุณเองก่อน แล้ว Deploy ใหม่' });
+    }
     if (body.token !== TOKEN) return json({ ok: false, error: 'token ไม่ถูกต้อง' });
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var written = [];
@@ -241,6 +246,11 @@ function doGet(e) {
        มีอยู่ไหม โดยไม่เปิดเผยรหัสผ่าน ต้องใส่ TOKEN ถึงจะเรียกได้
        เรียกแบบ: ...exec?action=diag&t=TOKEN ของคุณ&user=ยูสเซอร์ที่จะเช็ค    */
     if (action === 'diag') {
+      // ปิดตัวเองถ้ายังไม่ได้เปลี่ยน TOKEN เพราะค่าเริ่มต้นเปิดเผยอยู่ในโค้ดสาธารณะ
+      // ใครก็เรียกดูรายชื่อยูสเซอร์ได้ ต้องตั้ง TOKEN ของตัวเองก่อน
+      if (TOKEN === 'CHANGE-ME-1234') {
+        return json({ ok: false, error: 'ยังไม่ได้เปลี่ยน TOKEN — แก้บรรทัด var TOKEN ในสคริปต์เป็นรหัสของคุณเองก่อน แล้ว Deploy ใหม่' });
+      }
       if (norm_(p.t) !== TOKEN) return json({ ok: false, error: 'ต้องใส่ TOKEN ให้ถูกต้อง' });
       var book = userBook_();
       var tab = book.getSheetByName(USER_SHEET);
