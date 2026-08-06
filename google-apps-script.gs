@@ -468,19 +468,36 @@ function yearTab_(ss, year) {
 /* รวมข้อมูลใหม่เข้ากับของเดิมในแท็บปีนั้น
    rows = [{ id, name, position, days: { '2026-08-01': 'รหัส', ... } }]
    เขียนทับเฉพาะวันที่ส่งมา วันอื่นในแท็บยังอยู่ครบ                        */
+/* Google Sheets แปลงข้อความอย่าง 2026-08-01 ให้กลายเป็นเซลล์ชนิดวันที่เอง
+   พออ่านกลับมาจึงได้ Date ไม่ใช่ข้อความเดิม ถ้าไม่แปลงกลับ ระบบจะนึกว่าเป็น
+   วันใหม่แล้วสร้างคอลัมน์ซ้ำเพิ่มทุกครั้งที่อัป จนคอลัมน์บานปลาย            */
+function dateKey_(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  var s = norm_(v);
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[0];
+  var d = new Date(s);                       // เผื่อเคยถูกบันทึกเป็นข้อความวันที่แบบยาว
+  if (s && !isNaN(d.getTime())) {
+    return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return s;
+}
+
 function mergeYear_(sh, rows) {
   var old = sh.getDataRange().getValues();
   var byId = {}, dates = {};
   if (old.length > 1) {
     var head = old[0];
-    for (var c = 3; c < head.length; c++) { var d = norm_(head[c]); if (d) dates[d] = true; }
+    for (var c = 3; c < head.length; c++) { var d = dateKey_(head[c]); if (d) dates[d] = true; }
     for (var r = 1; r < old.length; r++) {
       var id = norm_(old[r][0]);
       if (!id) continue;
       var rec = { id: id, name: norm_(old[r][1]), position: norm_(old[r][2]), days: {} };
       for (var c2 = 3; c2 < head.length; c2++) {
-        var dd = norm_(head[c2]), vv = norm_(old[r][c2]);
-        if (dd && vv) rec.days[dd] = vv;
+        var dd = dateKey_(head[c2]), vv = norm_(old[r][c2]);
+        if (dd && vv) rec.days[dd] = vv;     // วันเดียวกันเขียนทับกัน ไม่แตกคอลัมน์
       }
       byId[id] = rec;
     }
@@ -508,6 +525,9 @@ function mergeYear_(sh, rows) {
   });
 
   sh.clear();
+  // บังคับให้แถวหัวเป็นข้อความล้วน ไม่งั้น Sheets จะแปลง 2026-08-01 เป็นชนิดวันที่
+  // แล้วรอบหน้าอ่านกลับมาไม่ตรง จนเกิดคอลัมน์ซ้ำ
+  sh.getRange(1, 1, 1, header.length).setNumberFormat('@');
   sh.getRange(1, 1, out.length, header.length).setValues(out);
   sh.getRange(1, 1, 1, header.length).setFontWeight('bold')
     .setBackground('#201e1d').setFontColor('#ffffff');
