@@ -1403,7 +1403,10 @@ class Component extends DCLogic {
     V.archRows = [...scope].reverse().map(a => ({
       month: a.month, employees: a.employees, days: a.days, onTime: a.total.onTime + '%', attRate: (a.total.attRate ?? 0) + '%',
       absent: a.total.absent.toLocaleString(), late: a.total.late.toLocaleString(), early: a.total.early.toLocaleString(), inc: a.total.inc.toLocaleString(),
-      shifts: `${a.byShift.morning.onTime} / ${a.byShift.afternoon.onTime} / ${a.byShift.night.onTime}`,
+      // อ่าน key ที่มีจริงในแต่ละเดือน เดือนเก่าเก็บชุดกะแบบก่อนไว้
+      shifts: Object.keys(a.byShift || {})
+        .filter(k => k !== 'none' && k !== 'other' && a.byShift[k])
+        .map(k => a.byShift[k].onTime).join(' / ') || '—',
       source: a.source === 'demo' ? 'ตัวอย่าง' : a.source === 'upload' ? 'HCM' : a.source,
       rateStyle: this.tagStyle(a.total.onTime < 88 ? 'red' : a.total.onTime < 93 ? 'yellow' : 'ok'),
       rowStyle: `cursor:pointer; background:${s.archOpen === a.month ? '#ffe0d9' : 'transparent'};`,
@@ -1425,7 +1428,9 @@ class Component extends DCLogic {
     V.exportArchive = () => this.eng.download(`attendance-archive-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(s.archive, null, 1), 'application/json');
     V.exportArchiveCSV = () => this.eng.download('attendance-monthly-history.csv', this.eng.toCSV(
       ['เดือน', 'พนักงาน', 'วัน', 'วันทำงานรวม', 'ตรงเวลา%', 'ขาด', 'สาย', 'นาทีสาย', 'ออกก่อน', 'แสกนไม่ครบ', 'ลา', 'กะเช้า%', 'กะบ่าย%', 'กะดึก%', 'ที่มา'],
-      s.archive.map(a => [a.month, a.employees, a.days, a.total.slots, a.total.onTime, a.total.absent, a.total.late, a.total.lateMin, a.total.early, a.total.inc, a.total.leave, a.byShift.morning.onTime, a.byShift.afternoon.onTime, a.byShift.night.onTime, a.source])), 'text/csv;charset=utf-8');
+      s.archive.map(a => [a.month, a.employees, a.days, a.total.slots, a.total.onTime, a.total.absent, a.total.late, a.total.lateMin, a.total.early, a.total.inc, a.total.leave,
+        Object.keys(a.byShift || {}).filter(k => k !== 'none' && k !== 'other' && a.byShift[k])
+          .map(k => k + ' ' + a.byShift[k].onTime + '%').join(' · '), a.source])), 'text/csv;charset=utf-8');
 
     if (!m || !E) return V;
 
