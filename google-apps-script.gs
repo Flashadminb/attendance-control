@@ -259,6 +259,7 @@ function doPost(e) {
       var dsh = dataSheet_(rss);
       listMonths_(rss).forEach(function (x) { deleteKey_(dsh, 'ds:' + x.month); });
       deleteKey_(dsh, 'index');
+      dropSnapshot_(rss);            // ของสำรองไว้กดย้อนก็ต้องหายไปด้วย
       wiped.push('ข้อมูลที่หน้างานดึงไปแสดง');
       // 2) ตารางที่คนเปิดอ่านได้ในชีตนี้
       ['Matrix', 'Summary by position', 'Daily rate', 'Warning list', 'Sync log'].forEach(function (n) {
@@ -285,6 +286,66 @@ function doPost(e) {
         } catch (e2) { wiped.push('ชีตสำรอง ' + kind + ' ลบไม่สำเร็จ: ' + String(e2)); }
       });
       return json({ ok: true, wiped: wiped });
+    }
+
+    /* ── ย้อนการอัปรอบล่าสุด ────────────────────────────────────────────
+       ถอนวันที่ของรอบที่เพิ่งอัปออกจากชีตสำรองก่อน แล้วค่อยเอาของเดิมคืน
+       ถ้าเดือนนั้นเดิมยังไม่มีอะไรเลย ก็ลบทิ้งให้ว่างเหมือนก่อนอัป
+       ตารางที่คนอ่านได้ (Matrix ฯลฯ) หน้าเว็บจะเขียนทับให้เองหลังได้ของคืน */
+    if (body.action === 'undoSync') {
+      var uss = SpreadsheetApp.getActiveSpreadsheet();
+      var snap = readSnapshot_(uss);
+      if (!snap || !snap.month) return json({ ok: false, error: 'ไม่มีรอบอัปที่ย้อนกลับได้' });
+      var usheet = dataSheet_(uss);
+      var undone = [];
+      var uyear = String(snap.month).slice(0, 4);
+      ['att', 'sch'].forEach(function (kind) {
+        try {
+          var r = dropDatesFromBackup_(kind, uyear, snap.dates || []);
+          if (r) undone.push('ถอน ' + r.ถอนวันที่ + ' วันออกจาก ' + r.ไฟล์);
+        } catch (e3) { undone.push('ชีตสำรอง ' + kind + ' ถอนไม่สำเร็จ: ' + String(e3)); }
+      });
+      var back = null;
+      if (snap.had) {
+        var prevRaw = readKey_(usheet, 'snapds');
+        if (!prevRaw) return json({ ok: false, error: 'ของเดิมหายไปจากชีต ย้อนกลับไม่ได้' });
+        writeKey_(usheet, 'ds:' + snap.month, prevRaw);
+        back = JSON.parse(prevRaw);
+        undone.push('คืนข้อมูลเดือน ' + snap.month + ' เป็นชุดก่อนหน้า');
+      } else {
+        var res0 = dropMonth_(uss, snap.month);
+        undone = undone.concat(res0.done);
+      }
+      dropSnapshot_(uss);
+      return json({ ok: true, month: snap.month, undone: undone,
+        dataset: back ? filterDataset_(back, publicUser_(sender)) : null,
+        months: listMonths_(uss) });
+    }
+
+    /* ── ลบข้อมูลทั้งเดือนออกจากชีต ─────────────────────────────────────
+       แก้ของเก่าด้วยมือในแท็บ Matrix ไม่มีผล เพราะหน้าเว็บอ่านจากแท็บ _data
+       จึงต้องมีคำสั่งลบให้ครบทุกที่ในครั้งเดียว                            */
+    if (body.action === 'deleteMonth') {
+      if (!body.month) return json({ ok: false, error: 'ไม่ได้บอกว่าจะลบเดือนไหน' });
+      var mss = SpreadsheetApp.getActiveSpreadsheet();
+      var res1 = dropMonth_(mss, body.month);
+      var msnap = readSnapshot_(mss);
+      if (msnap && msnap.month === body.month) dropSnapshot_(mss);   // ย้อนไปหาของที่ลบแล้วไม่ได้
+      return json({ ok: true, month: body.month, done: res1.done, months: res1.months });
+    }
+
+    /* ── จำตารางกะไว้บนชีต ──────────────────────────────────────────────
+       เดิมจำไว้ในเครื่องที่อัป พออัปจากอีกเครื่องก็ต้องหาไฟล์ตารางกะมาอัปใหม่
+       เก็บไว้ตรงกลางแล้วเครื่องไหนอัปไฟล์เวลาทำงานก็หยิบไปใช้ได้เหมือนกัน   */
+    if (body.action === 'setSchedule') {
+      var sss = SpreadsheetApp.getActiveSpreadsheet();
+      if (body.table && body.table.length) {
+        writeKey_(dataSheet_(sss), 'schtab', JSON.stringify({
+          name: norm_(body.name), rows: body.table, at: new Date().toISOString() }));
+        return json({ ok: true, saved: body.table.length });
+      }
+      deleteKey_(dataSheet_(sss), 'schtab');       // ส่งมาว่าง = สั่งลืมตารางกะ
+      return json({ ok: true, saved: 0 });
     }
 
     // ตั้งค่าชีตสำรอง — แอดมินวาง URL ในหน้าเว็บ เก็บไว้ฝั่ง Google ไม่อยู่ในโค้ด
@@ -327,8 +388,9 @@ function doPost(e) {
       written.push(name + ' (' + norm.length + ' แถว)');
     });
 
-    // 2) เก็บข้อมูลดิบไว้ให้หน้างานดึง
+    // 2) เก็บข้อมูลดิบไว้ให้หน้างานดึง — เก็บของเดิมไว้ก่อนหนึ่งชุดเผื่อกดย้อน
     if (body.dataset && body.month) {
+      keepSnapshot_(ss, body.month, body.dataset);
       saveDataset_(ss, body.month, body.dataset);
       written.push('dataset ' + body.month);
     }
@@ -352,7 +414,11 @@ function doPost(e) {
     if (log.getLastRow() === 0) log.appendRow(['เวลา', 'รอบข้อมูล', 'สิ่งที่เขียน', 'หมายเหตุ']);
     log.appendRow([new Date(), body.month || body.period || '', written.join(', '), body.note || '']);
 
-    return json({ ok: true, written: written, months: listMonths_(ss) });
+    /* ส่งข้อมูลที่เพิ่งเก็บลงชีตกลับไปด้วยเลย หน้าเว็บจะได้แสดงของบนชีตจริง
+       ไม่ใช่ของที่ตัวเองเพิ่งคำนวณ — ถ้าเขียนไม่ครบจะเห็นทันทีตั้งแต่ตอนอัป  */
+    var justSaved = body.month ? filterDataset_(readDataset_(ss, body.month), publicUser_(sender)) : null;
+    return json({ ok: true, written: written, months: listMonths_(ss),
+      month: body.month || '', dataset: justSaved });
   } catch (err) {
     return json({ ok: false, error: String(err) });
   }
@@ -439,9 +505,20 @@ function doGet(e) {
     if (action === 'bootstrap') {
       var months = listMonths_(ss);
       var pick = p.month || (months.length ? months[months.length - 1].month : '');
+      var snapb = pub.isAdmin ? readSnapshot_(ss) : null;
       return json({ ok: true, me: pub, months: months, month: pick,
         meta: readMeta_(ss),
+        // บอกว่ามีรอบอัปให้ย้อนกลับไหม แอดมินจะได้เห็นปุ่มย้อนจากเครื่องไหนก็ได้
+        undo: snapb ? { month: snapb.month, at: snapb.at, had: !!snapb.had } : null,
         dataset: pick ? filterDataset_(readDataset_(ss, pick), pub) : null });
+    }
+
+    /* ตารางกะที่จำไว้ — ดึงตอนจะอัปไฟล์เท่านั้น ไม่พ่วงไปกับ bootstrap
+       เพราะเป็นตารางใหญ่ ถ้าส่งทุกครั้งที่เปิดหน้าจะทำให้เข้าเว็บช้าโดยเปล่าประโยชน์ */
+    if (action === 'schedule') {
+      if (!pub.isAdmin) return json({ ok: false, error: 'ต้องเป็นแอดมินเท่านั้น' });
+      var srow = readKey_(dataSheet_(ss), 'schtab');
+      return json({ ok: true, schedule: srow ? JSON.parse(srow) : null });
     }
 
     if (action === 'months') return json({ ok: true, months: listMonths_(ss), me: pub });
@@ -522,6 +599,31 @@ function writeKey_(sh, key, text) {
   for (var i = 0; i * CHUNK < text.length; i++) rows.push([key, i, text.substr(i * CHUNK, CHUNK)]);
   if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
 }
+/* ── เก็บของเดิมไว้หนึ่งชุดก่อนเขียนทับ ────────────────────────────────
+   เผื่ออัปผิดไฟล์หรือผิดเดือน จะได้กดย้อนกลับได้จากเครื่องไหนก็ได้
+   เก็บแค่รอบล่าสุดรอบเดียว รอบเก่ากว่านั้นให้ลบข้อมูลทั้งเดือนทิ้งแทน     */
+function keepSnapshot_(ss, month, newDataset) {
+  var sh = dataSheet_(ss);
+  var prev = readKey_(sh, 'ds:' + month);
+  writeKey_(sh, 'snap', JSON.stringify({
+    month: month,
+    had: !!prev,
+    // วันที่ของรอบที่กำลังจะเขียน ใช้ตอนย้อนกลับเพื่อรู้ว่าต้องถอนวันไหนออก
+    dates: (newDataset && newDataset.dates) || [],
+    at: new Date().toISOString(),
+  }));
+  if (prev) writeKey_(sh, 'snapds', prev); else deleteKey_(sh, 'snapds');
+}
+function readSnapshot_(ss) {
+  var raw = readKey_(dataSheet_(ss), 'snap');
+  return raw ? JSON.parse(raw) : null;
+}
+function dropSnapshot_(ss) {
+  var sh = dataSheet_(ss);
+  deleteKey_(sh, 'snap');
+  deleteKey_(sh, 'snapds');
+}
+
 function saveDataset_(ss, month, dataset) {
   var sh = dataSheet_(ss);
   writeKey_(sh, 'ds:' + month, JSON.stringify(dataset));
@@ -663,6 +765,67 @@ function saveBackup_(kind, year, rows) {
   var ss = SpreadsheetApp.openById(id);
   var res = mergeYear_(yearTab_(ss, year), rows);
   return { ไฟล์: ss.getName(), แท็บ: String(year), ผล: res };
+}
+
+/* ถอนวันที่ทั้งชุดออกจากแท็บปีในชีตสำรอง — ใช้ตอนย้อนการอัปหรือลบทั้งเดือน
+   ลบทั้งคอลัมน์ของวันนั้น คนที่ไม่เหลือข้อมูลวันไหนเลยก็ตัดแถวออกด้วย     */
+function dropDatesFromBackup_(kind, year, dates) {
+  var id = sheetIdOf_(cfgGet_(CFG_KEYS[kind]));
+  if (!id || !dates || !dates.length) return null;
+  var ss = SpreadsheetApp.openById(id);
+  var sh = ss.getSheetByName(String(year));
+  if (!sh) return null;
+  var old = sh.getDataRange().getValues();
+  if (old.length < 2) return null;
+
+  var kill = {};
+  dates.forEach(function (d) { var k = dateKey_(d); if (k) kill[k] = true; });
+  var head = old[0];
+  var keep = [0, 1, 2];                       // รหัส / ชื่อ / ตำแหน่ง เก็บไว้เสมอ
+  for (var c = 3; c < head.length; c++) {
+    if (!kill[dateKey_(head[c])]) keep.push(c);
+  }
+  var out = [];
+  for (var r = 0; r < old.length; r++) {
+    var line = keep.map(function (c) { return old[r][c]; });
+    // แถวหัวตารางเก็บไว้เสมอ ส่วนแถวคนต้องเหลือข้อมูลอย่างน้อยหนึ่งวัน
+    if (r === 0 || line.slice(3).some(function (v) { return norm_(v); })) out.push(line);
+  }
+  sh.clear();
+  sh.getRange(1, 1, 1, keep.length).setNumberFormat('@');
+  sh.getRange(1, 1, out.length, keep.length).setValues(out);
+  sh.getRange(1, 1, 1, keep.length).setFontWeight('bold')
+    .setBackground('#201e1d').setFontColor('#ffffff');
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(3);
+  return { ไฟล์: ss.getName(), แท็บ: String(year),
+    ถอนวันที่: head.length - keep.length, เหลือแถว: out.length - 1 };
+}
+
+/* ลบข้อมูลทั้งเดือนออกจากทุกที่ที่เก็บไว้ */
+function dropMonth_(ss, month) {
+  var sh = dataSheet_(ss);
+  var ds = readDataset_(ss, month);
+  var dates = (ds && ds.dates) || [];
+  deleteKey_(sh, 'ds:' + month);
+  var idx = JSON.parse(readKey_(sh, 'index') || '[]').filter(function (x) { return x.month !== month; });
+  writeKey_(sh, 'index', JSON.stringify(idx));
+  var done = ['ข้อมูลเดือน ' + month];
+  var year = String(month).slice(0, 4);
+  ['att', 'sch'].forEach(function (kind) {
+    try {
+      var r = dropDatesFromBackup_(kind, year, dates);
+      if (r) done.push('ชีตสำรอง ' + r.ไฟล์ + ' แท็บ ' + r.แท็บ + ' (ถอน ' + r.ถอนวันที่ + ' วัน)');
+    } catch (e) { done.push('ชีตสำรอง ' + kind + ' ถอนไม่สำเร็จ: ' + String(e)); }
+  });
+  // ไม่เหลือเดือนไหนเลย = ล้างตารางที่คนอ่านได้ด้วย ไม่งั้นจะค้างของเดือนที่ลบไปแล้ว
+  if (!idx.length) {
+    ['Matrix', 'Summary by position', 'Daily rate', 'Warning list'].forEach(function (n) {
+      var t = ss.getSheetByName(n);
+      if (t) { t.clear(); done.push('ล้าง ' + n); }
+    });
+  }
+  return { done: done, months: idx };
 }
 
 function json(obj) {

@@ -110,23 +110,76 @@
         </label>
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <button type="button" class="btn btn-secondary" onClick="{{ loadDemo }}" style="height:36px;">โหลดข้อมูลตัวอย่าง</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ clearAll }}" style="height:36px;">ล้างไฟล์ที่เพิ่งอัป</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ wipeAll }}" style="height:36px; color:#ae1800;">ลบข้อมูลทั้งหมดในเครื่อง</button>
-        <span style="font-size:12px; color:#605d5d;">ไฟล์ถูกประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดออกนอกเครื่อง</span>
-      </div>
-      <div style="font-size:11px; color:#7d7979; margin-top:-10px;">{{ storageInfo }}</div>
+      <!-- ══ จังหวะที่ 2 · ตรวจก่อนเขียน ══ -->
+      <sc-if value="{{ hasPending }}" hint-placeholder-val="{{ true }}">
+        <div style="border:2px solid #201e1d; background:#eae9e9;">
+          <div style="padding:12px 16px; background:#201e1d; color:#f3f2f2; font-family:Archivo; font-weight:800; font-size:14px;">
+            ตรวจก่อนเขียนลงชีต — ยังไม่มีอะไรถูกแก้
+          </div>
+          <div style="padding:16px; display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex; flex-wrap:wrap; gap:22px; font-size:13px;">
+              <div><div style="font-size:11px; color:#7d7979;">ไฟล์</div><strong>{{ pend.fileName }}</strong></div>
+              <div><div style="font-size:11px; color:#7d7979;">รอบข้อมูล</div><strong style="font-family:Archivo;">{{ pend.month }}</strong></div>
+              <div><div style="font-size:11px; color:#7d7979;">ช่วงวันที่</div><strong style="font-family:Archivo;">{{ pend.from }} → {{ pend.to }}</strong></div>
+              <div><div style="font-size:11px; color:#7d7979;">พนักงานในไฟล์</div><strong style="font-family:Archivo;">{{ pend.people }} คน</strong></div>
+              <div><div style="font-size:11px; color:#7d7979;">บนชีตตอนนี้</div><strong style="font-family:Archivo;">{{ pend.onSheet }} คน</strong></div>
+            </div>
+
+            <sc-if value="{{ pend.hasAdded }}" hint-placeholder-val="{{ true }}">
+              <div style="border-left:4px solid #ec3013; padding:8px 12px; background:#fff2ef; font-size:12px;">
+                <strong>คนที่ไม่เคยอยู่บนชีต {{ pend.addedCount }} คน</strong><br>
+                <span style="color:#605d5d;">{{ pend.addedText }}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ pend.hasRemoved }}" hint-placeholder-val="{{ true }}">
+              <div style="border-left:4px solid #7d7979; padding:8px 12px; background:#f3f2f2; font-size:12px;">
+                <strong>คนที่ไม่มีในไฟล์นี้ {{ pend.removedCount }} คน — จะถูกตัดออกจากชีต</strong><br>
+                <span style="color:#605d5d;">{{ pend.removedText }}</span>
+              </div>
+            </sc-if>
+            <sc-for list="{{ pendFlags }}" as="f" hint-placeholder-count="2">
+              <div style="{{ f.style }}">{{ f.text }}</div>
+            </sc-for>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary" onClick="{{ confirmWrite }}" style="height:38px;">ยืนยัน เขียนลงชีต</button>
+              <button type="button" class="btn btn-ghost" onClick="{{ cancelPending }}" style="height:38px;">ยกเลิก</button>
+              <span style="font-size:12px; color:#605d5d;">กดยืนยันแล้วข้อมูลบนชีตจะถูกเขียนทับ และทุกคนจะเห็นชุดนี้</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isWriting }}" hint-placeholder-val="{{ true }}">
+        <div style="border:2px solid #201e1d; background:#eae9e9; padding:12px 16px; font-size:13px;">
+          กำลังทำงานกับชีต… อย่าปิดหน้านี้
+        </div>
+      </sc-if>
+      <sc-if value="{{ hasPendMsg }}" hint-placeholder-val="{{ true }}">
+        <div style="border:2px solid #ec3013; background:#fff2ef; padding:12px 16px; font-size:13px;">{{ pendMsg }}</div>
+      </sc-if>
 
       <sc-if value="{{ hasUndo }}" hint-placeholder-val="{{ true }}">
         <div style="border:2px solid #ec3013; background:#fff2ef; padding:12px 14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
           <div style="flex:1; min-width:220px; font-size:12px;">
-            <strong>อัปผิดไฟล์?</strong> ย้อนข้อมูลกลับเป็นชุดก่อนหน้าได้<br>
+            <strong>อัปผิดไฟล์?</strong> ย้อนข้อมูลบนชีตกลับเป็นชุดก่อนหน้าได้<br>
             <span style="color:#605d5d;">{{ undoText }}</span>
           </div>
-          <button type="button" class="btn btn-secondary" onClick="{{ undoUpload }}" style="height:34px; flex:none;">ยกเลิกการอัปล่าสุด</button>
+          <button type="button" class="btn btn-secondary" onClick="{{ undoUpload }}" style="height:34px; flex:none;">ย้อนการอัปล่าสุด</button>
         </div>
       </sc-if>
+
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <a class="btn btn-secondary" href="{{ sheetUrl }}" target="_blank" rel="noopener"
+           style="height:36px; display:inline-flex; align-items:center; text-decoration:none;">เปิดชีต</a>
+        <sc-if value="{{ hasMonth }}" hint-placeholder-val="{{ true }}">
+          <button type="button" class="btn btn-ghost" onClick="{{ deleteMonth }}" style="height:36px; color:#ae1800;">ลบข้อมูลเดือน {{ curMonth }} ออกจากชีต</button>
+        </sc-if>
+        <button type="button" class="btn btn-ghost" onClick="{{ wipeAll }}" style="height:36px; color:#ae1800;">ลบข้อมูลทั้งหมด</button>
+      </div>
+      <div style="font-size:11px; color:#7d7979; margin-top:-10px;">
+        แก้แถวในแท็บ Matrix ด้วยมือไม่มีผลกับหน้าเว็บ — หน้าเว็บอ่านจากแท็บ _data ถ้าจะแก้ให้อัปไฟล์เดือนนั้นทับ หรือกดลบทั้งเดือน
+      </div>
 
       <hr class="hr">
       <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:24px;">
@@ -900,57 +953,6 @@
         <p class="card-body" style="margin:6px 0 12px; max-width:660px;">สรุปสถิติตามตำแหน่งงานพร้อมรายชื่อที่ถึงเกณฑ์เตือน จัดหน้าให้พิมพ์ได้ทันที (เลือกปลายทางเป็น Save as PDF ในหน้าต่างพิมพ์)</p>
         <button type="button" class="btn btn-secondary" onClick="{{ printReport }}" style="height:36px;">เปิดหน้าพิมพ์</button>
       </div>
-
-      <hr class="hr">
-
-      <section>
-        <h4 style="margin:0 0 4px;">Sync เข้า Google Sheet ใหม่</h4>
-        <p style="max-width:760px; color:#605d5d;">ข้อมูลทั้งหมดมาจากไฟล์ที่อัปโหลดในหน้าแรกเท่านั้น — การ sync คือ "เขียนผลที่ประมวลผลแล้ว" ลงชีตปลายทางให้พนักงานและหัวหน้าสาขาเปิดดูเองได้ ไม่ดึงข้อมูลกลับ และไม่แตะไฟล์ต้นทางของ HCM</p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); border:2px solid rgba(32,30,29,.4); margin-bottom:18px;">
-          <sc-for list="{{ syncTabs }}" as="t" hint-placeholder-count="4">
-            <div style="padding:12px 14px; border-right:1px solid #d7d3d3;">
-              <div style="font-family:Archivo; font-weight:800; font-size:12px;">{{ t.tab }}</div>
-              <div style="font-size:11px; color:#605d5d; margin-top:4px;">{{ t.desc }}</div>
-            </div>
-          </sc-for>
-        </div>
-        <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:24px; align-items:start;">
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            <div class="field" style="margin:0;"><label>ลิงก์ Google Sheet ปลายทาง</label>
-              <input class="input" value="{{ sheetUrl }}" onInput="{{ onSheetUrl }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:36px;"></div>
-            <div class="field" style="margin:0;"><label>Web app URL จาก Apps Script (ลงท้าย /exec)</label>
-              <input class="input" value="{{ endpoint }}" onInput="{{ onEndpoint }}" placeholder="https://script.google.com/macros/s/AKfy.../exec" style="height:36px;"></div>
-            <div style="font-size:12px; color:#605d5d; border-left:3px solid #5cb87f; padding-left:10px;">
-              ไม่ต้องตั้งรหัสอะไรเพิ่ม — ระบบใช้การล็อกอินแอดมินของคุณยืนยันตัวให้อัตโนมัติ
-            </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-              <div class="field" style="margin:0;"><label>ชื่อแท็บ</label><input class="input" value="{{ sheetTab }}" onInput="{{ onSheetTab }}" style="height:36px;"></div>
-              <div class="field" style="margin:0;"><label>ขอบเขตข้อมูล</label>
-                <select class="input" onChange="{{ onSyncScope }}" value="{{ syncScope }}" style="height:36px;">
-                  <option value="filtered">เดือนที่เปิดอยู่ ตามตัวกรอง</option><option value="all">เดือนที่เปิดอยู่ ทั้งหมด</option>
-                  <option value="range">ตามช่วงวันที่เลือกด้านบน</option><option value="every">ทุกเดือนที่เก็บไว้ในเครื่อง</option>
-                  <option value="summary">เฉพาะสรุปรายตำแหน่ง</option>
-                </select></div>
-            </div>
-            <label style="display:flex; gap:8px; align-items:center; font-size:13px;">
-              <input type="checkbox" checked="{{ syncDaily }}" onChange="{{ onSyncDaily }}"> sync อัตโนมัติทุกวันเวลา 07:30 หลังไฟล์ HCM เข้า
-            </label>
-            <div style="display:flex; gap:8px;">
-              <button type="button" class="btn btn-primary" onClick="{{ runSync }}" style="height:36px;">{{ syncBtn }}</button>
-              <button type="button" class="btn btn-ghost" onClick="{{ copyTSV }}" style="height:36px;">คัดลอกข้อมูลไว้วางเอง</button>
-            </div>
-          </div>
-          <div style="border:2px solid rgba(32,30,29,.4); background:#eae9e9; min-height:170px;">
-            <div style="padding:8px 12px; border-bottom:2px solid rgba(32,30,29,.4); font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-family:Archivo; font-weight:800;">Sync log</div>
-            <sc-for list="{{ syncLog }}" as="l" hint-placeholder-count="3">
-              <div style="padding:6px 12px; border-bottom:1px solid #d7d3d3; font-size:12px; display:flex; gap:10px; font-family:Archivo;">
-                <span style="color:#7d7979;">{{ l.t }}</span><span style="{{ l.style }}">{{ l.m }}</span>
-              </div>
-            </sc-for>
-          </div>
-        </div>
-      </section>
     </div>
     </sc-if>
 
@@ -1060,8 +1062,10 @@
           </div>
         </div>
         <div>
-          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ชีตสำรองหลังบ้าน</h4>
+          <h4 style="margin:0 0 10px; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">ชีตหลังบ้าน</h4>
           <p style="font-size:12px; color:#605d5d; margin:0 0 10px;">วาง URL ครั้งเดียว ระบบจำไว้ฝั่ง Google · ทุกครั้งที่อัปไฟล์ ระบบจะเขียนข้อมูลแบบย่อลงให้เอง แยกแท็บตามปี ขึ้นปีใหม่สร้างแท็บใหม่อัตโนมัติ</p>
+          <div class="field" style="margin:0 0 10px;"><label>ชีตหลัก — ที่เว็บอ่านข้อมูลไปแสดง (ใช้กับปุ่ม "เปิดชีต")</label>
+            <input class="input" value="{{ sheetUrl }}" onInput="{{ onSheetUrl }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:34px; font-size:12px;"></div>
           <div class="field" style="margin:0 0 10px;"><label>ชีตสำรอง — ตารางกะ</label>
             <input class="input" value="{{ bkSch }}" onInput="{{ onBkSch }}" placeholder="https://docs.google.com/spreadsheets/d/..." style="height:34px; font-size:12px;"></div>
           <div class="field" style="margin:0 0 10px;"><label>ชีตสำรอง — Attendance</label>
@@ -1230,6 +1234,8 @@ class Component extends DCLogic {
     screen: 'dash', eng: null, model: null, src: 'none', log: [], columns: [],
     me: null, cloudState: 'idle', cloudMsg: '',
     attName: '', schName: '', dragA: false, dragB: false, schRemembered: false, undoInfo: null,
+    // pending = ไฟล์ที่แกะแล้วรอยืนยัน ยังไม่ได้เขียนอะไรลงชีต
+    pending: null, pendMsg: '', writing: false,
     dashTab: 'all', exPreset: 'ทั้งเดือน', archive: [], archYear: 'ทั้งหมด', archOpen: null,
     datasets: [], curMonth: '', exFrom: '', exTo: '',
     warnings: [], warnRules: [], customCodes: [], users: [], usersMsg: '', nuName: '', nuUser: '', nuPass: '', nuShift: '', warnSearch: '', warnSort: 'count', nearGap: 1, hShift: 'all', winMode: 'month', winDays: 30, shiftGroups: [], shiftEditOpen: false,
@@ -1241,7 +1247,7 @@ class Component extends DCLogic {
     // ไม่เคยเขียนว่า "วันหยุด" กฎนี้จึงยิงธงแดงมั่วทุกวันหยุดจริง เปิดได้ถ้าไฟล์กะแยกวันหยุด
     grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
     detail: 'code', warnAbsent: 3, warnLate: 5, newHoliday: '',
-    sheetUrl: ''  /* วาง URL ชีตของคุณในหน้า Export & Sync ครั้งเดียว แล้วระบบจำให้ */, sheetTab: 'Matrix', syncScope: 'filtered', syncDaily: true,
+    sheetUrl: ''  /* วาง URL ชีตหลักในหน้าตั้งค่ากฎสีครั้งเดียว แล้วระบบจำให้ */,
     syncState: 'idle', syncLog: [], endpoint: '', syncToken: '', bkSch: '', bkAtt: '', bkMsg: '',
   };
 
@@ -1275,41 +1281,23 @@ class Component extends DCLogic {
     if (wiped) setTimeout(() => this.addLog(`ล้างข้อมูลเก่าออก ${wiped} รายการ ตามคำสั่งล้างจากส่วนกลาง — เริ่มนับหนึ่งใหม่`), 0);
     this.setState({ eng: true, grace: this.props.grace ?? 5, earlyGrace: this.props.earlyGrace ?? 5,
       warnAbsent: this.props.warnAbsent ?? 3, warnLate: this.props.warnLate ?? 5, detail: this.props.cellDetail ?? 'code' },
-      () => {
-        /* คนที่อัปโหลดได้ → ใช้ข้อมูลที่ประมวลผลไว้ในเครื่องตัวเอง
-           คนที่อัปไม่ได้    → ดึงจากชีตอย่างเดียว เซิร์ฟเวอร์กรองกะให้แล้ว     */
-        if (!this.canUpload()) { this.refreshCloud(); return; }
-        const idx = this.eng.listDatasets();
-        /* เครื่องนี้ยังไม่เคยอัปไฟล์เอง แต่คนคนเดียวกันอาจอัปไว้จากอีกเครื่องแล้ว
-           ข้อมูลที่ประมวลผลแล้วเก็บอยู่ในเครื่องที่อัป ไม่ได้ตามคนไปทุกเครื่อง
-           จึงต้องไปเอาของที่ส่งขึ้นชีตไว้มาแสดงแทน ไม่ใช่ขึ้นว่ายังไม่มีข้อมูล */
-        if (!idx.length) { this.addLog('เครื่องนี้ยังไม่มีข้อมูลในตัว — กำลังดึงของที่อัปไว้จากชีต'); this.refreshCloud(); return; }
-        const last = idx[idx.length - 1].month;
-        const m = this.eng.loadDataset(last);
-        if (!m) return;
-        this.setState({ model: m, curMonth: last, src: m.source || 'stored',
-          dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null });
-        this.addLog(`เปิดข้อมูลเดือน ${last} ที่เก็บไว้ (${m.employees.length} คน)`);
-      });
+      // ทุกคนดูข้อมูลจากชีตเหมือนกันหมด ไม่มีใครดูของที่เก็บไว้ในเครื่องตัวเองอีก
+      () => this.refreshCloud());
     /* ตามข้อมูลใหม่ให้เองทุก 2 นาที แอดมินอัปเสร็จปุ๊บทุกคนเห็นโดยไม่ต้องรีเฟรช
-       เว้นเครื่องที่เพิ่งอัปไฟล์เอง เพราะของในเครื่องใหม่กว่าบนชีตอยู่แล้ว
-       และหยุดดึงตอนสลับไปแท็บอื่น จะได้ไม่ยิงหาเซิร์ฟเวอร์ทิ้ง ๆ ขว้าง ๆ    */
+       หยุดดึงตอนสลับไปแท็บอื่น หรือระหว่างที่กำลังเขียนลงชีตอยู่             */
     this._poll = setInterval(() => {
-      if (document.hidden) return;
-      if (this.state.src === 'upload') return;
+      if (document.hidden || this.state.writing) return;
       this.refreshCloud();
     }, 2 * 60 * 1000);
     // กลับมาที่แท็บนี้เมื่อไหร่ เช็คให้รอบหนึ่งทันที ไม่ต้องรอครบรอบ
-    this._vis = () => { if (!document.hidden && this.state.src !== 'upload') this.refreshCloud(); };
+    this._vis = () => { if (!document.hidden && !this.state.writing) this.refreshCloud(); };
     document.addEventListener('visibilitychange', this._vis);
     this.loadArchive();
     this.loadSchedule();
-    this.setState({ datasets: this.eng.listDatasets() });
     this.loadWarnings();
     this.loadWarnRules();
     this.loadCustomCodes();
     this.loadBackupCfg();
-    this.loadUndo();
     this.loadThresholds();
     this.loadShiftGroups();
     try {
@@ -1517,8 +1505,15 @@ class Component extends DCLogic {
         + (this.state.curMonth ? '&month=' + encodeURIComponent(this.state.curMonth) : '');
       const out = await (await fetch(q)).json();
       if (!out.ok) { this.setState({ cloudState: 'err', cloudMsg: out.error || 'โหลดไม่สำเร็จ' }); return; }
+      // รอบอัปที่ย้อนกลับได้เก็บไว้ฝั่งชีต แอดมินจึงกดย้อนจากเครื่องไหนก็ได้
+      this.setState({ undoInfo: out.undo
+        ? { month: out.undo.month, at: new Date(out.undo.at).toLocaleString('th-TH'), had: !!out.undo.had }
+        : null });
       if (!out.months || !out.months.length) {
-        this.setState({ cloudState: 'err', cloudMsg: 'ยังไม่มีข้อมูลบนชีต', datasets: [] }); return;
+        this.setState({ cloudState: 'ok', cloudMsg: 'ยังไม่มีข้อมูลบนชีต',
+          datasets: [], model: null, curMonth: '', src: 'none' });
+        this._cloudSig = null;
+        return;
       }
       const t = out.meta;
       if (t) this.setState({
@@ -1621,24 +1616,22 @@ class Component extends DCLogic {
     this.setState({ model, src, columns: model.columns.slice(0, 16), dayKey: model.dates[model.dates.length - 1] || '',
       selId: model.employees[0] ? model.employees[0].id : null,
       unknownList: this.eng.unknownPhrases(att, this.state.customCodes) });
+    // คลังสถิติย้อนหลังยังเก็บในเครื่อง เป็นแค่ตัวเลขสรุปไม่กี่บรรทัด ไม่ใช่ข้อมูลรายคน
     setTimeout(() => {
       const sn = this.saveSnapshot(model, src);
       if (sn) this.addLog(`บันทึกสถิติเดือน ${sn.month} เข้าคลังแล้ว`);
-      try {
-        const mo = this.eng.saveDataset(model, { source: src });
-        if (mo) { this.setState({ datasets: this.eng.listDatasets(), curMonth: mo }); this.addLog(`เก็บข้อมูลเดือน ${mo} ไว้ในเครื่องแล้ว — เดือนก่อนหน้ายังอยู่ครบ`); }
-      } catch (e) { this.addLog('เก็บข้อมูลเดือนนี้ไม่สำเร็จ (พื้นที่เต็ม) — ลบเดือนเก่าออกก่อน'); }
     }, 0);
     return model;
   }
-  openMonth = (month) => {
+  /* เปลี่ยนเดือน = ไปเอาจากชีต ไม่ได้เก็บข้อมูลเดือนไหนไว้ในเครื่องแล้ว */
+  openMonth = async (month) => {
     if (!month || month === this.state.curMonth) return;
-    const m = this.eng.loadDataset(month);
-    if (!m) { this.addLog('ไม่พบข้อมูลเดือน ' + month); return; }
+    this.addLog(`กำลังเปิดข้อมูลเดือน ${month} จากชีต…`);
+    const ds = await this.fetchDataset(month);
+    if (!ds) { this.addLog('ไม่พบข้อมูลเดือน ' + month + ' บนชีต'); return; }
     this.att = null; this.sch = null;
-    this.setState({ model: m, curMonth: month, src: m.source || 'stored', dayKey: m.dates[m.dates.length - 1] || '',
-      selId: m.employees[0] ? m.employees[0].id : null, dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0 });
-    this.addLog(`เปิดข้อมูลเดือน ${month} (${m.employees.length} คน)`);
+    this.showCloud(ds, month);
+    this.addLog(`เปิดข้อมูลเดือน ${month} (${(ds.employees || []).length} คน)`);
   };
   reprocess() {
     if (!this.att) return;
@@ -1646,29 +1639,18 @@ class Component extends DCLogic {
     this.setState({ model: m, unknownList: this.eng.unknownPhrases(this.att, this.state.customCodes) });
   }
 
-  loadDemo = () => {
-    const { att, sch } = this.eng.demoData(this.props.demoSize ?? 640);
-    const m = this.rebuild(att, sch, 'demo');
-    this.addLog(`โหลดข้อมูลตัวอย่าง ${m.employees.length} คน × ${m.dates.length} วัน`);
-  };
-  /* ล้างเฉพาะไฟล์ที่เพิ่งอัป — ของที่เก็บไว้ในเครื่องยังอยู่ครบ */
-  clearAll = () => { this.att = null; this.sch = null; this.setState({ model: null, attName: '', schName: '', src: 'none', log: [] }); };
-
-  /* ── ลบข้อมูลทุกอย่างที่แอปเก็บไว้ในเครื่องนี้ ─────────────────────────
-     ใช้ตอนอยากเริ่มใหม่หมด กู้คืนไม่ได้ จึงถามยืนยันก่อนเสมอ
-     (ข้อมูลเก็บแยกตามเบราว์เซอร์และแยกตามลิงก์ ลบเครื่องนี้ไม่กระทบเครื่องอื่น) */
+  /* ── ลบข้อมูลทั้งหมด ทั้งบนชีตและในเครื่อง ─────────────────────────────
+     ใช้ตอนอยากเริ่มใหม่หมด กู้คืนไม่ได้ จึงถามยืนยันก่อนเสมอ               */
   wipeAll = () => {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('hcm-'));
-    const ds = this.eng ? this.eng.listDatasets() : [];
-    // หมายเหตุ: การล็อกอินและที่อยู่เซิร์ฟเวอร์ถูกกันไว้ ไม่ถูกลบไปด้วย
     const msg = 'ลบข้อมูลทั้งหมด?\n\n'
-      + 'ในเครื่องนี้\n'
-      + `• ข้อมูลรายเดือนที่เก็บไว้ ${ds.length} เดือน\n`
-      + '• คลังสถิติ · ประวัติหนังสือเตือน · กฎ · รหัสที่เพิ่มเอง · ตารางกะที่จำไว้\n\n'
-      + 'บน Google Sheet (ถ้าเชื่อมต่ออยู่)\n'
-      + '• ข้อมูลที่หน้างานดึงไปแสดง\n'
+      + 'บนชีต\n'
+      + '• ข้อมูลทุกเดือนที่ทุกคนเห็นบนเว็บ\n'
       + '• ตาราง Matrix / Summary / Daily rate / Warning list\n'
-      + '• ชีตสำรองรายปีทั้งสองไฟล์\n\n'
+      + '• ชีตสำรองรายปีทั้งสองไฟล์\n'
+      + '• ตารางกะที่จำไว้\n\n'
+      + 'ในเครื่องนี้\n'
+      + '• คลังสถิติ · ประวัติหนังสือเตือน · กฎ · รหัสที่เพิ่มเอง\n\n'
       + 'กู้คืนไม่ได้ — ไฟล์ต้นฉบับใน HCM ไม่ได้รับผลกระทบ อัปใหม่ได้ตลอด';
     if (!window.confirm(msg)) return;
 
@@ -1679,132 +1661,247 @@ class Component extends DCLogic {
       this.callSync({ action: 'resetAll', token: s0.token })
         .then(r => this.addLog(r && r.ok ? 'ล้างบนชีตแล้ว — ' + (r.wiped || []).join(' · ') : 'ล้างบนชีตไม่สำเร็จ: ' + ((r && r.error) || '')))
         .catch(e => this.addLog('ล้างบนชีตไม่สำเร็จ: ' + e.message));
+      this.callSync({ action: 'setSchedule', token: s0.token, table: null }).catch(() => {});
     }
     // ไม่ลบการล็อกอินกับที่อยู่เซิร์ฟเวอร์ ผู้ใช้จะได้ไม่ต้องล็อกอินใหม่หลังกดล้าง
     const KEEP = ['hcm-session-v1', 'hcm-sync-endpoint-v1', this.RESET_KEY];
     keys.filter(k => KEEP.indexOf(k) < 0).forEach(k => localStorage.removeItem(k));
     this.att = null; this.sch = null; this.rememberedSch = null; this.schFromUpload = false;
+    this._pendingRows = null; this._cloudSig = null; this._lastFileKey = null;
     this.setState({
-      model: null, attName: '', schName: '', schRemembered: false, src: 'none',
-      datasets: [], archive: [], warnings: [], curMonth: '', unknownList: [], log: [],
+      model: null, attName: '', schName: '', schRemembered: false, src: 'none', pending: null,
+      datasets: [], archive: [], warnings: [], curMonth: '', unknownList: [], log: [], undoInfo: null,
       warnRules: this.eng.DEFAULT_WARN_RULES.map(x => ({ ...x })), customCodes: [], shiftGroups: [],
     }, () => this.addLog(`ลบข้อมูลในเครื่องแล้ว ${keys.length} รายการ — พร้อมเริ่มใหม่`));
   };
 
-  /* ── ตารางกะที่จำไว้ ───────────────────────────────────────────────────
-     แอดมินอัปไฟล์ attendance ทุกวัน แต่อัปตารางกะเฉพาะตอนมีพนักงานใหม่หรือเปลี่ยนกะ
-     จึงเก็บตารางกะล่าสุดไว้ แล้วหยิบมาใช้เองทุกครั้งที่อัปเฉพาะไฟล์ attendance   */
-  SCHED_KEY = 'hcm-schedule-v1';
-  loadSchedule() {
+  /* ── ตารางกะที่จำไว้ ────────────────────────────────────────────────────
+     เก็บไว้บนชีต ไม่ใช่ในเครื่อง อัปจากเครื่องไหนก็หยิบตารางกะเดิมมาใช้ได้
+     ดึงตอนเปิดหน้าอัปโหลดเท่านั้น เป็นตารางใหญ่ ไม่ควรพ่วงไปกับตอนเข้าเว็บ  */
+  async loadSchedule() {
+    if (!this.canUpload()) return;
+    const s = this.session();
+    const url = this.syncUrl();
+    if (!url || !s || !s.token) return;
     try {
-      const d = JSON.parse(localStorage.getItem(this.SCHED_KEY) || 'null');
-      if (!d || !Array.isArray(d.rows)) return;
-      this.rememberedSch = d.rows;
-      this.setState({ schName: `${d.name} · จำไว้จากที่อัปเมื่อ ${String(d.savedAt).slice(0, 10)}`, schRemembered: true });
+      const d = await (await fetch(url + '?action=schedule&token=' + encodeURIComponent(s.token))).json();
+      if (!d.ok || !d.schedule || !Array.isArray(d.schedule.rows)) return;
+      this.rememberedSch = d.schedule.rows;
+      this.setState({ schName: `${d.schedule.name || 'ตารางกะ'} · จำไว้บนชีตเมื่อ ${String(d.schedule.at).slice(0, 10)}`,
+        schRemembered: true });
     } catch (e) {}
   }
-  saveSchedule(rows, name) {
+  async saveSchedule(rows, name) {
+    const s = this.session();
     try {
-      localStorage.setItem(this.SCHED_KEY, JSON.stringify({ rows, name, savedAt: new Date().toISOString() }));
-      this.setState({ schRemembered: false });
-    } catch (e) { this.addLog('เก็บตารางกะไว้ใช้ครั้งหน้าไม่สำเร็จ (พื้นที่เต็ม)'); }
+      const d = await this.callSync({ action: 'setSchedule', token: s && s.token, table: rows, name });
+      if (d && d.ok) this.setState({ schRemembered: false });
+      else this.addLog('จำตารางกะบนชีตไม่สำเร็จ: ' + ((d && d.error) || ''));
+    } catch (e) { this.addLog('จำตารางกะบนชีตไม่สำเร็จ: ' + e.message); }
   }
-  forgetSchedule = (ev) => {
+  forgetSchedule = async (ev) => {
     // ปุ่มนี้อยู่ใน <label> ของ input file — ถ้าไม่กันไว้ การกดจะไปเปิดหน้าต่างเลือกไฟล์ด้วย
     if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-    localStorage.removeItem(this.SCHED_KEY);
+    const s = this.session();
     this.sch = null; this.rememberedSch = null; this.schFromUpload = false;
     this.setState({ schName: '', schRemembered: false });
+    try { await this.callSync({ action: 'setSchedule', token: s && s.token, table: null }); } catch (e) {}
     this.addLog('ลบตารางกะที่จำไว้แล้ว');
-    if (this.att) this.rebuild(this.att, null, 'upload');
   };
 
-  /* ── ยกเลิกการอัปล่าสุด ─────────────────────────────────────────────────
-     ก่อนเขียนทับข้อมูลเดือนไหน เก็บของเดิมไว้หนึ่งชุด กดยกเลิกแล้วได้คืน
-     เผื่ออัปผิดไฟล์หรือผิดเดือน                                            */
-  UNDO_KEY = 'hcm-undo-v1';
-  keepUndo(month) {
-    if (!month) return;
-    try {
-      const raw = localStorage.getItem('hcm-ds-v2:' + month);
-      localStorage.setItem(this.UNDO_KEY, JSON.stringify({
-        month, raw, at: new Date().toISOString(), had: !!raw,
-      }));
-      this.setState({ undoInfo: { month, at: new Date().toLocaleString('th-TH'), had: !!raw } });
-    } catch (e) {}
-  }
-  loadUndo() {
-    try {
-      const u = JSON.parse(localStorage.getItem(this.UNDO_KEY) || 'null');
-      if (u && u.month) this.setState({ undoInfo: { month: u.month, at: new Date(u.at).toLocaleString('th-TH'), had: u.had } });
-    } catch (e) {}
-  }
+  /* ── ย้อนการอัปล่าสุด ───────────────────────────────────────────────────
+     ของเดิมเก็บไว้ฝั่งชีต ไม่ใช่ในเครื่อง กดย้อนจากเครื่องไหนก็ได้
+     ย้อนได้แค่รอบล่าสุดรอบเดียว เก่ากว่านั้นใช้ "ลบข้อมูลเดือนนี้" แทน      */
   undoUpload = async () => {
-    let u = null;
-    try { u = JSON.parse(localStorage.getItem(this.UNDO_KEY) || 'null'); } catch (e) {}
+    const u = this.state.undoInfo;
     if (!u || !u.month) return;
     const msg = u.had
-      ? `ย้อนข้อมูลเดือน ${u.month} กลับเป็นชุดก่อนหน้า?\n\nข้อมูลที่เพิ่งอัปจะถูกแทนที่ด้วยของเดิม`
-      : `เดือน ${u.month} ก่อนหน้านี้ยังไม่มีข้อมูล\n\nยกเลิกแล้วเดือนนี้จะว่างเปล่า`;
+      ? `ย้อนข้อมูลเดือน ${u.month} บนชีตกลับเป็นชุดก่อนหน้า?\n\nข้อมูลที่เพิ่งอัปจะถูกแทนที่ด้วยของเดิม`
+      : `เดือน ${u.month} ก่อนหน้านี้ยังไม่มีข้อมูลบนชีต\n\nย้อนแล้วเดือนนี้จะถูกลบออกจากชีตทั้งเดือน`;
     if (!window.confirm(msg)) return;
+    const s = this.session();
+    this.setState({ writing: true });
+    this.addLog('กำลังย้อนข้อมูลบนชีต…');
     try {
-      if (u.had) localStorage.setItem('hcm-ds-v2:' + u.month, u.raw);
-      else this.eng.deleteDataset(u.month);
-      localStorage.removeItem(this.UNDO_KEY);
-      this.att = null; this.sch = null;
-      const m = u.had ? this.eng.loadDataset(u.month) : null;
-      this.setState({ model: m, curMonth: u.had ? u.month : '', attName: '', undoInfo: null,
-        datasets: this.eng.listDatasets(), src: m ? (m.source || 'stored') : 'none',
-        dayKey: m ? (m.dates[m.dates.length - 1] || '') : '',
-        selId: m && m.employees[0] ? m.employees[0].id : null });
-      this.addLog(`ย้อนข้อมูลเดือน ${u.month} กลับแล้ว`);
-      if (m) setTimeout(() => this.autoSync(), 0);   // ส่งของเดิมขึ้นชีตทับกลับด้วย
-    } catch (e) { this.addLog('ย้อนข้อมูลไม่สำเร็จ: ' + e.message); }
+      const d = await this.callSync({ action: 'undoSync', token: s && s.token });
+      if (!d.ok) { this.addLog('ย้อนไม่สำเร็จ: ' + (d.error || '')); this.setState({ writing: false }); return; }
+      (d.undone || []).forEach(x => this.addLog(x));
+      this.setState({ undoInfo: null, datasets: d.months || [] });
+      if (d.dataset) {
+        // ได้ของเดิมคืนมาแล้ว เขียนตาราง Matrix / สรุป / ชีตสำรอง ให้ตรงกับของเดิมด้วย
+        this.showCloud(d.dataset, u.month);
+        this.addLog('กำลังเขียนตารางบนชีตให้ตรงกับข้อมูลที่ย้อนกลับ…');
+        await this.pushToSheet({ silentUndo: true });
+      } else {
+        this.setState({ model: null, curMonth: '', src: 'none' });
+        this.addLog('ลบข้อมูลเดือน ' + u.month + ' ออกจากชีตแล้ว');
+      }
+    } catch (e) { this.addLog('ย้อนไม่สำเร็จ: ' + e.message); }
+    this.setState({ writing: false });
   };
 
+  /* ลบข้อมูลทั้งเดือนออกจากชีต — แก้แท็บ Matrix ด้วยมือไม่มีผลกับหน้าเว็บ
+     เพราะหน้าเว็บอ่านจากแท็บซ่อน _data จึงต้องลบผ่านปุ่มนี้เท่านั้น        */
+  deleteMonth = async () => {
+    const month = this.state.curMonth;
+    if (!month) return;
+    if (!window.confirm(`ลบข้อมูลเดือน ${month} ออกจากชีตทั้งหมด?\n\n`
+      + '• ข้อมูลที่ทุกคนเห็นบนเว็บ\n• วันของเดือนนี้ในชีตสำรอง\n\n'
+      + 'กู้คืนไม่ได้ — แต่อัปไฟล์เดือนนี้ใหม่ได้ตลอด')) return;
+    const s = this.session();
+    this.setState({ writing: true });
+    this.addLog(`กำลังลบข้อมูลเดือน ${month} ออกจากชีต…`);
+    try {
+      const d = await this.callSync({ action: 'deleteMonth', token: s && s.token, month });
+      if (!d.ok) { this.addLog('ลบไม่สำเร็จ: ' + (d.error || '')); this.setState({ writing: false }); return; }
+      (d.done || []).forEach(x => this.addLog(x));
+      this.setState({ writing: false, undoInfo: null, model: null, curMonth: '', src: 'none', datasets: d.months || [] });
+      this._cloudSig = null;
+      this.refreshCloud();
+    } catch (e) { this.addLog('ลบไม่สำเร็จ: ' + e.message); this.setState({ writing: false }); }
+  };
+
+  /* ── จังหวะที่ 1 · แกะไฟล์แล้วเทียบกับของบนชีต ยังไม่แตะชีต ───────────── */
   async ingest(file, which) {
+    this.setState({ pending: null, pendMsg: '' });
     try {
       this.addLog(`กำลังอ่าน ${file.name}…`);
       const rows = await this.eng.readSheet(file);
-
-      // ถามยืนยันก่อนเสมอ เผื่อหยิบไฟล์ผิดหรือผิดเดือน
       const t = this.eng.mapTable(rows);
-      const from = t.dates[0] || '-', to = t.dates[t.dates.length - 1] || '-';
-      const month = String(from).slice(0, 7);
-      const kind = which === 'att' ? 'ไฟล์เวลาทำงาน (Attendance)' : 'ไฟล์ตารางกะ (Schedule)';
-      const dup = which === 'att' && month && this.eng.listDatasets().some(x => x.month === month);
-      const ok = window.confirm(
-        `ยืนยันอัปโหลด ${kind}?\n\n`
-        + `ไฟล์: ${file.name}\n`
-        + `พนักงาน: ${t.records.length} คน\n`
-        + `ช่วงวันที่: ${from} → ${to}\n\n`
-        + (dup ? `มีข้อมูลเดือน ${month} อยู่แล้ว — จะถูกเขียนทับ\n(ยกเลิกย้อนกลับได้ที่ปุ่มด้านล่าง)`
-               : 'กด OK เพื่อประมวลผลและส่งขึ้นชีต'));
-      if (!ok) { this.addLog(`ยกเลิกการอัปโหลด ${file.name}`); return; }
-      if (which === 'att' && month) this.keepUndo(month);
-      if (which === 'att') {
-        this.att = rows;
-        // ถ้ายังไม่ได้อัปตารางกะในรอบนี้ ให้หยิบตารางกะที่จำไว้มาใช้
-        // (และทิ้งตารางกะของข้อมูลตัวอย่างที่ค้างอยู่จากตอนเปิดแอป)
-        if (!this.schFromUpload) this.sch = this.rememberedSch || null;
-        this.setState({ attName: `${file.name} · ${rows.length - 2} แถว` });
-      } else {
+
+      if (which === 'sch') {
+        // ตารางกะไม่ได้เขียนทับข้อมูลใคร จำไว้ได้เลย ไม่ต้องผ่านหน้าตรวจสอบ
         this.sch = rows;
         this.rememberedSch = rows;
         this.schFromUpload = true;
-        this.setState({ schName: `${file.name} · ${rows.length - 2} แถว`, schRemembered: false });
-        this.saveSchedule(rows, file.name);
-        this.addLog('เก็บตารางกะไว้แล้ว — ครั้งหน้าอัปแค่ไฟล์ attendance ก็พอ');
+        this.setState({ schName: `${file.name} · ${t.records.length} คน`, schRemembered: false });
+        await this.saveSchedule(rows, file.name);
+        this.addLog(`จำตารางกะไว้บนชีตแล้ว (${t.records.length} คน) — ครั้งหน้าอัปแค่ไฟล์ attendance ก็พอ`);
+        return;
       }
-      if (this.att) {
-        const m = this.rebuild(this.att, this.sch, 'upload');
-        this.addLog(`ประมวลผลแล้ว ${m.employees.length} คน × ${m.dates.length} วัน${this.sch ? (this.state.schRemembered ? ' (ใช้ตารางกะที่จำไว้)' : ' (จับคู่ตารางกะแล้ว)') : ' — ยังไม่มีไฟล์ตารางกะ'}`);
-        if (m.openDay) this.addLog(`ยังไม่นับ ${m.openDay} เพราะกะยังไม่จบ (ยังไม่มีใครสแกนออกครบสักคน) — จะเข้าสถิติเองตอนอัปรอบหน้า`);
-        // ล้างชื่อไฟล์ออกจากช่อง ให้พร้อมรับไฟล์ถัดไปทันที ไม่ค้างว่ายังเลือกอยู่
-        this.setState({ attName: '' });
-        setTimeout(() => this.autoSync(), 0);   // ส่งขึ้นชีตต่อทันที ไม่ต้องกดปุ่มเอง
+
+      if (!t.records.length || !t.dates.length) {
+        this.addLog(`${file.name} ไม่ใช่ไฟล์เวลาทำงาน — หาคอลัมน์วันที่หรือรายชื่อไม่เจอ`);
+        this.setState({ pendMsg: 'ไฟล์นี้ไม่ใช่ไฟล์เวลาทำงานจาก HCM — ไม่พบคอลัมน์วันที่หรือรายชื่อพนักงาน' });
+        return;
       }
+
+      const from = t.dates[0], to = t.dates[t.dates.length - 1];
+      const month = String(from).slice(0, 7);
+      this.addLog('กำลังเทียบกับข้อมูลที่อยู่บนชีต…');
+      const cur = await this.fetchDataset(month);         // null = เดือนนี้ยังว่างอยู่บนชีต
+
+      const curIds = new Set((cur && cur.employees || []).map(e => String(e.id)));
+      const newIds = new Set(t.records.map(r => String(r.id)));
+      const nameOf = new Map(t.records.map(r => [String(r.id), r.name]));
+      (cur && cur.employees || []).forEach(e => { if (!nameOf.has(String(e.id))) nameOf.set(String(e.id), e.name); });
+      const added = [...newIds].filter(id => !curIds.has(id));
+      const removed = [...curIds].filter(id => !newIds.has(id));
+
+      // ธงเตือน — ข้อไหนขึ้นสีแดงต้องกดยืนยันซ้ำอีกชั้น
+      const flags = [];
+      const months = this.state.datasets || [];
+      const latest = months.length ? months[months.length - 1].month : '';
+      if (latest && month < latest) flags.push({ hard: false, text: `ไฟล์นี้เป็นเดือน ${month} ซึ่งเก่ากว่าเดือนล่าสุดบนชีต (${latest})` });
+      if (curIds.size && Math.abs(newIds.size - curIds.size) / curIds.size > 0.2) {
+        flags.push({ hard: true, text: `จำนวนคนต่างจากบนชีตมาก — บนชีต ${curIds.size} คน ไฟล์นี้ ${newIds.size} คน` });
+      }
+      if (added.length && curIds.size) {
+        flags.push({ hard: added.length > 5, text: `มีคนที่ไม่เคยอยู่บนชีต ${added.length} คน — ถ้าไม่ใช่พนักงานเราแปลว่าหยิบไฟล์ผิด` });
+      }
+      if (this._lastFileKey === `${file.name}|${file.size}`) {
+        flags.push({ hard: false, text: 'ไฟล์นี้เพิ่งอัปไปเมื่อครู่ (ชื่อและขนาดเดียวกัน)' });
+      }
+
+      this.setState({
+        attName: `${file.name} · ${t.records.length} คน`,
+        pending: {
+          fileName: file.name, fileKey: `${file.name}|${file.size}`,
+          month, from, to, people: t.records.length, days: t.dates.length,
+          onSheet: cur ? (cur.employees || []).length : 0,
+          addedText: added.slice(0, 8).map(id => `${id} ${nameOf.get(id) || ''}`.trim()).join(' · ')
+            + (added.length > 8 ? ` และอีก ${added.length - 8} คน` : ''),
+          removedText: removed.slice(0, 8).map(id => `${id} ${nameOf.get(id) || ''}`.trim()).join(' · ')
+            + (removed.length > 8 ? ` และอีก ${removed.length - 8} คน` : ''),
+          addedCount: added.length, removedCount: removed.length,
+          // ชีตยังว่าง = ทุกคนเป็นคนใหม่อยู่แล้ว ไม่ต้องขึ้นเตือนให้ตกใจเปล่า ๆ
+          hasAdded: !!added.length && !!curIds.size, hasRemoved: !!removed.length,
+          flags, hard: flags.some(f => f.hard), hasFlags: !!flags.length,
+        },
+      });
+      this._pendingRows = rows;
+      this.addLog(`ตรวจแล้ว — ${t.records.length} คน × ${t.dates.length} วัน (${from} → ${to}) รอยืนยันก่อนเขียนลงชีต`);
     } catch (e) { this.addLog('อ่านไฟล์ไม่สำเร็จ: ' + e.message); }
+  }
+
+  cancelPending = () => {
+    this._pendingRows = null;
+    this.setState({ pending: null, attName: '', pendMsg: '' });
+    this.addLog('ยกเลิกแล้ว ไม่ได้เขียนอะไรลงชีต');
+  };
+
+  /* ── จังหวะที่ 2 · ยืนยันแล้วค่อยเขียนลงชีต ────────────────────────────── */
+  confirmWrite = async () => {
+    const p = this.state.pending;
+    if (!p || !this._pendingRows) return;
+    if (p.hard && !window.confirm('ระบบเตือนว่าไฟล์นี้อาจผิด\n\n'
+      + p.flags.filter(f => f.hard).map(f => '• ' + f.text).join('\n')
+      + '\n\nยืนยันเขียนลงชีตจริงหรือไม่?')) return;
+
+    this.setState({ writing: true, pending: null });
+    this._lastFileKey = p.fileKey;
+    try {
+      if (!this.schFromUpload) this.sch = this.rememberedSch || null;
+      const m = this.rebuild(this._pendingRows, this.sch, 'upload');
+      this.addLog(`ประมวลผลแล้ว ${m.employees.length} คน × ${m.dates.length} วัน`
+        + (this.sch ? ' (จับคู่ตารางกะแล้ว)' : ' — ยังไม่มีตารางกะ'));
+      if (m.openDay) this.addLog(`ยังไม่นับ ${m.openDay} เพราะกะยังไม่จบ — จะเข้าสถิติเองตอนอัปรอบหน้า`);
+      await this.pushToSheet({});
+    } catch (e) { this.addLog('เขียนลงชีตไม่สำเร็จ: ' + e.message); }
+    this._pendingRows = null;
+    this.setState({ writing: false, attName: '' });
+  };
+
+  /* เขียนลงชีตแล้วเอาของที่ชีตตอบกลับมาแสดง ไม่ใช้ของที่เพิ่งคำนวณในเครื่อง
+     เขียนไม่ครบเมื่อไหร่จะเห็นทันทีตั้งแต่ตอนอัป ไม่ใช่ไปรู้ทีหลัง          */
+  async pushToSheet(opt) {
+    const url = this.syncUrl();
+    if (!url || !this.state.model) return;
+    if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(url)) {
+      this.addLog('ยังไม่ได้ตั้งค่าที่อยู่ชีต — เขียนไม่ได้'); return;
+    }
+    this.addLog('กำลังเขียนลงชีต…');
+    try {
+      const out = await this.callSync(this.syncPayload());
+      if (!out.ok) { this.addLog('เขียนลงชีตไม่สำเร็จ: ' + (out.error || 'ไม่ทราบสาเหตุ')); return; }
+      this.addLog('เขียนลงชีตแล้ว — ' + ((out.written || []).join(' · ') || 'สำเร็จ'));
+      this.setState({ datasets: out.months || this.state.datasets });
+      if (out.dataset) this.showCloud(out.dataset, out.month);
+      if (!(opt && opt.silentUndo)) {
+        this.setState({ undoInfo: { month: out.month, at: new Date().toLocaleString('th-TH'), had: true } });
+      }
+      this.addLog('ทุกคนที่เปิดเว็บอยู่จะเห็นชุดนี้ภายในสองนาที');
+    } catch (err) { this.addLog('เขียนลงชีตไม่สำเร็จ: ' + err.message); }
+  }
+
+  /* เอาข้อมูลที่ได้จากชีตมาเป็นตัวหลักที่หน้าจอแสดง */
+  showCloud(ds, month) {
+    const m = this.eng.deserializeModel(ds);
+    this._cloudSig = JSON.stringify(ds);
+    this.setState({ model: m, curMonth: month || m.dates[0].slice(0, 7), src: 'cloud',
+      dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null,
+      dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0 });
+  }
+
+  async fetchDataset(month) {
+    const s = this.session();
+    const url = this.syncUrl();
+    if (!url || !s || !s.token) return null;
+    try {
+      const d = await (await fetch(url + '?action=dataset&token=' + encodeURIComponent(s.token)
+        + '&month=' + encodeURIComponent(month))).json();
+      return (d.ok && d.dataset && d.month === month) ? d.dataset : null;
+    } catch (e) { return null; }
   }
 
   filtered() {
@@ -1878,15 +1975,19 @@ class Component extends DCLogic {
     return emps.map(e => ({ ...e, cells: e.cells.map(c => this.bucket(c.shift) === gb ? c : OUT) }))
       .filter(e => e.cells.some(c => c !== OUT));
   }
-  exportRange() {
+  /* all = true → ชุดเต็ม ไม่สนใจตัวกรองที่ค้างอยู่บนจอ
+     ใช้ตอนเขียนลงชีต เพราะชีตต้องเป็นข้อมูลทั้งหมดเสมอ ไม่ใช่เท่าที่จอกำลังโชว์ */
+  exportRange(all) {
     const dates = (this.state.model && this.state.model.dates) || [];
+    if (all) return { dates, idx: dates.map((d, i) => i), from: dates[0] || '', to: dates[dates.length - 1] || '' };
     const f = this.state.exFrom || dates[0], t = this.state.exTo || dates[dates.length - 1];
     const idx = dates.map((d, i) => i).filter(i => dates[i] >= f && dates[i] <= t);
     return { dates: idx.map(i => dates[i]), idx, from: f, to: t };
   }
-  exportRows() {
-    const m = this.state.model, emps = this.gridEmployees();
-    const R = this.exportRange();
+  exportRows(all) {
+    const m = this.state.model;
+    const emps = all ? ((m && m.employees) || []) : this.gridEmployees();
+    const R = this.exportRange(all);
     const header = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'ตำแหน่ง', 'ขาด', 'สาย', 'นาทีสาย', 'ลา', 'มาทำงาน', 'Attendance Rate', ...this.eng.HCM_CODES, 'TOTAL', ...R.dates.map(d => d.slice(-2))];
     const rows = [], colors = [];
     emps.forEach(e => {
@@ -1929,7 +2030,7 @@ class Component extends DCLogic {
       goRules: go('rules'),
       periodLabel: m && m.dates.length ? m.dates[0].slice(0, 7) : '—',
       empCount: m ? m.employees.length : 0,
-      sourceLabel: s.src === 'demo' ? 'ตัวอย่าง' : s.src === 'upload' ? 'HCM' : s.src === 'cloud' ? 'ชีต' : '—',
+      sourceLabel: s.src === 'cloud' ? 'ชีต' : s.src === 'upload' ? 'HCM' : '—',
       refreshCloud: this.refreshCloud,
       cloudMsg: s.cloudMsg, hasCloudMsg: !!s.cloudMsg,
       shiftNameChips: (s.shiftGroups || []).map(g => g.name),
@@ -1952,23 +2053,29 @@ class Component extends DCLogic {
       hasUndo: !!s.undoInfo,
       undoText: s.undoInfo
         ? (s.undoInfo.had ? `จะย้อนเดือน ${s.undoInfo.month} กลับเป็นชุดก่อนหน้า (อัปล่าสุด ${s.undoInfo.at})`
-                          : `เดือน ${s.undoInfo.month} ก่อนหน้านี้ยังไม่มีข้อมูล — ยกเลิกแล้วจะว่าง`)
+                          : `เดือน ${s.undoInfo.month} ก่อนหน้านี้ยังไม่มีข้อมูล — ย้อนแล้วเดือนนี้จะถูกลบออกจากชีต`)
         : '',
       undoUpload: this.undoUpload,
       wipeAll: this.wipeAll,
-      storageInfo: (() => {
-        const n = (s.datasets || []).length;
-        const w = (s.warnings || []).length;
-        return n || w
-          ? `ตอนนี้เก็บไว้ในเครื่องนี้: ข้อมูล ${n} เดือน · ประวัติหนังสือเตือน ${w} รายการ${s.schRemembered ? ' · ตารางกะที่จำไว้' : ''}`
-          : 'ยังไม่มีข้อมูลเก็บไว้ในเครื่องนี้';
-      })(),
+      deleteMonth: this.deleteMonth,
+      hasMonth: !!s.curMonth,
       attStatus: s.attName || 'ยังไม่ได้เลือกไฟล์',
       schStatus: s.schName || 'ยังไม่ได้เลือกไฟล์',
       schRemembered: s.schRemembered,
       forgetSchedule: this.forgetSchedule,
       detectedCols: s.columns, logLines: s.log,
-      loadDemo: this.loadDemo, clearAll: this.clearAll,
+      // หน้าตรวจก่อนเขียน — ระหว่างนี้ยังไม่มีอะไรถูกเขียนลงชีต
+      hasPending: !!s.pending,
+      pend: s.pending || { fileName: '', month: '', from: '', to: '', people: 0, onSheet: 0,
+        addedText: '', removedText: '', addedCount: 0, removedCount: 0, hasAdded: false, hasRemoved: false },
+      pendFlags: ((s.pending && s.pending.flags) || []).map(f => ({
+        text: f.text,
+        style: `border-left:4px solid ${f.hard ? '#ae1800' : '#d0a215'}; padding:8px 12px; font-size:12px;`
+          + `background:${f.hard ? '#ffe0d9' : '#fdf6e3'};`,
+      })),
+      confirmWrite: this.confirmWrite, cancelPending: this.cancelPending,
+      isWriting: !!s.writing,
+      pendMsg: s.pendMsg || '', hasPendMsg: !!s.pendMsg,
       onDragOver: (e) => { e.preventDefault(); }, onDragLeave: () => {},
       onDropAtt: (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) this.ingest(e.dataTransfer.files[0], 'att'); },
       onDropSch: (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) this.ingest(e.dataTransfer.files[0], 'sch'); },
@@ -1990,17 +2097,11 @@ class Component extends DCLogic {
         label: l, sw: `width:16px; height:12px; display:inline-block; background:${CMAP[c]}; border:1px solid rgba(32,30,29,.35);`,
       })),
       printReport: () => window.print(),
-      sheetUrl: s.sheetUrl, sheetTab: s.sheetTab, syncScope: s.syncScope, syncDaily: s.syncDaily,
+      sheetUrl: s.sheetUrl,
       onSheetUrl: (e) => this.saveEndpoint({ sheetUrl: e.target.value }),
-      endpoint: s.endpoint, syncToken: s.syncToken,
       bkSch: s.bkSch, bkAtt: s.bkAtt, bkMsg: s.bkMsg,
       onBkSch: (e) => set({ bkSch: e.target.value }), onBkAtt: (e) => set({ bkAtt: e.target.value }),
       saveBackupCfg: this.saveBackupCfg,
-      onEndpoint: (e) => this.saveEndpoint({ endpoint: e.target.value.trim() }),
-      onSyncToken: (e) => this.saveEndpoint({ syncToken: e.target.value.trim() }), onSheetTab: (e) => set({ sheetTab: e.target.value }),
-      onSyncScope: (e) => set({ syncScope: e.target.value }), onSyncDaily: (e) => set({ syncDaily: e.target.checked }),
-      syncBtn: s.syncState === 'running' ? 'กำลัง sync…' : 'Sync ตอนนี้',
-      syncLog: s.syncLog,
       grace: s.grace, earlyGrace: s.earlyGrace, graceLabel: `${s.grace} นาที`, earlyLabel: `${s.earlyGrace} นาที`,
       onGrace: (e) => this.setState({ grace: +e.target.value }, () => this.reprocess()),
       onEarly: (e) => this.setState({ earlyGrace: +e.target.value }, () => this.reprocess()),
@@ -2084,16 +2185,10 @@ class Component extends DCLogic {
       addShift: () => this.saveShiftGroups([...s.shiftGroups, { key: 'g' + Date.now().toString(36), name: 'กะใหม่', start: '08:00', end: '17:00' }]),
       resetShifts: () => this.saveShiftGroups(this.eng.DEFAULT_SHIFT_GROUPS.map(x => ({ ...x }))),
       shiftCards: [], shiftIssues: [], shiftBranchRows: [], shiftTrendGrid: [], shiftTrendLines: [], shiftTrendLegend: [],
-      syncTabs: [
-        { tab: 'Matrix', desc: 'ตารางพนักงาน × วันที่ พร้อมสีและตัวย่อ (AL, SL, OFF, L15)' },
-        { tab: 'Summary by position', desc: 'สรุปตามตำแหน่งงาน: Attendance Rate, ขาด, สาย, แสกนไม่ครบ' },
-        { tab: 'Daily rate', desc: 'Attendance Rate รายวันของช่วงที่เลือก' },
-        { tab: 'Warning list', desc: 'รายชื่อที่ถึงเกณฑ์ออกหนังสือเตือน' },
-      ],
       monthOpts: ((s.datasets || []).length
         ? s.datasets.map(d => ({ month: d.month, label: `${d.month} · ${d.employees} คน` }))
         : (s.model && s.model.dates && s.model.dates.length
-            ? [{ month: s.model.dates[0].slice(0, 7), label: s.model.dates[0].slice(0, 7) + (s.src === 'demo' ? ' · ตัวอย่าง' : '') }]
+            ? [{ month: s.model.dates[0].slice(0, 7), label: s.model.dates[0].slice(0, 7) }]
             : [])),
       curMonth: s.curMonth || (s.model && s.model.dates && s.model.dates.length ? s.model.dates[0].slice(0, 7) : ''),
       onPickMonth: (e) => this.openMonth(e.target.value),
@@ -2107,7 +2202,7 @@ class Component extends DCLogic {
       spacerTopStyle: 'height:0px;', spacerBottomStyle: 'height:0px;',
       empListShort: [], empListCount: '', empName: '—', empMeta: '', empOnTime: '—', empStats: [], empStrip: [], empIssues: [],
       exportPNG: () => this.exportPNG(), exportXLS: () => this.exportXLS(), exportCSV: () => this.exportCSV(),
-      copyTSV: () => this.copyTSV(), exportHubCSV: () => this.exportHubCSV(), runSync: () => this.runSync(),
+      copyTSV: () => this.copyTSV(), exportHubCSV: () => this.exportHubCSV(),
     };
     // ── warning letters
     V.isWarn = s.screen === 'warn';
@@ -2653,15 +2748,18 @@ class Component extends DCLogic {
       try { localStorage.setItem('hcm-sync-endpoint-v1', JSON.stringify({ endpoint: s.endpoint, token: s.syncToken, sheetUrl: s.sheetUrl })); } catch (e) {}
     });
   }
+  /* ── ชุดข้อมูลที่จะเขียนลงชีต ────────────────────────────────────────
+     ต้องเป็นชุดเต็มเสมอ ไม่ขึ้นกับกะที่เลือกอยู่หรือคำค้นที่ค้างในช่องค้นหา
+     ไม่งั้นเผลอกรองกะไว้แล้วอัป ชีตจะเหลือแค่กะเดียวโดยไม่มีใครรู้           */
   syncPayload() {
     const s = this.state, m = s.model, E = this.eng;
-    const { header, rows, colors } = this.exportRows();
-    const hubs = E.hubRollup(this.posEmployees());
-    const R = this.exportRange();
+    const { header, rows, colors } = this.exportRows(true);
+    const hubs = E.hubRollup(m.employees);
+    const R = this.exportRange(true);
     const daily = R.dates.map((d, j) => {
       const i = m.dates.indexOf(d);
       let pres = 0, head = 0, abs = 0, late = 0;
-      this.filtered().forEach(e => {
+      m.employees.forEach(e => {
         const c = e.cells[i]; if (!c) return;
         head++;
         if (this.eng.isPresent(c)) pres++;
@@ -2724,57 +2822,6 @@ class Component extends DCLogic {
       meta: { shiftGroups: s.shiftGroups, warnAbsent: s.warnAbsent, warnLate: s.warnLate, nearGap: s.nearGap,
         winMode: s.winMode, winDays: s.winDays, warnings: s.warnings, grace: s.grace, earlyGrace: s.earlyGrace },
     };
-  }
-  /* ส่งข้อมูลขึ้นชีตเองหลังอัปไฟล์เสร็จ — แอดมินไม่ต้องกดปุ่มอะไรเพิ่ม
-     เงียบ ๆ ไม่ขึ้น error ถ้ายังไม่ได้ตั้งค่าเชื่อมต่อ แค่จดไว้ในบันทึก */
-  /* ข้อมูลตัวอย่างเป็นพนักงานสมมติที่ระบบสร้างขึ้นเอง ห้ามส่งขึ้นชีตเด็ดขาด
-     เพราะชีตสำรองเขียนแบบรวมกับของเดิม พนักงานปลอมจะค้างอยู่ตลอดไป
-     ต้องไล่ลบเองทีละแถว — เคยเกิดมาแล้ว มีปลอมปน 639 แถวในชีตจริง        */
-  isDemoData() { return this.state.src === 'demo'; }
-
-  async autoSync() {
-    const url = this.syncUrl();
-    if (!url || !this.state.model) return;
-    if (this.isDemoData()) { this.addLog('ไม่ส่งขึ้นชีต เพราะเป็นข้อมูลตัวอย่าง'); return; }
-    if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(url)) return;
-    this.addLog('กำลังส่งข้อมูลขึ้นชีต…');
-    try {
-      const out = await (await fetch(url, { method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(this.syncPayload()) })).json();
-      if (out.ok) {
-        this.addLog('ส่งขึ้นชีตแล้ว — ' + ((out.written || []).join(' · ') || 'สำเร็จ'));
-        this.addLog('หน้างานจะเห็นข้อมูลชุดนี้ทันทีที่เปิดหรือรีเฟรช');
-      } else {
-        this.addLog('ส่งขึ้นชีตไม่สำเร็จ: ' + (out.error || 'ไม่ทราบสาเหตุ'));
-      }
-    } catch (err) {
-      this.addLog('ส่งขึ้นชีตไม่สำเร็จ: ' + err.message);
-    }
-  }
-
-  async runSync() {
-    const s = this.state;
-    if (s.syncState === 'running') return;
-    if (!s.model) { this.pushSync('ยังไม่มีข้อมูล — อัปโหลดไฟล์ก่อน', 'err'); return; }
-    if (this.isDemoData()) { this.pushSync('ตอนนี้เป็นข้อมูลตัวอย่าง ส่งขึ้นชีตไม่ได้ — อัปไฟล์จริงก่อน', 'err'); return; }
-    if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(this.syncUrl())) {
-      this.pushSync('ใส่ Web app URL จาก Apps Script ก่อน (ลงท้ายด้วย /exec)', 'err'); return;
-    }
-    this.setState({ syncState: 'running' });
-    const payload = this.syncPayload();
-    this.pushSync(`ส่งข้อมูลเดือน ${payload.month} → ${s.sheetTab || 'ชีตปลายทาง'}`, 'info');
-    try {
-      const res = await fetch(s.endpoint, { method: 'POST', body: JSON.stringify(payload) });
-      const out = await res.json();
-      if (out.ok) {
-        this.pushSync('เขียนสำเร็จ: ' + (out.written || []).join(' · '), 'ok');
-        this.pushSync('หน้างานจะเห็นข้อมูลชุดนี้ทันทีที่เปิดหรือรีเฟรช', 'ok');
-      } else this.pushSync('ผิดพลาด: ' + (out.error || 'ไม่ทราบสาเหตุ'), 'err');
-    } catch (err) {
-      this.pushSync('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจว่า Deploy เป็น Web app และตั้ง Access = Anyone', 'err');
-    }
-    this.setState({ syncState: 'idle' });
   }
 }
 </script>
