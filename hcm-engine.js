@@ -137,6 +137,21 @@ export const LEAVE_TYPES = [
 const toMin = (s) => { const m = /(\d{1,2}):(\d{2})/.exec(s || ''); return m ? +m[1] * 60 + +m[2] : null; };
 export const fmtMin = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
+/* ข้อความที่ลงในชีตต่อหนึ่งช่องวัน — วันไหนมีการแสกนให้เห็นเวลาจริง
+   ไม่ใช่แค่คำว่า "มา" เปิดชีตแล้วต้องรู้ได้เลยว่าเข้ากี่โมงออกกี่โมง
+     แสกนครบ            08:45-20:32
+     สาย                L15 08:45-20:32
+     แสกนข้างเดียว      INC 08:45-
+     ลาครึ่งวันแล้วมา   AL½ 13:02-20:30
+     ไม่มีการแสกน       AB / OFF / AL ตามรหัสเดิม                        */
+export function cellText(c) {
+  if (!c) return '';
+  const code = c.code || '';
+  if (c.in == null && c.out == null) return code || (c.color === 'ok' ? 'มา' : '');
+  const time = `${c.in == null ? '' : fmtMin(c.in)}-${c.out == null ? '' : fmtMin(c.out)}`;
+  return code ? `${code} ${time}` : time;
+}
+
 export function parseShift(text) {
   if (!text) return null;
   const t = String(text).trim();
