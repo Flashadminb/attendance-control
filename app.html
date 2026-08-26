@@ -89,7 +89,7 @@
             <span class="btn btn-primary" style="height:34px; pointer-events:none;">เลือกไฟล์</span>
             <span style="font-size:12px; color:#605d5d;">หรือลากไฟล์มาวางที่นี่</span>
           </div>
-          <div style="margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px;">{{ attStatus }}</div>
+          <div style="{{ attStatusStyle }}">{{ attStatus }}</div>
         </label>
 
         <label style="{{ dropBStyle }}" onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDropSch }}">
@@ -160,9 +160,10 @@
       </sc-if>
 
       <sc-if value="{{ hasUndo }}" hint-placeholder-val="{{ true }}">
-        <div style="border:2px solid #ec3013; background:#fff2ef; padding:12px 14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <!-- ไม่ใช่คำเตือน เป็นทางออกเผื่อหยิบไฟล์ผิด จึงใช้สีกลาง ไม่ใช่สีแดง -->
+        <div style="border:2px solid rgba(32,30,29,.4); background:#eae9e9; padding:12px 14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
           <div style="flex:1; min-width:220px; font-size:12px;">
-            <strong>อัปผิดไฟล์?</strong> ย้อนข้อมูลบนชีตกลับเป็นชุดก่อนหน้าได้<br>
+            <strong>ย้อนการอัปล่าสุดได้</strong> ถ้าหยิบไฟล์ผิด กดปุ่มนี้เอาข้อมูลบนชีตกลับไปเป็นชุดก่อนหน้า<br>
             <span style="color:#605d5d;">{{ undoText }}</span>
           </div>
           <button type="button" class="btn btn-secondary" onClick="{{ undoUpload }}" style="height:34px; flex:none;">ย้อนการอัปล่าสุด</button>
@@ -1203,6 +1204,10 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;grace&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:30,&quot;unit&quot;:&quot;นาที&quot;,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;earlyGrace&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:30,&quot;unit&quot;:&quot;นาที&quot;,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;warnAbsent&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:10,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;warnLate&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:20,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;cellDetail&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;code&quot;,&quot;options&quot;:[&quot;code&quot;,&quot;plain&quot;,&quot;time&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;การแสดงผล&quot;},&quot;demoSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:640,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:50,&quot;max&quot;:2000,&quot;step&quot;:10,&quot;section&quot;:&quot;การแสดงผล&quot;}}">
 const RED = '#ec3013', YEL = '#e8a400', GRY = '#d7d3d3', GRY2 = '#eae7e7', OK = '#5cb87f';   // เขียว = มาทำงานปกติ
+// กล่องรับไฟล์ — มีไฟล์แล้วเป็นสีเขียว ยังว่างเป็นสีเทา ไม่ใช้แดงเพราะไม่ได้ผิดอะไร
+const dropBox = (filled) => `border:2px solid ${filled ? '#3f9c6d' : 'rgba(32,30,29,.4)'};`
+  + ` background:${filled ? '#eef7f2' : '#eae9e9'}; padding:18px; min-height:210px;`
+  + ' display:flex; flex-direction:column; cursor:pointer;';
 const CMAP = { red: RED, yellow: YEL, gray: GRY, 'gray-half': GRY2, ok: OK, out: '#f3f2f2' };
 
 /* สีตัวอักษรที่อ่านออกบนพื้นสีที่แอดมินเลือกเอง — พื้นเข้มใช้ตัวขาว พื้นอ่อนใช้ตัวดำ */
@@ -1235,7 +1240,7 @@ class Component extends DCLogic {
     me: null, cloudState: 'idle', cloudMsg: '',
     attName: '', schName: '', dragA: false, dragB: false, schRemembered: false, undoInfo: null,
     // pending = ไฟล์ที่แกะแล้วรอยืนยัน ยังไม่ได้เขียนอะไรลงชีต
-    pending: null, pendMsg: '', writing: false,
+    pending: null, pendMsg: '', writing: false, attDone: '',
     dashTab: 'all', exPreset: 'ทั้งเดือน', archive: [], archYear: 'ทั้งหมด', archOpen: null,
     datasets: [], curMonth: '', exFrom: '', exTo: '',
     warnings: [], warnRules: [], customCodes: [], users: [], usersMsg: '', nuName: '', nuUser: '', nuPass: '', nuShift: '', warnSearch: '', warnSort: 'count', nearGap: 1, hShift: 'all', winMode: 'month', winDays: 30, shiftGroups: [], shiftEditOpen: false,
@@ -1672,7 +1677,7 @@ class Component extends DCLogic {
     this.att = null; this.sch = null; this.rememberedSch = null; this.schFromUpload = false;
     this._pendingRows = null; this._cloudSig = null; this._lastFileKey = null;
     this.setState({
-      model: null, attName: '', schName: '', schRemembered: false, src: 'none', pending: null,
+      model: null, attName: '', schName: '', schRemembered: false, src: 'none', pending: null, attDone: '',
       datasets: [], archive: [], warnings: [], curMonth: '', unknownList: [], log: [], undoInfo: null,
       warnRules: this.eng.DEFAULT_WARN_RULES.map(x => ({ ...x })), customCodes: [], shiftGroups: [],
     }, () => this.addLog(`ลบข้อมูลในเครื่องแล้ว ${keys.length} รายการ — พร้อมเริ่มใหม่`));
@@ -1758,7 +1763,7 @@ class Component extends DCLogic {
       const d = await this.callSync({ action: 'deleteMonth', token: s && s.token, month });
       if (!d.ok) { this.addLog('ลบไม่สำเร็จ: ' + (d.error || '')); this.setState({ writing: false }); return; }
       (d.done || []).forEach(x => this.addLog(x));
-      this.setState({ writing: false, undoInfo: null, model: null, curMonth: '', src: 'none', datasets: d.months || [] });
+      this.setState({ writing: false, undoInfo: null, attDone: '', model: null, curMonth: '', src: 'none', datasets: d.months || [] });
       this._cloudSig = null;
       this.refreshCloud();
     } catch (e) { this.addLog('ลบไม่สำเร็จ: ' + e.message); this.setState({ writing: false }); }
@@ -1766,7 +1771,7 @@ class Component extends DCLogic {
 
   /* ── จังหวะที่ 1 · แกะไฟล์แล้วเทียบกับของบนชีต ยังไม่แตะชีต ───────────── */
   async ingest(file, which) {
-    this.setState({ pending: null, pendMsg: '' });
+    this.setState({ pending: null, pendMsg: '', attDone: '' });
     try {
       this.addLog(`กำลังอ่าน ${file.name}…`);
       const rows = await this.eng.readSheet(file);
@@ -1881,6 +1886,7 @@ class Component extends DCLogic {
       const out = await this.callSync(this.syncPayload());
       if (!out.ok) { this.addLog('เขียนลงชีตไม่สำเร็จ: ' + (out.error || 'ไม่ทราบสาเหตุ')); return; }
       this.addLog('เขียนลงชีตแล้ว — ' + ((out.written || []).join(' · ') || 'สำเร็จ'));
+      this.setState({ attDone: `เขียนลงชีตแล้ว · รอบ ${out.month || ''} · ${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.` });
       this.setState({ datasets: out.months || this.state.datasets });
       if (out.dataset) await this.showCloud(out.dataset, out.month);
       else this.addLog('ชีตไม่ได้ส่งข้อมูลกลับมา — หน้าจอยังเป็นของที่เพิ่งประมวลผล');
@@ -2071,7 +2077,12 @@ class Component extends DCLogic {
       wipeAll: this.wipeAll,
       deleteMonth: this.deleteMonth,
       hasMonth: !!s.curMonth,
-      attStatus: s.attName || 'ยังไม่ได้เลือกไฟล์',
+      /* อัปเสร็จแล้วช่องนี้จะว่าง เพราะพร้อมรับไฟล์ของวันถัดไป
+         แต่ถ้าปล่อยให้ว่างเปล่าเฉย ๆ คนใช้จะไม่แน่ใจว่าที่ทำไปสำเร็จหรือเปล่า
+         จึงค้างผลของรอบล่าสุดไว้ให้เห็นด้วยตัวหนังสือสีเขียว                 */
+      attStatus: s.attName || s.attDone || 'ยังไม่ได้เลือกไฟล์',
+      attStatusStyle: 'margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px;'
+        + (!s.attName && s.attDone ? ' color:#2e7d4f; font-weight:600;' : ''),
       schStatus: s.schName || 'ยังไม่ได้เลือกไฟล์',
       schRemembered: s.schRemembered,
       forgetSchedule: this.forgetSchedule,
@@ -2093,8 +2104,10 @@ class Component extends DCLogic {
       onDropSch: (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) this.ingest(e.dataTransfer.files[0], 'sch'); },
       onPickAtt: (e) => { if (e.target.files[0]) this.ingest(e.target.files[0], 'att'); },
       onPickSch: (e) => { if (e.target.files[0]) this.ingest(e.target.files[0], 'sch'); },
-      dropAStyle: `border:2px solid ${s.attName ? RED : 'rgba(32,30,29,.4)'}; background:${s.attName ? '#fff2ef' : '#eae9e9'}; padding:18px; min-height:210px; display:flex; flex-direction:column; cursor:pointer;`,
-      dropBStyle: `border:2px solid ${s.schName ? RED : 'rgba(32,30,29,.4)'}; background:${s.schName ? '#fff2ef' : '#eae9e9'}; padding:18px; min-height:210px; display:flex; flex-direction:column; cursor:pointer;`,
+      /* กล่องที่มีไฟล์แล้วใช้สีเขียว ไม่ใช่สีแดง — แดงเก็บไว้ใช้กับเรื่องที่ผิดพลาดจริง
+         ไม่งั้นอัปสำเร็จแล้วยังขึ้นขอบแดง คนใช้จะนึกว่าทำอะไรพลาด            */
+      dropAStyle: dropBox(!!s.attName || !!s.attDone),
+      dropBStyle: dropBox(!!s.schName),
       search: s.search, fBranch: s.fBranch, fPos: s.fPos, dayKey: s.dayKey,
       onSearch: (e) => set({ search: e.target.value, scrollTop: 0 }),
       onBranch: (e) => set({ fBranch: e.target.value, scrollTop: 0 }),
