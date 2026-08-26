@@ -103,10 +103,12 @@
             <span class="btn btn-primary" style="height:34px; pointer-events:none;">เลือกไฟล์</span>
             <span style="font-size:12px; color:#605d5d;">หรือลากไฟล์มาวางที่นี่</span>
           </div>
-          <div style="margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px; display:flex; align-items:center; gap:10px;">
-            <span style="flex:1; min-width:0;">{{ schStatus }}</span>
-            <sc-if value="{{ schRemembered }}" hint-placeholder-val="{{ true }}">
-              <button type="button" class="btn btn-ghost" onClick="{{ forgetSchedule }}" style="height:26px; font-size:11px; flex:none;">ลืมตารางกะนี้</button>
+          <!-- ไม่มีปุ่มลืมตารางกะแล้ว — ระบบต้องใช้ตลอด เผลอกดทีเดียวคนทั้งฮับกลายเป็นไม่มีกะ
+               ถ้าจะล้างจริง ๆ ใช้ "ลบข้อมูลทั้งหมด" ซึ่งถามยืนยันก่อน -->
+          <div style="{{ schStatusStyle }}">
+            <div>{{ schStatus }}</div>
+            <sc-if value="{{ hasSchInfo }}" hint-placeholder-val="{{ true }}">
+              <div style="color:#605d5d; margin-top:3px;">{{ schInfoText }}</div>
             </sc-if>
           </div>
         </label>
@@ -1249,7 +1251,7 @@ class Component extends DCLogic {
        ถ้าตั้งเป็น demo แถบซ้ายจะขึ้นว่า "ตัวอย่าง" ทั้งที่ยังไม่ได้โหลดอะไร */
     screen: 'dash', eng: null, model: null, src: 'none', log: [], columns: [],
     me: null, cloudState: 'idle', cloudMsg: '',
-    attName: '', schName: '', dragA: false, dragB: false, schRemembered: false, undoInfo: null,
+    attName: '', schName: '', dragA: false, dragB: false, schRemembered: false, schInfo: null, undoInfo: null,
     // pending = ไฟล์ที่แกะแล้วรอยืนยัน ยังไม่ได้เขียนอะไรลงชีต
     pending: null, pendMsg: '', writing: false, attDone: '',
     dashTab: 'all', exPreset: 'ทั้งเดือน', archive: [], archYear: 'ทั้งหมด', archOpen: null,
@@ -1705,7 +1707,7 @@ class Component extends DCLogic {
     this.att = null; this.sch = null; this.rememberedSch = null; this.schFromUpload = false;
     this._pendingRows = null; this._cloudSig = null; this._lastFileKey = null;
     this.setState({
-      model: null, attName: '', schName: '', schRemembered: false, src: 'none', pending: null, attDone: '',
+      model: null, attName: '', schName: '', schRemembered: false, schInfo: null, src: 'none', pending: null, attDone: '',
       datasets: [], archive: [], warnings: [], curMonth: '', unknownList: [], log: [], undoInfo: null,
       warnRules: this.eng.DEFAULT_WARN_RULES.map(x => ({ ...x })), customCodes: [], shiftGroups: [],
     }, () => this.addLog(`ลบข้อมูลในเครื่องแล้ว ${keys.length} รายการ — พร้อมเริ่มใหม่`));
@@ -1723,27 +1725,26 @@ class Component extends DCLogic {
       const d = await (await fetch(url + '?action=schedule&token=' + encodeURIComponent(s.token))).json();
       if (!d.ok || !d.schedule || !Array.isArray(d.schedule.rows)) return;
       this.rememberedSch = d.schedule.rows;
-      this.setState({ schName: `${d.schedule.name || 'ตารางกะ'} · จำไว้บนชีตเมื่อ ${String(d.schedule.at).slice(0, 10)}`,
-        schRemembered: true });
+      this.setState({ schName: '', schRemembered: true,
+        schInfo: this.schSummary(d.schedule.rows, String(d.schedule.at || '').slice(0, 10)) });
     } catch (e) {}
+  }
+  /* สรุปว่าตารางกะที่ถืออยู่มีของเท่าไหร่ ครอบคลุมวันไหนถึงวันไหน */
+  schSummary(rows, at) {
+    try {
+      const t = this.eng.mapTable(rows);
+      if (!t.records.length || !t.dates.length) return null;
+      return { people: t.records.length, days: t.dates.length,
+        from: t.dates[0], to: t.dates[t.dates.length - 1], at: at || '' };
+    } catch (e) { return null; }
   }
   async saveSchedule(rows, name) {
     const s = this.session();
     try {
       const d = await this.callSync({ action: 'setSchedule', token: s && s.token, table: rows, name });
-      if (d && d.ok) this.setState({ schRemembered: false });
-      else this.addLog('จำตารางกะบนชีตไม่สำเร็จ: ' + ((d && d.error) || ''));
+      if (!d || !d.ok) this.addLog('จำตารางกะบนชีตไม่สำเร็จ: ' + ((d && d.error) || 'ไม่ทราบสาเหตุ'));
     } catch (e) { this.addLog('จำตารางกะบนชีตไม่สำเร็จ: ' + e.message); }
   }
-  forgetSchedule = async (ev) => {
-    // ปุ่มนี้อยู่ใน <label> ของ input file — ถ้าไม่กันไว้ การกดจะไปเปิดหน้าต่างเลือกไฟล์ด้วย
-    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-    const s = this.session();
-    this.sch = null; this.rememberedSch = null; this.schFromUpload = false;
-    this.setState({ schName: '', schRemembered: false });
-    try { await this.callSync({ action: 'setSchedule', token: s && s.token, table: null }); } catch (e) {}
-    this.addLog('ลบตารางกะที่จำไว้แล้ว');
-  };
 
   /* ── ย้อนการอัปล่าสุด ───────────────────────────────────────────────────
      ของเดิมเก็บไว้ฝั่งชีต ไม่ใช่ในเครื่อง กดย้อนจากเครื่องไหนก็ได้
@@ -1819,7 +1820,8 @@ class Component extends DCLogic {
         this.sch = merged;
         this.rememberedSch = merged;
         this.schFromUpload = true;
-        this.setState({ schName: `${file.name} · ในไฟล์ ${t.records.length} คน · รวมแล้ว ${after} คน`, schRemembered: false });
+        this.setState({ schName: `${file.name} · ในไฟล์ ${t.records.length} คน`, schRemembered: true,
+          schInfo: this.schSummary(merged, new Date().toISOString().slice(0, 10)) });
         await this.saveSchedule(merged, file.name);
         this.addLog(before
           ? `รวมตารางกะแล้ว — ไฟล์นี้มี ${t.records.length} คน ของเดิมมี ${before} คน รวมเป็น ${after} คน`
@@ -2153,9 +2155,17 @@ class Component extends DCLogic {
       attStatus: s.attName || s.attDone || 'ยังไม่ได้เลือกไฟล์',
       attStatusStyle: 'margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px;'
         + (!s.attName && s.attDone ? ' color:#2e7d4f; font-weight:600;' : ''),
-      schStatus: s.schName || 'ยังไม่ได้เลือกไฟล์',
+      /* บอกให้เห็นตลอดว่าตารางกะที่ระบบถืออยู่มีของเท่าไหร่ ครอบคลุมถึงวันไหน
+         จะได้รู้ทันทีว่าต้องอัปเพิ่มหรือยัง โดยไม่ต้องเดา                     */
+      schStatus: s.schName || (s.schInfo ? 'จำตารางกะไว้บนชีตแล้ว' : 'ยังไม่ได้เลือกไฟล์'),
+      schStatusStyle: 'margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px;'
+        + (s.schInfo ? ' color:#2e7d4f; font-weight:600;' : ''),
+      hasSchInfo: !!s.schInfo,
+      schInfoText: s.schInfo
+        ? `${s.schInfo.people} คน × ${s.schInfo.days} วัน · ${s.schInfo.from} → ${s.schInfo.to}`
+          + (s.schInfo.at ? ` · อัปล่าสุด ${s.schInfo.at}` : '')
+        : '',
       schRemembered: s.schRemembered,
-      forgetSchedule: this.forgetSchedule,
       detectedCols: s.columns, logLines: s.log,
       // หน้าตรวจก่อนเขียน — ระหว่างนี้ยังไม่มีอะไรถูกเขียนลงชีต
       hasPending: !!s.pending,
