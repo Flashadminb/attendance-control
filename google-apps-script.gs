@@ -607,6 +607,22 @@ function mergeYear_(sh, rows) {
       byId[id] = rec;
     }
   }
+  /* พนักงานที่หลุดออกจากไฟล์แล้ว (ลาออก หรือเคยเผลออัปข้อมูลตัวอย่างขึ้นมา)
+     จะค้างอยู่ตลอดไปถ้าเก็บทุกแถวเดิมไว้หมด — จึงตัดคนที่ไม่มีในไฟล์รอบนี้
+     ออกจากช่วงวันที่กำลังอัป ส่วนวันอื่นที่เขาเคยมีข้อมูลยังอยู่ครบ         */
+  var incoming = {};
+  (rows || []).forEach(function (n) { if (norm_(n.id)) incoming[norm_(n.id)] = true; });
+  var touched = {};
+  (rows || []).forEach(function (n) {
+    Object.keys(n.days || {}).forEach(function (d) { touched[d] = true; });
+  });
+  Object.keys(byId).forEach(function (id) {
+    if (incoming[id]) return;
+    Object.keys(touched).forEach(function (d) { delete byId[id].days[d]; });
+    // ไม่เหลือข้อมูลวันไหนเลย = ไม่ใช่พนักงานของชุดนี้ ตัดทิ้ง
+    if (!Object.keys(byId[id].days).length) delete byId[id];
+  });
+
   (rows || []).forEach(function (n) {
     var id = norm_(n.id);
     if (!id) return;

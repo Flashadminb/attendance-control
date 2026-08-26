@@ -2691,9 +2691,15 @@ class Component extends DCLogic {
   }
   /* ส่งข้อมูลขึ้นชีตเองหลังอัปไฟล์เสร็จ — แอดมินไม่ต้องกดปุ่มอะไรเพิ่ม
      เงียบ ๆ ไม่ขึ้น error ถ้ายังไม่ได้ตั้งค่าเชื่อมต่อ แค่จดไว้ในบันทึก */
+  /* ข้อมูลตัวอย่างเป็นพนักงานสมมติที่ระบบสร้างขึ้นเอง ห้ามส่งขึ้นชีตเด็ดขาด
+     เพราะชีตสำรองเขียนแบบรวมกับของเดิม พนักงานปลอมจะค้างอยู่ตลอดไป
+     ต้องไล่ลบเองทีละแถว — เคยเกิดมาแล้ว มีปลอมปน 639 แถวในชีตจริง        */
+  isDemoData() { return this.state.src === 'demo'; }
+
   async autoSync() {
     const url = this.syncUrl();
     if (!url || !this.state.model) return;
+    if (this.isDemoData()) { this.addLog('ไม่ส่งขึ้นชีต เพราะเป็นข้อมูลตัวอย่าง'); return; }
     if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(url)) return;
     this.addLog('กำลังส่งข้อมูลขึ้นชีต…');
     try {
@@ -2715,6 +2721,7 @@ class Component extends DCLogic {
     const s = this.state;
     if (s.syncState === 'running') return;
     if (!s.model) { this.pushSync('ยังไม่มีข้อมูล — อัปโหลดไฟล์ก่อน', 'err'); return; }
+    if (this.isDemoData()) { this.pushSync('ตอนนี้เป็นข้อมูลตัวอย่าง ส่งขึ้นชีตไม่ได้ — อัปไฟล์จริงก่อน', 'err'); return; }
     if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(this.syncUrl())) {
       this.pushSync('ใส่ Web app URL จาก Apps Script ก่อน (ลงท้ายด้วย /exec)', 'err'); return;
     }
