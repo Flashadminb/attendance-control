@@ -221,8 +221,14 @@ export function classify(cellText, shiftText, cfg, dateKey) {
   const pending = /รอการอนุมัติ/.test(t);
   const leave = LEAVE_TYPES.find(l => l.re.test(t));
   const half = /ครึ่งวัน/.test(t) ? (/บ่าย/.test(t) ? 'บ่าย' : 'เช้า') : null;
-  const scan = t.match(/in\s*:\s*([^\s]+)\s+out\s*:\s*([^\s]+)/i);
-  const inRaw = scan ? scan[1] : '', outRaw = scan ? scan[2] : '';
+  /* อ่าน in กับ out แยกกัน ไม่บังคับว่าต้องมาคู่กัน
+     ไฟล์จาก HCM ปกติเขียนครบทั้งสองฝั่งเสมอ ฝั่งที่ขาดใส่ "--" ไว้
+     แต่ถ้าวันไหนส่งมาแค่ฝั่งเดียวจริง ๆ แบบเดิมจะอ่านไม่เจอเลย
+     แล้วนับเป็นมาทำงานเต็มวันโดยไม่ขึ้นรหัสอะไร ซึ่งผิดแบบเงียบ ๆ         */
+  const inHit = t.match(/in\s*:\s*([^\s]+)/i);
+  const outHit = t.match(/out\s*:\s*([^\s]+)/i);
+  const scan = inHit || outHit;
+  const inRaw = inHit ? inHit[1] : '', outRaw = outHit ? outHit[1] : '';
   const inM = /^\d{1,2}:\d{2}/.test(inRaw) ? toMin(inRaw) : null;
   const outM = /^\d{1,2}:\d{2}/.test(outRaw) ? toMin(outRaw) : null;
   // แสกนมาข้างเดียว (มีแค่ in หรือ out) — ตัดสินตรงนี้ก่อนแยกสาขา เพราะสาขา NoS/PH
