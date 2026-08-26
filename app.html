@@ -46,6 +46,15 @@
       <div style="display:flex; justify-content:space-between; gap:10px;"><span style="flex:1; min-width:0; white-space:nowrap;">ชุดข้อมูล</span><strong style="font-family:Archivo; flex:none; white-space:nowrap;">{{ periodLabel }}</strong></div>
       <div style="display:flex; justify-content:space-between; gap:10px;"><span style="flex:1; min-width:0; white-space:nowrap;">พนักงาน</span><strong style="font-family:Archivo; flex:none; white-space:nowrap;">{{ empCount }}</strong></div>
       <div style="display:flex; justify-content:space-between; gap:10px;"><span style="flex:1; min-width:0; white-space:nowrap;">แหล่งข้อมูล</span><strong style="font-family:Archivo; flex:none; white-space:nowrap;">{{ sourceLabel }}</strong></div>
+      <!-- ข้อมูลที่อัปจากอีกเครื่องไม่ได้ตามมาเอง ต้องมีทางดึงลงมาดูด้วยมือ -->
+      <button type="button" class="noprint" onClick="{{ refreshCloud }}"
+        style="width:100%; margin-top:10px; padding:7px 8px; cursor:pointer; background:transparent;
+               border:1px solid rgba(32,30,29,.4); font-family:inherit; font-size:11px; color:#201e1d;">
+        ดึงข้อมูลจากชีต
+      </button>
+      <sc-if value="{{ hasCloudMsg }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:6px; font-size:10px; color:#7d7979;">{{ cloudMsg }}</div>
+      </sc-if>
     </div>
   </aside>
 
@@ -1216,7 +1225,9 @@ const now = () => new Date().toLocaleTimeString('th-TH', { hour12: false });
 
 class Component extends DCLogic {
   state = {
-    screen: 'dash', eng: null, model: null, src: 'demo', log: [], columns: [],
+    /* เริ่มที่ 'none' ไม่ใช่ 'demo' — ตอนเปิดหน้ายังไม่มีข้อมูลอะไรเลย
+       ถ้าตั้งเป็น demo แถบซ้ายจะขึ้นว่า "ตัวอย่าง" ทั้งที่ยังไม่ได้โหลดอะไร */
+    screen: 'dash', eng: null, model: null, src: 'none', log: [], columns: [],
     me: null, cloudState: 'idle', cloudMsg: '',
     attName: '', schName: '', dragA: false, dragB: false, schRemembered: false, undoInfo: null,
     dashTab: 'all', exPreset: 'ทั้งเดือน', archive: [], archYear: 'ทั้งหมด', archOpen: null,
@@ -1269,7 +1280,10 @@ class Component extends DCLogic {
            คนที่อัปไม่ได้    → ดึงจากชีตอย่างเดียว เซิร์ฟเวอร์กรองกะให้แล้ว     */
         if (!this.canUpload()) { this.refreshCloud(); return; }
         const idx = this.eng.listDatasets();
-        if (!idx.length) { this.addLog('ยังไม่มีข้อมูล — อัปโหลดไฟล์ attendance เพื่อเริ่มใช้งาน'); return; }
+        /* เครื่องนี้ยังไม่เคยอัปไฟล์เอง แต่คนคนเดียวกันอาจอัปไว้จากอีกเครื่องแล้ว
+           ข้อมูลที่ประมวลผลแล้วเก็บอยู่ในเครื่องที่อัป ไม่ได้ตามคนไปทุกเครื่อง
+           จึงต้องไปเอาของที่ส่งขึ้นชีตไว้มาแสดงแทน ไม่ใช่ขึ้นว่ายังไม่มีข้อมูล */
+        if (!idx.length) { this.addLog('เครื่องนี้ยังไม่มีข้อมูลในตัว — กำลังดึงของที่อัปไว้จากชีต'); this.refreshCloud(); return; }
         const last = idx[idx.length - 1].month;
         const m = this.eng.loadDataset(last);
         if (!m) return;
@@ -1277,8 +1291,17 @@ class Component extends DCLogic {
           dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null });
         this.addLog(`เปิดข้อมูลเดือน ${last} ที่เก็บไว้ (${m.employees.length} คน)`);
       });
-    // คนที่ดูอย่างเดียว ให้ดึงข้อมูลใหม่ทุก 5 นาที จะได้เห็นของที่แอดมินเพิ่งอัป
-    if (!this.canUpload()) this._poll = setInterval(() => this.refreshCloud(), 5 * 60 * 1000);
+    /* ตามข้อมูลใหม่ให้เองทุก 2 นาที แอดมินอัปเสร็จปุ๊บทุกคนเห็นโดยไม่ต้องรีเฟรช
+       เว้นเครื่องที่เพิ่งอัปไฟล์เอง เพราะของในเครื่องใหม่กว่าบนชีตอยู่แล้ว
+       และหยุดดึงตอนสลับไปแท็บอื่น จะได้ไม่ยิงหาเซิร์ฟเวอร์ทิ้ง ๆ ขว้าง ๆ    */
+    this._poll = setInterval(() => {
+      if (document.hidden) return;
+      if (this.state.src === 'upload') return;
+      this.refreshCloud();
+    }, 2 * 60 * 1000);
+    // กลับมาที่แท็บนี้เมื่อไหร่ เช็คให้รอบหนึ่งทันที ไม่ต้องรอครบรอบ
+    this._vis = () => { if (!document.hidden && this.state.src !== 'upload') this.refreshCloud(); };
+    document.addEventListener('visibilitychange', this._vis);
     this.loadArchive();
     this.loadSchedule();
     this.setState({ datasets: this.eng.listDatasets() });
@@ -1296,7 +1319,11 @@ class Component extends DCLogic {
     this._ro = () => this.setState({ viewH: window.innerHeight });
     window.addEventListener('resize', this._ro);
   }
-  componentWillUnmount() { window.removeEventListener('resize', this._ro); clearInterval(this._poll); }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._ro);
+    document.removeEventListener('visibilitychange', this._vis);
+    clearInterval(this._poll);
+  }
 
   cfg() { const s = this.state; return { grace: s.grace, earlyGrace: s.earlyGrace, flagNoShift: s.flagNoShift, flagShiftOnHoliday: s.flagShiftOnHoliday, holidays: s.holidays, customCodes: s.customCodes, dropOpenDay: s.dropOpenDay }; }
   addLog(m) { this.setState(s => ({ log: [{ t: now(), m }, ...s.log].slice(0, 40) })); }
@@ -1472,6 +1499,7 @@ class Component extends DCLogic {
       + (month ? '&month=' + encodeURIComponent(month) : '');
     const out = await (await fetch(q)).json();
     if (!out.ok || !out.dataset) return;
+    this._cloudSig = JSON.stringify(out.dataset);   // กันรอบดึงอัตโนมัติเขียนทับซ้ำทันที
     const m = this.eng.deserializeModel(out.dataset);
     this.setState({ model: m, curMonth: out.month || month, src: 'cloud',
       dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null,
@@ -1501,11 +1529,17 @@ class Component extends DCLogic {
         grace: t.grace ?? this.state.grace, earlyGrace: t.earlyGrace ?? this.state.earlyGrace,
       });
       this.setState({ datasets: out.months });
+      /* ดึงทุกสองนาที ถ้าเขียนทับทุกครั้งจะเด้งกลับไปเดือนเต็มและเลื่อนจอกลับหัวตาราง
+         ขณะที่คนกำลังไล่ดูอยู่ จึงเทียบก่อนว่าของบนชีตเปลี่ยนจริงไหมค่อยเขียนทับ  */
       if (out.dataset) {
-        const m = this.eng.deserializeModel(out.dataset);
-        this.setState({ model: m, curMonth: out.month, src: 'cloud',
-          dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null,
-          dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0 });
+        const sig = JSON.stringify(out.dataset);
+        if (sig !== this._cloudSig) {
+          this._cloudSig = sig;
+          const m = this.eng.deserializeModel(out.dataset);
+          this.setState({ model: m, curMonth: out.month, src: 'cloud',
+            dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null,
+            dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0 });
+        }
       }
       this.setState({ cloudState: 'ok',
         cloudMsg: 'อัปเดตแล้ว ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) });
@@ -1895,7 +1929,9 @@ class Component extends DCLogic {
       goRules: go('rules'),
       periodLabel: m && m.dates.length ? m.dates[0].slice(0, 7) : '—',
       empCount: m ? m.employees.length : 0,
-      sourceLabel: s.src === 'demo' ? 'ตัวอย่าง' : s.src === 'upload' ? 'HCM' : '—',
+      sourceLabel: s.src === 'demo' ? 'ตัวอย่าง' : s.src === 'upload' ? 'HCM' : s.src === 'cloud' ? 'ชีต' : '—',
+      refreshCloud: this.refreshCloud,
+      cloudMsg: s.cloudMsg, hasCloudMsg: !!s.cloudMsg,
       shiftNameChips: (s.shiftGroups || []).map(g => g.name),
       reloadUsers: this.reloadUsers,
       saveUser: this.saveUser,
