@@ -70,7 +70,9 @@
         <select class="input" onChange="{{ onPickMonth }}" value="{{ curMonth }}" style="height:34px; font-size:12px; width:170px;">
           <sc-for list="{{ monthOpts }}" as="m" hint-placeholder-count="2"><option value="{{ m.month }}">{{ m.label }}</option></sc-for>
         </select>
-        <button type="button" class="btn btn-secondary" onClick="{{ goExport }}" style="height:34px; white-space:nowrap;">ส่งออก</button>
+        <sc-if value="{{ canExport }}" hint-placeholder-val="{{ true }}">
+          <button type="button" class="btn btn-secondary" onClick="{{ goExport }}" style="height:34px; white-space:nowrap;">ส่งออก</button>
+        </sc-if>
       </div>
     </header>
 
@@ -2036,7 +2038,12 @@ class Component extends DCLogic {
        (ตัวกันจริงอยู่ที่เซิร์ฟเวอร์ — ข้อมูลกะอื่นไม่ถูกส่งมาตั้งแต่ต้นทาง) */
     const allowed = (s.me && Array.isArray(s.me.menus) && s.me.menus.length) ? s.me.menus : NAV.map(n => n[0]);
     const NAVV = NAV.filter(n => allowed.indexOf(n[0]) >= 0);
-    const scr = NAVV.find(n => n[0] === s.screen) || NAVV[0] || NAV[1];
+    /* หน้าส่งออกไม่ได้อยู่ในเมนูซ้าย เข้าได้จากปุ่ม "ส่งออก" มุมขวาบนอย่างเดียว
+       จึงหาในรายการเมนูไม่เจอ แล้วเด้งกลับแดชบอร์ดทุกครั้งที่กด — ต้องรับไว้ตรงนี้ */
+    const canExport = allowed.indexOf('export') >= 0;
+    const scr = (s.screen === 'export' && canExport)
+      ? ['export', 'ส่งออก', 'Export', 'ส่งออกข้อมูลและรายงาน']
+      : (NAVV.find(n => n[0] === s.screen) || NAVV[0] || NAV[1]);
     const unknown = s.unknownList || [];
     // เรนเดอร์รอบแรกเกิดก่อน componentDidMount จะ import engine เสร็จ — E จึงยังว่างได้
     const BUILTIN = (E && E.BUILTIN_CODES) || [];
@@ -2051,7 +2058,7 @@ class Component extends DCLogic {
       screenTitle: scr[3], screenKicker: scr[2],
       isUpload: scr[0] === 'upload', isDash: scr[0] === 'dash', isGrid: scr[0] === 'grid',
       isEmp: scr[0] === 'emp', isHub: scr[0] === 'hub', isExport: scr[0] === 'export', isRules: scr[0] === 'rules', isUsers: scr[0] === 'users',
-      goExport: go('export'),
+      goExport: go('export'), canExport,
       goRules: go('rules'),
       periodLabel: m && m.dates.length ? m.dates[0].slice(0, 7) : '—',
       empCount: m ? m.employees.length : 0,
