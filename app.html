@@ -1610,17 +1610,20 @@ class Component extends DCLogic {
     return st;
   }
 
-  rebuild(att, sch, src) {
+  /* เป็น async เพราะการเปลี่ยนข้อมูลบนจอไม่ได้เกิดขึ้นทันทีที่สั่ง
+     ถ้าสั่งเขียนลงชีตต่อเลยโดยไม่รอ ตัวเขียนจะไปหยิบข้อมูลชุดเก่าที่ยังว่างอยู่
+     แล้วเลิกทำเงียบ ๆ — หน้าจอมีข้อมูลแต่ชีตไม่มีอะไรเลย                     */
+  async rebuild(att, sch, src) {
     const model = this.eng.buildModel(att, sch, this.cfg());
     this.att = att; this.sch = sch;
-    this.setState({ model, src, columns: model.columns.slice(0, 16), dayKey: model.dates[model.dates.length - 1] || '',
+    await new Promise(done => this.setState({
+      model, src, columns: model.columns.slice(0, 16), dayKey: model.dates[model.dates.length - 1] || '',
       selId: model.employees[0] ? model.employees[0].id : null,
-      unknownList: this.eng.unknownPhrases(att, this.state.customCodes) });
+      unknownList: this.eng.unknownPhrases(att, this.state.customCodes),
+    }, done));
     // คลังสถิติย้อนหลังยังเก็บในเครื่อง เป็นแค่ตัวเลขสรุปไม่กี่บรรทัด ไม่ใช่ข้อมูลรายคน
-    setTimeout(() => {
-      const sn = this.saveSnapshot(model, src);
-      if (sn) this.addLog(`บันทึกสถิติเดือน ${sn.month} เข้าคลังแล้ว`);
-    }, 0);
+    const sn = this.saveSnapshot(model, src);
+    if (sn) this.addLog(`บันทึกสถิติเดือน ${sn.month} เข้าคลังแล้ว`);
     return model;
   }
   /* เปลี่ยนเดือน = ไปเอาจากชีต ไม่ได้เก็บข้อมูลเดือนไหนไว้ในเครื่องแล้ว */
@@ -1729,7 +1732,7 @@ class Component extends DCLogic {
       this.setState({ undoInfo: null, datasets: d.months || [] });
       if (d.dataset) {
         // ได้ของเดิมคืนมาแล้ว เขียนตาราง Matrix / สรุป / ชีตสำรอง ให้ตรงกับของเดิมด้วย
-        this.showCloud(d.dataset, u.month);
+        await this.showCloud(d.dataset, u.month);
         this.addLog('กำลังเขียนตารางบนชีตให้ตรงกับข้อมูลที่ย้อนกลับ…');
         await this.pushToSheet({ silentUndo: true });
       } else {
@@ -1852,7 +1855,7 @@ class Component extends DCLogic {
     this._lastFileKey = p.fileKey;
     try {
       if (!this.schFromUpload) this.sch = this.rememberedSch || null;
-      const m = this.rebuild(this._pendingRows, this.sch, 'upload');
+      const m = await this.rebuild(this._pendingRows, this.sch, 'upload');
       this.addLog(`ประมวลผลแล้ว ${m.employees.length} คน × ${m.dates.length} วัน`
         + (this.sch ? ' (จับคู่ตารางกะแล้ว)' : ' — ยังไม่มีตารางกะ'));
       if (m.openDay) this.addLog(`ยังไม่นับ ${m.openDay} เพราะกะยังไม่จบ — จะเข้าสถิติเองตอนอัปรอบหน้า`);
@@ -1866,9 +1869,12 @@ class Component extends DCLogic {
      เขียนไม่ครบเมื่อไหร่จะเห็นทันทีตั้งแต่ตอนอัป ไม่ใช่ไปรู้ทีหลัง          */
   async pushToSheet(opt) {
     const url = this.syncUrl();
-    if (!url || !this.state.model) return;
+    // เงื่อนไขที่ไปต่อไม่ได้ ต้องบอกให้รู้เสมอ ห้ามเงียบ
+    // เคยเงียบมาแล้วครั้งหนึ่ง หน้าจอมีข้อมูลแต่ชีตว่างเปล่าโดยไม่มีใครรู้
+    if (!url) { this.addLog('ยังไม่ได้ตั้งค่าที่อยู่ชีต — เขียนลงชีตไม่ได้'); return; }
+    if (!this.state.model) { this.addLog('ไม่มีข้อมูลจะเขียน — ยกเลิกการเขียนลงชีต'); return; }
     if (!/^https:\/\/script\.google\.com\/.*\/exec$/.test(url)) {
-      this.addLog('ยังไม่ได้ตั้งค่าที่อยู่ชีต — เขียนไม่ได้'); return;
+      this.addLog('ที่อยู่ชีตไม่ถูกต้อง ต้องลงท้ายด้วย /exec — เขียนลงชีตไม่ได้'); return;
     }
     this.addLog('กำลังเขียนลงชีต…');
     try {
@@ -1876,7 +1882,8 @@ class Component extends DCLogic {
       if (!out.ok) { this.addLog('เขียนลงชีตไม่สำเร็จ: ' + (out.error || 'ไม่ทราบสาเหตุ')); return; }
       this.addLog('เขียนลงชีตแล้ว — ' + ((out.written || []).join(' · ') || 'สำเร็จ'));
       this.setState({ datasets: out.months || this.state.datasets });
-      if (out.dataset) this.showCloud(out.dataset, out.month);
+      if (out.dataset) await this.showCloud(out.dataset, out.month);
+      else this.addLog('ชีตไม่ได้ส่งข้อมูลกลับมา — หน้าจอยังเป็นของที่เพิ่งประมวลผล');
       if (!(opt && opt.silentUndo)) {
         this.setState({ undoInfo: out.undo
           ? { month: out.undo.month, at: new Date(out.undo.at).toLocaleString('th-TH'), had: !!out.undo.had }
@@ -1886,13 +1893,16 @@ class Component extends DCLogic {
     } catch (err) { this.addLog('เขียนลงชีตไม่สำเร็จ: ' + err.message); }
   }
 
-  /* เอาข้อมูลที่ได้จากชีตมาเป็นตัวหลักที่หน้าจอแสดง */
+  /* เอาข้อมูลที่ได้จากชีตมาเป็นตัวหลักที่หน้าจอแสดง
+     รอให้ข้อมูลเข้าที่ก่อนค่อยคืนค่า คนเรียกจะได้สั่งงานต่อได้อย่างปลอดภัย */
   showCloud(ds, month) {
     const m = this.eng.deserializeModel(ds);
     this._cloudSig = JSON.stringify(ds);
-    this.setState({ model: m, curMonth: month || m.dates[0].slice(0, 7), src: 'cloud',
+    return new Promise(done => this.setState({
+      model: m, curMonth: month || (m.dates[0] || '').slice(0, 7), src: 'cloud',
       dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null,
-      dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0 });
+      dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0,
+    }, done));
   }
 
   async fetchDataset(month) {
