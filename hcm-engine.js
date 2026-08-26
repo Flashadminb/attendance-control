@@ -124,6 +124,34 @@ export function mapTable(rows) {
   return { dates: dates.map(d => d.key), records, headerRow: hIdx, columns: header };
 }
 
+/* ── รวมตารางกะใหม่เข้ากับของเดิม ─────────────────────────────────────────
+   แอดมินอัปตารางกะเฉพาะตอนมีพนักงานใหม่หรือเปลี่ยนกะ ไฟล์รอบนั้นจึงอาจมีแค่ไม่กี่คน
+   ถ้าเอาไปทับของเดิมทั้งชุด คนที่เหลือจะกลายเป็น "ไม่มีกะ" ทั้งเดือน
+   ช่องแดงเต็มตาราง หาสายไม่เจอ และคนที่ควรได้ใบเตือนก็หลุด
+   จึงรวมแบบรายคน — คนที่มาในไฟล์ใหม่ใช้ของใหม่ คนที่ไม่มีในไฟล์ใช้ของเดิมต่อ    */
+export function mergeSchedule(oldRows, newRows) {
+  if (!oldRows || !oldRows.length) return newRows;
+  const o = mapTable(oldRows), n = mapTable(newRows);
+  const byId = new Map();
+  const put = (recs) => recs.forEach(r => {
+    const id = String(r.id || '').trim();
+    if (!id) return;
+    const cur = byId.get(id) || { id, name: '', position: '', days: {} };
+    if (r.name) cur.name = r.name;
+    if (r.position) cur.position = r.position;
+    // วันเดียวกันเขียนทับกัน วันที่ไฟล์ใหม่ไม่มีก็ยังใช้ของเดิม
+    Object.entries(r.days || {}).forEach(([d, v]) => { if (String(v).trim()) cur.days[d] = v; });
+    byId.set(id, cur);
+  });
+  put(o.records);
+  put(n.records);
+  const dates = [...new Set([...o.dates, ...n.dates])].sort();
+  const header = ['รหัสพนักงาน', 'ชื่อ', 'ตำแหน่ง', ...dates];
+  const out = [header];
+  [...byId.values()].forEach(r => out.push([r.id, r.name, r.position, ...dates.map(d => r.days[d] || '')]));
+  return out;
+}
+
 /* ── classification ──────────────────────────────────────────────────────── */
 export const LEAVE_TYPES = [
   { re: /ลาพักร้อน/, code: 'AL', label: 'ลาพักร้อน' },

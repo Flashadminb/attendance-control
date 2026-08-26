@@ -1806,13 +1806,24 @@ class Component extends DCLogic {
       const t = this.eng.mapTable(rows);
 
       if (which === 'sch') {
-        // ตารางกะไม่ได้เขียนทับข้อมูลใคร จำไว้ได้เลย ไม่ต้องผ่านหน้าตรวจสอบ
-        this.sch = rows;
-        this.rememberedSch = rows;
+        if (!t.records.length || !t.dates.length) {
+          this.addLog(`${file.name} ไม่ใช่ไฟล์ตารางกะ — หาคอลัมน์วันที่หรือรายชื่อไม่เจอ`);
+          this.setState({ pendMsg: 'ไฟล์นี้ไม่ใช่ไฟล์ตารางกะ — ไม่พบคอลัมน์วันที่หรือรายชื่อพนักงาน' });
+          return;
+        }
+        /* รวมกับตารางกะเดิม ไม่ทับทั้งชุด — อัปเฉพาะคนใหม่ได้โดยคนอื่นไม่หายไป
+           ถ้าทับทั้งชุด คนที่ไม่มีในไฟล์จะกลายเป็น "ไม่มีกะ" ทั้งเดือน       */
+        const before = this.rememberedSch ? this.eng.mapTable(this.rememberedSch).records.length : 0;
+        const merged = this.eng.mergeSchedule(this.rememberedSch, rows);
+        const after = this.eng.mapTable(merged).records.length;
+        this.sch = merged;
+        this.rememberedSch = merged;
         this.schFromUpload = true;
-        this.setState({ schName: `${file.name} · ${t.records.length} คน`, schRemembered: false });
-        await this.saveSchedule(rows, file.name);
-        this.addLog(`จำตารางกะไว้บนชีตแล้ว (${t.records.length} คน) — ครั้งหน้าอัปแค่ไฟล์ attendance ก็พอ`);
+        this.setState({ schName: `${file.name} · ในไฟล์ ${t.records.length} คน · รวมแล้ว ${after} คน`, schRemembered: false });
+        await this.saveSchedule(merged, file.name);
+        this.addLog(before
+          ? `รวมตารางกะแล้ว — ไฟล์นี้มี ${t.records.length} คน ของเดิมมี ${before} คน รวมเป็น ${after} คน`
+          : `จำตารางกะไว้บนชีตแล้ว (${after} คน) — ครั้งหน้าอัปแค่ไฟล์ attendance ก็พอ`);
         return;
       }
 
