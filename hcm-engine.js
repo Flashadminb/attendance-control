@@ -140,18 +140,26 @@ export function mergeSchedule(oldRows, newRows) {
   if (!oldRows || !oldRows.length) return newRows;
   const o = mapTable(oldRows), n = mapTable(newRows);
   const byId = new Map();
-  const put = (recs) => recs.forEach(r => {
+  const put = (recs, authoritative) => recs.forEach(r => {
     const id = String(r.id || '').trim();
     if (!id) return;
     const cur = byId.get(id) || { id, name: '', position: '', days: {} };
     if (r.name) cur.name = r.name;
     if (r.position) cur.position = r.position;
-    // วันเดียวกันเขียนทับกัน วันที่ไฟล์ใหม่ไม่มีก็ยังใช้ของเดิม
-    Object.entries(r.days || {}).forEach(([d, v]) => { if (String(v).trim()) cur.days[d] = v; });
+    /* ไฟล์ใหม่ถือเป็นตัวจริงของ "คนที่มีในไฟล์ ในวันที่ไฟล์ครอบคลุม"
+       ช่องที่เว้นว่างจึงต้องล้างของเดิมออกด้วย ไม่ใช่ปล่อยให้ค้าง —
+       ถ้าเปลี่ยนวันทำงานเป็นวันหยุด แล้วกะเก่ายังค้างอยู่
+       วันนั้นจะกลายเป็น "มีกะแต่ไม่มาแสกน" คือขาดงานทั้งที่เขาหยุดจริง
+       ส่วนวันที่ไฟล์ใหม่ไม่มีคอลัมน์ ยังใช้ของเดิมต่อเหมือนเดิม           */
+    Object.entries(r.days || {}).forEach(([d, v]) => {
+      const val = String(v || '').trim();
+      if (val) cur.days[d] = val;
+      else if (authoritative) delete cur.days[d];
+    });
     byId.set(id, cur);
   });
-  put(o.records);
-  put(n.records);
+  put(o.records, false);
+  put(n.records, true);
   // ตัดวันเก่าทิ้งเมื่อสะสมเกินราวหนึ่งปี ไม่งั้นตารางจะโตขึ้นทุกวันไม่มีวันหยุด
   const dates = [...new Set([...o.dates, ...n.dates])].sort().slice(-KEEP_SCHEDULE_DAYS);
   const header = ['รหัสพนักงาน', 'ชื่อ', 'ตำแหน่ง', ...dates];
