@@ -18,7 +18,7 @@
   try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { s = null; }
 
   if (!s || !s.me || !s.me.user || !s.token) { location.replace(LOGIN_PAGE); return; }
-  if (need === 'admin' && !s.me.isAdmin) { location.replace('./Attendance%20Viewer.dc.html'); return; }
+  if (need === 'admin' && !s.me.isAdmin) { location.replace('./app.html'); return; }
 
   window.HCM_SESSION = s;
 

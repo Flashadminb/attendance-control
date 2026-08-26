@@ -33,10 +33,16 @@ var CHUNK = 40000;                   // ขนาดต่อเซลล์ (�
 /* ── ผู้ใช้และสิทธิ์การเข้าถึง ──────────────────────────────────────────
    รายชื่อผู้ใช้อยู่ในชีตชื่อ DATA เรียงคอลัมน์ตามนี้ (แถวแรกเป็นหัวตาราง)
 
-     A: ชื่อ            B: ยูสเซอร์         C: รหัส          D: กะที่ดูแล
+     A: ชื่อ    B: ยูสเซอร์    C: รหัส    D: กะที่ดูแล    E: เมนูที่เข้าได้
 
-   ช่อง "กะที่ดูแล" ใส่ได้หลายกะคั่นด้วยจุลภาค เช่น  กะเช้า, กะบ่าย
-   ถ้าใส่คำว่า  ทั้งหมด  หรือ  ALL  คนนั้นจะเป็นแอดมิน เห็นทุกกะและจัดการผู้ใช้ได้
+   D "กะที่ดูแล" คุมว่าเห็นข้อมูลของใคร — ใส่ชื่อกะให้ตรงกับที่ตั้งไว้ในเว็บ
+     ใส่ได้หลายกะคั่นจุลภาค เช่น  03:00-12:00, 18:00-03:00
+     ใส่คำว่า  ทั้งหมด  = เห็นข้อมูลทุกกะ
+
+   E "เมนูที่เข้าได้" คุมว่าเข้าหน้าไหนได้ — เว้นว่างไว้ก็ได้
+     เว้นว่าง + กะ "ทั้งหมด"  = เข้าได้ทุกเมนู (เป็นแอดมินเต็ม)
+     เว้นว่าง + ดูแลบางกะ     = เข้าได้เฉพาะเมนูดูข้อมูล อัปโหลดและตั้งค่าไม่ได้
+     ระบุเอง                  = เช่น  แดชบอร์ด, ตารางสี, หนังสือเตือน
 
    เว้น USER_SHEET_ID ว่างไว้ = อ่านแท็บ DATA จากไฟล์เดียวกับที่ติดตั้งสคริปต์
    ซึ่งเป็นวิธีที่แนะนำ ไม่ต้องตั้งค่าอะไรเพิ่ม
@@ -55,8 +61,8 @@ function userSheet_() {
   var sh = ss.getSheetByName(USER_SHEET);
   if (!sh) {
     sh = ss.insertSheet(USER_SHEET);
-    sh.appendRow(['ชื่อ', 'ยูสเซอร์', 'รหัส', 'กะที่ดูแล']);
-    sh.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#201e1d').setFontColor('#ffffff');
+    sh.appendRow(['ชื่อ', 'ยูสเซอร์', 'รหัส', 'กะที่ดูแล', 'เมนูที่เข้าได้']);
+    sh.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#201e1d').setFontColor('#ffffff');
     sh.setFrozenRows(1);
   }
   return sh;
@@ -74,8 +80,36 @@ function readUsers_() {
   for (var i = 1; i < v.length; i++) {
     var u = norm_(v[i][1]);
     if (!u) continue;
-    out.push({ row: i + 1, name: norm_(v[i][0]), user: u, pass: norm_(v[i][2]), shiftText: norm_(v[i][3]) });
+    out.push({ row: i + 1, name: norm_(v[i][0]), user: u, pass: norm_(v[i][2]),
+      shiftText: norm_(v[i][3]), menuText: norm_(v[i][4]) });
   }
+  return out;
+}
+
+/* ── เมนูที่แต่ละคนเข้าได้ (คอลัมน์ E) ──────────────────────────────────
+   เว้นว่าง   = ใช้ค่าเริ่มต้น (ดูกะทั้งหมด → ทุกเมนู, ดูบางกะ → เมนูดูอย่างเดียว)
+   "ทั้งหมด"  = เข้าได้ทุกเมนู
+   นอกนั้น    = ใส่ชื่อเมนูคั่นจุลภาค เช่น  แดชบอร์ด, ตารางสี, รายพนักงาน     */
+var ALL_MENUS = ['upload', 'dash', 'grid', 'emp', 'hub', 'warn', 'archive', 'export', 'rules', 'users'];
+var MENU_LABEL = {
+  upload: 'อัปโหลดไฟล์', dash: 'แดชบอร์ด', grid: 'ตารางสี', emp: 'รายพนักงาน',
+  hub: 'รายตำแหน่ง', warn: 'หนังสือเตือน', archive: 'คลังสถิติย้อนหลัง',
+  export: 'ส่งออกไฟล์', rules: 'ตั้งค่ากฎสี', users: 'ผู้ใช้และสิทธิ์'
+};
+// ค่าเริ่มต้นของคนที่ดูแลเฉพาะบางกะ — ดูได้แต่แก้ระบบไม่ได้
+var VIEWER_MENUS = ['dash', 'grid', 'emp', 'hub', 'warn', 'archive', 'export'];
+
+function menusOf_(u) {
+  var t = norm_(u.menuText);
+  if (!t) return isAdminShifts_(u.shiftText) ? ALL_MENUS.slice() : VIEWER_MENUS.slice();
+  if (/ทั้งหมด|^all$/i.test(t)) return ALL_MENUS.slice();
+  var want = t.split(/[,;/|]/).map(function (x) { return x.trim().toLowerCase(); }).filter(String);
+  var out = [];
+  ALL_MENUS.forEach(function (k) {
+    for (var i = 0; i < want.length; i++) {
+      if (want[i] === k || want[i] === String(MENU_LABEL[k]).toLowerCase()) { out.push(k); return; }
+    }
+  });
   return out;
 }
 
@@ -91,7 +125,8 @@ function auth_(user, pass) {
 }
 function publicUser_(u) {
   return { name: u.name, user: u.user, shiftText: u.shiftText,
-    shifts: splitShifts_(u.shiftText), isAdmin: isAdminShifts_(u.shiftText) };
+    shifts: splitShifts_(u.shiftText), isAdmin: isAdminShifts_(u.shiftText),
+    menus: menusOf_(u), menuText: norm_(u.menuText) };
 }
 
 /* ── บัตรผ่านชั่วคราว (token) ───────────────────────────────────────────
@@ -368,8 +403,9 @@ function doGet(e) {
       var admin = whoIs_(p);
       if (!admin || !isAdminShifts_(admin.shiftText)) return json({ ok: false, error: 'ต้องเป็นแอดมินเท่านั้น' });
       return json({ ok: true, users: readUsers_().map(function (u) {
-        return { name: u.name, user: u.user, shiftText: u.shiftText, isAdmin: isAdminShifts_(u.shiftText) };
-      }) });
+        return { name: u.name, user: u.user, shiftText: u.shiftText, menuText: u.menuText,
+          menus: menusOf_(u), isAdmin: isAdminShifts_(u.shiftText) };
+      }), allMenus: ALL_MENUS.map(function (k) { return { key: k, label: MENU_LABEL[k] }; }) });
     }
 
     // ── ทุก action ที่เหลือต้องล็อกอินก่อน ─────────────────────────────
@@ -405,10 +441,10 @@ function manageUsers_(body) {
     if (!u || !norm_(body.pass)) return json({ ok: false, error: 'ต้องมียูสเซอร์และรหัส' });
     var exists = readUsers_().filter(function (x) { return x.user.toLowerCase() === u.toLowerCase(); });
     if (exists.length) {
-      sh.getRange(exists[0].row, 1, 1, 4).setValues([[norm_(body.name), u, norm_(body.pass), norm_(body.shiftText)]]);
+      sh.getRange(exists[0].row, 1, 1, 5).setValues([[norm_(body.name), u, norm_(body.pass), norm_(body.shiftText), norm_(body.menuText)]]);
       return json({ ok: true, updated: true, user: u });
     }
-    sh.appendRow([norm_(body.name), u, norm_(body.pass), norm_(body.shiftText)]);
+    sh.appendRow([norm_(body.name), u, norm_(body.pass), norm_(body.shiftText), norm_(body.menuText)]);
     return json({ ok: true, added: true, user: u });
   }
 
