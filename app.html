@@ -424,9 +424,9 @@
         </section>
       </div>
 
-      <section>
+      <section id="warnlist">
         <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px;">
-          <h4 style="margin:0;">รายชื่อที่ถึงเกณฑ์ออกหนังสือเตือน</h4>
+          <h4 style="margin:0;">รายชื่อที่ถึงเกณฑ์ออกหนังสือเตือน — ติ๊กช่องขวาสุดเมื่อออกหนังสือแล้ว</h4>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:12px;">
           <button type="button" class="btn btn-ghost noprint" onClick="{{ goRules }}" style="height:28px;">ตั้งกฎ</button>
           <span style="color:#605d5d;">เตือนล่วงหน้าเมื่อเหลือ</span>
@@ -683,6 +683,15 @@
     <!-- ══ WARNINGS ══ -->
     <sc-if value="{{ isWarn }}" hint-placeholder-val="{{ false }}">
     <div style="padding:22px 28px 60px; display:flex; flex-direction:column; gap:22px;">
+      <!-- หน้านี้เก็บประวัติอย่างเดียว บอกให้ชัดว่าถ้าจะออกหนังสือใหม่ต้องไปที่ไหน -->
+      <div class="noprint" style="{{ warnHintStyle }}">
+        <div style="flex:1; min-width:240px; font-size:13px;">
+          <strong>หน้านี้คือประวัติที่ออกไปแล้ว</strong><br>
+          <span style="color:#605d5d;">{{ warnPendingText }}</span>
+        </div>
+        <button type="button" class="btn btn-primary" onClick="{{ goDashWarn }}" style="height:34px; flex:none;">ไปหน้าที่ออกหนังสือ</button>
+      </div>
+
       <div class="noprint" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
         <div class="field" style="margin:0;"><label style="font-size:11px;">ค้นหาชื่อ หรือ รหัสพนักงาน</label>
           <input class="input" placeholder="เช่น สมชาย หรือ 57050" value="{{ warnSearch }}" onInput="{{ onWarnSearch }}" style="height:34px; width:260px; font-size:12px;"></div>
@@ -2506,7 +2515,11 @@ class Component extends DCLogic {
     const wstat = (e) => (ws && ws.get(e.id)) || e.stat;
     const wsx = wstat;
     const activeRules = (s.warnRules || []).filter(r => r.on);
-    const warnN = demps.filter(e => E.matchWarnRules(wstat(e), s.warnRules)).length;
+    const warnHits = demps.filter(e => E.matchWarnRules(wstat(e), s.warnRules));
+    const warnN = warnHits.length;
+    // ถึงเกณฑ์แล้วแต่ยังไม่ได้ติ๊กว่าส่ง — ตัวเลขนี้คือ "งานที่ยังค้าง" ของแอดมิน
+    const warnPending = warnHits.filter(e =>
+      !(s.warnings || []).some(w => w.key === `${e.id}|${win.period}`)).length;
     // ใกล้ถึงเกณฑ์ = ยังไม่เข้ากฎไหนเลย แต่เหลืออีกไม่เกิน nearGap ก็จะเข้ากฎใดกฎหนึ่ง
     const nearOf = (st) => {
       let best = null;
@@ -2570,6 +2583,26 @@ class Component extends DCLogic {
       barStyle: `display:block; height:10px; width:${Math.max(2, h.onTime)}%; background:${h.onTime < 88 ? RED : h.onTime < 94 ? YEL : '#201e1d'};` }));
     V.hubBars = hubs.slice(0, 6).map(h => ({ branch: h.branch, onTime: h.onTime + '%', open: () => this.setState({ screen: 'grid', fPos: h.branch, scrollTop: 0 }),
       barStyle: `display:block; height:12px; width:${Math.max(2, h.onTime)}%; background:${h.onTime < 88 ? RED : h.onTime < 94 ? YEL : '#201e1d'};` }));
+
+    /* หน้า "หนังสือเตือน" เก็บแต่ประวัติ เปิดมาแล้วเห็น 0 ทุกช่องจนไม่รู้ว่าต้องไปกดที่ไหน
+       จึงบอกตรงนั้นเลยว่าตอนนี้มีกี่คนรอออก และพาไปหน้าที่กดได้ในปุ่มเดียว        */
+    V.warnPending = warnPending;
+    V.hasWarnPending = warnPending > 0;
+    V.warnPendingText = warnPending
+      ? `ตอนนี้มี ${warnPending} คนถึงเกณฑ์แล้วแต่ยังไม่ได้ออกหนังสือ — รายชื่อและช่องติ๊กอยู่ในหน้าแดชบอร์ด`
+      : 'ตอนนี้ไม่มีใครถึงเกณฑ์ที่ยังไม่ได้ออกหนังสือ';
+    /* พาไปหน้าแดชบอร์ดแล้วเลื่อนลงไปที่ตารางให้เลย ไม่ต้องให้ไล่หาเอง
+       เลื่อนซ้ำสองสามจังหวะ เพราะกราฟกับตารางด้านบนยังทยอยขึ้น
+       ตำแหน่งของตารางจึงขยับลงเรื่อย ๆ เลื่อนครั้งเดียวจะไปไม่ถึง            */
+    V.goDashWarn = () => this.setState({ screen: 'dash', dashTab: 'all' }, () => {
+      [150, 450, 900].forEach(ms => setTimeout(() => {
+        const el = document.getElementById('warnlist');
+        if (el) el.scrollIntoView({ block: 'start' });
+      }, ms));
+    });
+    V.warnHintStyle = 'display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:12px 16px;'
+      + ` border:2px solid ${warnPending ? RED : 'rgba(32,30,29,.4)'};`
+      + ` background:${warnPending ? '#fff2ef' : '#eae9e9'};`;
 
     V.warnRule = activeRules.length
       ? `${activeRules.map(r => E.ruleText(r)).join(' · ')} — นับรอบ${win.label}`
