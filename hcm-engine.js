@@ -129,6 +129,13 @@ export function mapTable(rows) {
    ถ้าเอาไปทับของเดิมทั้งชุด คนที่เหลือจะกลายเป็น "ไม่มีกะ" ทั้งเดือน
    ช่องแดงเต็มตาราง หาสายไม่เจอ และคนที่ควรได้ใบเตือนก็หลุด
    จึงรวมแบบรายคน — คนที่มาในไฟล์ใหม่ใช้ของใหม่ คนที่ไม่มีในไฟล์ใช้ของเดิมต่อ    */
+// ดูย้อนหลังกี่วันเมื่อเดาว่าใครอยู่กะไหน — ยาวพอให้ครอบคลุมรอบกะปกติ
+// แต่สั้นพอที่การเปลี่ยนกะเดือนที่แล้วจะมีน้ำหนักมากกว่าเดือนก่อน ๆ
+const RECENT_SHIFT_DAYS = 45;
+// เก็บตารางกะย้อนหลังไว้เท่านี้ ประมาณหนึ่งปีเศษ พอให้ย้อนอัปเดือนเก่าได้
+// และไม่ปล่อยให้ตารางโตไม่มีที่สิ้นสุดจนชีตรับไม่ไหว
+const KEEP_SCHEDULE_DAYS = 400;
+
 export function mergeSchedule(oldRows, newRows) {
   if (!oldRows || !oldRows.length) return newRows;
   const o = mapTable(oldRows), n = mapTable(newRows);
@@ -145,10 +152,15 @@ export function mergeSchedule(oldRows, newRows) {
   });
   put(o.records);
   put(n.records);
-  const dates = [...new Set([...o.dates, ...n.dates])].sort();
+  // ตัดวันเก่าทิ้งเมื่อสะสมเกินราวหนึ่งปี ไม่งั้นตารางจะโตขึ้นทุกวันไม่มีวันหยุด
+  const dates = [...new Set([...o.dates, ...n.dates])].sort().slice(-KEEP_SCHEDULE_DAYS);
   const header = ['รหัสพนักงาน', 'ชื่อ', 'ตำแหน่ง', ...dates];
   const out = [header];
-  [...byId.values()].forEach(r => out.push([r.id, r.name, r.position, ...dates.map(d => r.days[d] || '')]));
+  [...byId.values()].forEach(r => {
+    const line = dates.map(d => r.days[d] || '');
+    // คนที่ไม่เหลือกะในช่วงที่เก็บไว้เลย = ไม่ได้อยู่แล้ว ไม่ต้องแบกต่อ
+    if (line.some(v => String(v).trim())) out.push([r.id, r.name, r.position, ...line]);
+  });
   return out;
 }
 
@@ -318,11 +330,16 @@ export function buildModel(attRows, schedRows, cfg) {
   const defaultShift = {};
   if (sched) sched.records.forEach(r => {
     shiftById[r.id] = r.days;
-    // กะประจำตัว = กะที่คนนั้นขึ้นบ่อยที่สุดในไฟล์ตารางกะ ใช้เป็นค่าตั้งต้นของวันที่ไฟล์ยังไม่ครอบคลุม
-    // เพราะแอดมินอัปตารางกะเฉพาะตอนมีพนักงานใหม่หรือเปลี่ยนกะ ไม่ได้อัปทุกเดือน
+    /* กะประจำตัว = กะที่คนนั้นขึ้นบ่อยที่สุด ใช้เป็นค่าตั้งต้นของวันที่ตารางกะยังไม่ครอบคลุม
+       เพราะแอดมินอัปตารางกะเฉพาะตอนมีพนักงานใหม่หรือเปลี่ยนกะ ไม่ได้อัปทุกเดือน
+
+       นับเฉพาะช่วงหลังเท่านั้น ไม่นับย้อนไปทั้งหมด — ตารางกะสะสมข้ามเดือนไปเรื่อย ๆ
+       ถ้านับทั้งหมด คนที่เพิ่งย้ายจากกะเช้าไปกะดึกจะยังถูกมองว่าเป็นกะเช้าอยู่นาน
+       เพราะเดือนก่อน ๆ เขาขึ้นกะเช้ามากกว่า                                   */
+    const recent = Object.keys(r.days).sort().slice(-RECENT_SHIFT_DAYS);
     const freq = {};
-    Object.values(r.days).forEach(v => {
-      const s = String(v || '').trim();
+    recent.forEach(d => {
+      const s = String(r.days[d] || '').trim();
       if (s && parseShift(s)) freq[s] = (freq[s] || 0) + 1;
     });
     const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
