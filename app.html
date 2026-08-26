@@ -1464,6 +1464,20 @@ class Component extends DCLogic {
     });
     return r.json();
   }
+  /* เก็บสิทธิ์ชุดใหม่ที่ได้จากเซิร์ฟเวอร์ ทั้งบนจอและในเครื่อง
+     เขียนเฉพาะตอนที่เปลี่ยนจริง จะได้ไม่สั่งวาดจอใหม่ทุกสองนาทีโดยเปล่าประโยชน์ */
+  applyMe(me) {
+    const cur = this.state.me;
+    if (cur && JSON.stringify(cur) === JSON.stringify(me)) return;
+    this.setState({ me });
+    try {
+      const raw = JSON.parse(localStorage.getItem('hcm-session-v1') || 'null');
+      if (raw) { raw.me = me; localStorage.setItem('hcm-session-v1', JSON.stringify(raw)); }
+      if (window.HCM_SESSION) window.HCM_SESSION.me = me;
+    } catch (e) {}
+    if (cur) this.addLog('สิทธิ์การเข้าถึงถูกปรับใหม่จากส่วนกลาง');
+  }
+
   /* ที่อยู่ชีตสำรอง เก็บไว้ฝั่ง Apps Script ไม่ได้อยู่ในโค้ดหรือในเครื่อง */
   loadBackupCfg = async () => {
     const s = this.session();
@@ -1512,6 +1526,9 @@ class Component extends DCLogic {
         + (this.state.curMonth ? '&month=' + encodeURIComponent(this.state.curMonth) : '');
       const out = await (await fetch(q)).json();
       if (!out.ok) { this.setState({ cloudState: 'err', cloudMsg: out.error || 'โหลดไม่สำเร็จ' }); return; }
+      /* สิทธิ์ที่เครื่องนี้ถืออยู่มาจากตอนล็อกอิน ถ้าแอดมินแก้สิทธิ์ทีหลัง
+         คนนั้นจะยังเห็นเมนูเดิมจนกว่าจะออกแล้วเข้าใหม่ — จึงรับของใหม่มาทับทุกครั้ง */
+      if (out.me) this.applyMe(out.me);
       // รอบอัปที่ย้อนกลับได้เก็บไว้ฝั่งชีต แอดมินจึงกดย้อนจากเครื่องไหนก็ได้
       this.setState({ undoInfo: out.undo
         ? { month: out.undo.month, at: new Date(out.undo.at).toLocaleString('th-TH'), had: !!out.undo.had }
