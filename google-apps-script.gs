@@ -130,10 +130,20 @@ function menusOf_(u) {
 }
 
 // ตรวจรหัส — คืน null ถ้าไม่ผ่าน ไม่บอกว่าผิดที่ยูสเซอร์หรือรหัส
+/* หารายชื่อจากที่จำไว้ก่อน ถ้าไม่เจอค่อยไปอ่านชีตใหม่แล้วลองอีกที
+   เพราะรายชื่อถูกจำไว้ 6 ชั่วโมง ถ้าแอดมินไปพิมพ์เพิ่มคนในชีตเอง
+   คนใหม่จะล็อกอินไม่ได้จนกว่าจะครบเวลา ทั้งที่แถวอยู่ในชีตเรียบร้อยแล้ว
+   ยอมอ่านชีตเพิ่มหนึ่งครั้งเฉพาะตอนล็อกอินไม่ผ่าน แลกกับไม่ต้องรอ 6 ชั่วโมง */
 function auth_(user, pass) {
   var u = norm_(user), p = norm_(pass);
   if (!u || !p) return null;
-  var list = readUsers_();
+  var hit = matchUser_(readUsers_(), u, p);
+  if (hit) return hit;
+  var fresh = readUsersFromSheet_();
+  try { CacheService.getScriptCache().put(USER_CACHE_KEY, JSON.stringify(fresh), 21600); } catch (e) {}
+  return matchUser_(fresh, u, p);
+}
+function matchUser_(list, u, p) {
   for (var i = 0; i < list.length; i++) {
     if (list[i].user.toLowerCase() === u.toLowerCase() && list[i].pass === p) return list[i];
   }
@@ -550,7 +560,8 @@ function manageUsers_(body) {
   if (act === 'addUser') {
     var u = norm_(body.user);
     if (!u || !norm_(body.pass)) return json({ ok: false, error: 'ต้องมียูสเซอร์และรหัส' });
-    var exists = readUsers_().filter(function (x) { return x.user.toLowerCase() === u.toLowerCase(); });
+    // อ่านชีตสด ๆ ไม่ใช้ของที่จำไว้ ไม่งั้นคนที่พิมพ์เพิ่มในชีตเองจะถูกเพิ่มซ้ำอีกแถว
+    var exists = readUsersFromSheet_().filter(function (x) { return x.user.toLowerCase() === u.toLowerCase(); });
     if (exists.length) {
       sh.getRange(exists[0].row, 1, 1, 5).setValues([[norm_(body.name), u, norm_(body.pass), norm_(body.shiftText), norm_(body.menuText)]]);
       dropUserCache_();
@@ -564,7 +575,8 @@ function manageUsers_(body) {
   if (act === 'delUser') {
     var t = norm_(body.user).toLowerCase();
     if (t === norm_(admin.user).toLowerCase()) return json({ ok: false, error: 'ลบตัวเองไม่ได้' });
-    var found = readUsers_().filter(function (x) { return x.user.toLowerCase() === t; });
+    // อ่านสด ๆ เหมือนกัน เลขแถวที่จำไว้อาจไม่ตรงแล้วถ้ามีคนแก้ชีตด้วยมือ
+    var found = readUsersFromSheet_().filter(function (x) { return x.user.toLowerCase() === t; });
     if (!found.length) return json({ ok: false, error: 'ไม่พบยูสเซอร์นี้' });
     sh.deleteRow(found[0].row);
     dropUserCache_();
