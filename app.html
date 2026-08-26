@@ -1477,30 +1477,36 @@ class Component extends DCLogic {
       dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null,
       dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0 });
   }
+  /* ขอทุกอย่างที่ต้องใช้ในรอบเดียว — รายชื่อเดือน ข้อมูลของเดือนที่เลือก และการตั้งค่า
+     เดิมยิงสามรอบต่อกัน รอบละสองถึงสามวินาที ทำให้เปิดหน้าแล้วรอนาน       */
   refreshCloud = async () => {
     const s = this.session();
     const url = this.syncUrl();
     if (!url || !s || !s.token) { this.setState({ cloudMsg: 'ยังไม่ได้ตั้งค่าการเชื่อมต่อ' }); return; }
     this.setState({ cloudState: 'loading', cloudMsg: 'กำลังโหลด…' });
     try {
-      const out = await (await fetch(url + '?action=months&token=' + encodeURIComponent(s.token))).json();
-      if (!out.ok || !out.months || !out.months.length) {
-        this.setState({ cloudState: 'err', cloudMsg: 'ยังไม่มีข้อมูลบนชีต' }); return;
+      const q = url + '?action=bootstrap&token=' + encodeURIComponent(s.token)
+        + (this.state.curMonth ? '&month=' + encodeURIComponent(this.state.curMonth) : '');
+      const out = await (await fetch(q)).json();
+      if (!out.ok) { this.setState({ cloudState: 'err', cloudMsg: out.error || 'โหลดไม่สำเร็จ' }); return; }
+      if (!out.months || !out.months.length) {
+        this.setState({ cloudState: 'err', cloudMsg: 'ยังไม่มีข้อมูลบนชีต', datasets: [] }); return;
       }
+      const t = out.meta;
+      if (t) this.setState({
+        shiftGroups: (t.shiftGroups && t.shiftGroups.length) ? this.eng.normalizeGroups(t.shiftGroups) : this.state.shiftGroups,
+        nearGap: t.nearGap ?? this.state.nearGap, winMode: t.winMode || this.state.winMode,
+        winDays: t.winDays || this.state.winDays,
+        warnings: Array.isArray(t.warnings) ? t.warnings : this.state.warnings,
+        grace: t.grace ?? this.state.grace, earlyGrace: t.earlyGrace ?? this.state.earlyGrace,
+      });
       this.setState({ datasets: out.months });
-      const has = out.months.some(x => x.month === this.state.curMonth);
-      await this.fetchMonth(has ? this.state.curMonth : out.months[out.months.length - 1].month);
-      try {
-        const mo = await (await fetch(url + '?action=meta&token=' + encodeURIComponent(s.token))).json();
-        const t = mo.ok && mo.meta;
-        if (t) this.setState({
-          shiftGroups: (t.shiftGroups && t.shiftGroups.length) ? this.eng.normalizeGroups(t.shiftGroups) : this.state.shiftGroups,
-          nearGap: t.nearGap ?? this.state.nearGap, winMode: t.winMode || this.state.winMode,
-          winDays: t.winDays || this.state.winDays,
-          warnings: Array.isArray(t.warnings) ? t.warnings : this.state.warnings,
-          grace: t.grace ?? this.state.grace, earlyGrace: t.earlyGrace ?? this.state.earlyGrace,
-        });
-      } catch (e) {}
+      if (out.dataset) {
+        const m = this.eng.deserializeModel(out.dataset);
+        this.setState({ model: m, curMonth: out.month, src: 'cloud',
+          dayKey: m.dates[m.dates.length - 1] || '', selId: m.employees[0] ? m.employees[0].id : null,
+          dashFrom: '', dashTo: '', exFrom: '', exTo: '', rangePreset: 'month', scrollTop: 0 });
+      }
       this.setState({ cloudState: 'ok',
         cloudMsg: 'อัปเดตแล้ว ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) });
     } catch (err) {

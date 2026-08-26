@@ -96,7 +96,6 @@
   ep.value = central || local;
   if (!ep.value) { cfg.style.display = 'block'; cfg.open = true; }
 
-  function home(me) { return me.isAdmin ? './Attendance%20Admin.dc.html' : './Attendance%20Viewer.dc.html'; }
 
   // ── ล็อกอินค้างไว้ ──────────────────────────────────────────────────
   var sess = null;
@@ -134,7 +133,16 @@
 
     var user = document.getElementById('u').value.trim();
     var pass = document.getElementById('p').value;
-    go.disabled = true; say('กำลังตรวจสอบ…', 'ok');
+    // Apps Script ใช้เวลาราวสองถึงสามวินาที ถ้าไม่บอกอะไรเลยผู้ใช้จะนึกว่าค้าง
+    go.disabled = true;
+    var tick = 0;
+    say('กำลังตรวจสอบ…', 'ok');
+    var timer = setInterval(function () {
+      tick++;
+      if (tick === 3) say('กำลังเชื่อมต่อ Google… (ครั้งแรกของวันจะช้ากว่าปกติ)', 'ok');
+      if (tick === 8) say('ยังรออยู่… เซิร์ฟเวอร์ตอบช้ากว่าปกติ', 'ok');
+    }, 1000);
+    var done = function () { clearInterval(timer); };
 
     try {
       // ส่งด้วย POST รหัสผ่านจะได้ไม่ไปโผล่ใน URL หรือ log
@@ -146,6 +154,7 @@
           remember: document.getElementById('rm').checked })
       });
       var d = await r.json();
+      done();
       if (!d.ok) { say(d.error || 'เข้าสู่ระบบไม่สำเร็จ'); go.disabled = false; return; }
 
       // เก็บ endpoint กับบัตรผ่าน — ไม่เก็บรหัสผ่านไว้ในเครื่อง
@@ -161,6 +170,7 @@
       say('ยินดีต้อนรับ ' + (d.me.name || d.me.user), 'ok');
       location.href = './app.html';
     } catch (err) {
+      done();
       // ต่อไม่ติด — กางช่องตั้งค่าให้แอดมินแก้ URL ได้ทันที
       cfg.style.display = 'block';
       say('ต่อกับเซิร์ฟเวอร์ไม่ได้ — ตรวจว่า Web app URL ถูกต้อง และตั้ง Who has access เป็น Anyone');

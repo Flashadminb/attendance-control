@@ -73,7 +73,23 @@ function splitShifts_(s) {
   return norm_(s).split(/[,;/|]/).map(function (x) { return x.trim(); }).filter(String);
 }
 
+/* อ่านรายชื่อผู้ใช้ทีเดียวแล้วจำไว้ 6 ชั่วโมง
+   ทุกคำขอที่ต้องยืนยันตัวตนจะเรียกฟังก์ชันนี้ ถ้าอ่านชีตใหม่ทุกครั้งจะเสียเวลา
+   หลายวินาทีต่อคำขอ — ล้างแคชทันทีเมื่อมีการเพิ่มหรือลบผู้ใช้              */
+var USER_CACHE_KEY = 'users_v1';
+function dropUserCache_() { try { CacheService.getScriptCache().remove(USER_CACHE_KEY); } catch (e) {} }
+
 function readUsers_() {
+  try {
+    var hit = CacheService.getScriptCache().get(USER_CACHE_KEY);
+    if (hit) return JSON.parse(hit);
+  } catch (e) {}
+  var fresh = readUsersFromSheet_();
+  try { CacheService.getScriptCache().put(USER_CACHE_KEY, JSON.stringify(fresh), 21600); } catch (e) {}
+  return fresh;
+}
+
+function readUsersFromSheet_() {
   var sh = userSheet_();
   var v = sh.getDataRange().getValues();
   var out = [];
@@ -418,6 +434,16 @@ function doGet(e) {
     if (!me) return json({ ok: false, error: 'ต้องล็อกอินก่อน', needLogin: true });
     var pub = publicUser_(me);
 
+    /* รวมสามคำขอที่หน้าเว็บต้องใช้ตอนเปิด (months + dataset + meta) ไว้ในรอบเดียว
+       เดิมยิงทีละรอบต่อกัน แต่ละรอบใช้เวลาสองถึงสามวินาที รวมแล้วรอนานเกินจำเป็น */
+    if (action === 'bootstrap') {
+      var months = listMonths_(ss);
+      var pick = p.month || (months.length ? months[months.length - 1].month : '');
+      return json({ ok: true, me: pub, months: months, month: pick,
+        meta: readMeta_(ss),
+        dataset: pick ? filterDataset_(readDataset_(ss, pick), pub) : null });
+    }
+
     if (action === 'months') return json({ ok: true, months: listMonths_(ss), me: pub });
     if (action === 'meta') return json({ ok: true, meta: readMeta_(ss), me: pub });
     if (action === 'dataset') {
@@ -447,9 +473,11 @@ function manageUsers_(body) {
     var exists = readUsers_().filter(function (x) { return x.user.toLowerCase() === u.toLowerCase(); });
     if (exists.length) {
       sh.getRange(exists[0].row, 1, 1, 5).setValues([[norm_(body.name), u, norm_(body.pass), norm_(body.shiftText), norm_(body.menuText)]]);
+      dropUserCache_();
       return json({ ok: true, updated: true, user: u });
     }
     sh.appendRow([norm_(body.name), u, norm_(body.pass), norm_(body.shiftText), norm_(body.menuText)]);
+    dropUserCache_();
     return json({ ok: true, added: true, user: u });
   }
 
@@ -459,6 +487,7 @@ function manageUsers_(body) {
     var found = readUsers_().filter(function (x) { return x.user.toLowerCase() === t; });
     if (!found.length) return json({ ok: false, error: 'ไม่พบยูสเซอร์นี้' });
     sh.deleteRow(found[0].row);
+    dropUserCache_();
     return json({ ok: true, deleted: true, user: found[0].user });
   }
 
