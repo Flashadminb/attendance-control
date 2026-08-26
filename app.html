@@ -1811,6 +1811,13 @@ class Component extends DCLogic {
       const months = this.state.datasets || [];
       const latest = months.length ? months[months.length - 1].month : '';
       if (latest && month < latest) flags.push({ hard: false, text: `ไฟล์นี้เป็นเดือน ${month} ซึ่งเก่ากว่าเดือนล่าสุดบนชีต (${latest})` });
+      /* ข้อมูลที่หน้าเว็บอ่านถูกเขียนทับทั้งเดือน ไม่ได้ต่อท้าย
+         หยิบไฟล์เก่าของเดือนเดียวกันมาอัป วันหลังจากนั้นจะหายไปจากหน้าเว็บ
+         (ในชีตสำรองยังอยู่ เพราะที่นั่นเขียนแบบรวมกับของเดิม)               */
+      const curLast = cur && cur.dates && cur.dates.length ? cur.dates[cur.dates.length - 1] : '';
+      if (curLast && to < curLast) {
+        flags.push({ hard: true, text: `ไฟล์นี้มีข้อมูลถึงแค่ ${to} แต่บนชีตมีถึง ${curLast} — ถ้าเขียนทับ ข้อมูลหลังจาก ${to} จะหายไปจากหน้าเว็บ` });
+      }
       if (curIds.size && Math.abs(newIds.size - curIds.size) / curIds.size > 0.2) {
         flags.push({ hard: true, text: `จำนวนคนต่างจากบนชีตมาก — บนชีต ${curIds.size} คน ไฟล์นี้ ${newIds.size} คน` });
       }
