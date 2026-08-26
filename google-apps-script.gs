@@ -417,8 +417,11 @@ function doPost(e) {
     /* ส่งข้อมูลที่เพิ่งเก็บลงชีตกลับไปด้วยเลย หน้าเว็บจะได้แสดงของบนชีตจริง
        ไม่ใช่ของที่ตัวเองเพิ่งคำนวณ — ถ้าเขียนไม่ครบจะเห็นทันทีตั้งแต่ตอนอัป  */
     var justSaved = body.month ? filterDataset_(readDataset_(ss, body.month), publicUser_(sender)) : null;
+    var snapw = readSnapshot_(ss);
     return json({ ok: true, written: written, months: listMonths_(ss),
-      month: body.month || '', dataset: justSaved });
+      month: body.month || '', dataset: justSaved,
+      // บอกกลับไปเลยว่ารอบนี้ย้อนกลับเป็นอะไร ปุ่มย้อนจะได้ขึ้นข้อความถูกตั้งแต่แรก
+      undo: snapw ? { month: snapw.month, at: snapw.at, had: !!snapw.had } : null });
   } catch (err) {
     return json({ ok: false, error: String(err) });
   }

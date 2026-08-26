@@ -1878,7 +1878,9 @@ class Component extends DCLogic {
       this.setState({ datasets: out.months || this.state.datasets });
       if (out.dataset) this.showCloud(out.dataset, out.month);
       if (!(opt && opt.silentUndo)) {
-        this.setState({ undoInfo: { month: out.month, at: new Date().toLocaleString('th-TH'), had: true } });
+        this.setState({ undoInfo: out.undo
+          ? { month: out.undo.month, at: new Date(out.undo.at).toLocaleString('th-TH'), had: !!out.undo.had }
+          : null });
       }
       this.addLog('ทุกคนที่เปิดเว็บอยู่จะเห็นชุดนี้ภายในสองนาที');
     } catch (err) { this.addLog('เขียนลงชีตไม่สำเร็จ: ' + err.message); }
