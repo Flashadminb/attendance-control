@@ -255,12 +255,17 @@ function doPost(e) {
         if (!id) return;
         try {
           var bk = SpreadsheetApp.openById(id);
-          bk.getSheets().forEach(function (t) {
-            if (/^\d{4}$/.test(t.getName())) {
-              if (bk.getSheets().length > 1) bk.deleteSheet(t); else t.clear();
-              wiped.push(bk.getName() + ' แท็บ ' + t.getName());
-            }
+          // เก็บชื่อแท็บที่จะลบไว้ก่อน แล้วค่อยลบทีหลัง
+          // ถ้าลบระหว่างวนรายการ ตัวถัดไปจะกลายเป็นแท็บที่ถูกลบไปแล้ว
+          var years = [];
+          bk.getSheets().forEach(function (t) { if (/^\d{4}$/.test(t.getName())) years.push(t.getName()); });
+          years.forEach(function (nm) {
+            var t = bk.getSheetByName(nm);
+            if (!t) return;
+            if (bk.getSheets().length > 1) bk.deleteSheet(t); else t.clear();
+            wiped.push(bk.getName() + ' แท็บ ' + nm);
           });
+          if (!years.length) wiped.push(bk.getName() + ' ไม่มีแท็บรายปีให้ลบ');
         } catch (e2) { wiped.push('ชีตสำรอง ' + kind + ' ลบไม่สำเร็จ: ' + String(e2)); }
       });
       return json({ ok: true, wiped: wiped });
