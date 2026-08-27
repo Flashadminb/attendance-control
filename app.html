@@ -1878,6 +1878,19 @@ class Component extends DCLogic {
       if (curLast && to < curLast) {
         flags.push({ hard: true, text: `ไฟล์นี้มีข้อมูลถึงแค่ ${to} แต่บนชีตมีถึง ${curLast} — ถ้าเขียนทับ ข้อมูลหลังจาก ${to} จะหายไปจากหน้าเว็บ` });
       }
+      /* ตารางกะครอบคลุมไม่ถึงวันในไฟล์นี้ = วันที่เหลือระบบต้องเดากะให้เอง
+         คนที่ไม่ได้เปลี่ยนกะเดาถูก แต่คนที่เพิ่งย้ายกะจะถูกเทียบกับกะเก่า
+         กลายเป็นสายทุกวันแล้วเข้าเกณฑ์ใบเตือนทั้งที่มาตรงเวลา              */
+      const schInfo = this.state.schInfo;
+      if (schInfo && schInfo.to && to > schInfo.to) {
+        const gap = t.dates.filter(d => d > schInfo.to).length;
+        flags.push({ hard: false, text: `ตารางกะมีถึงแค่ ${schInfo.to} แต่ไฟล์นี้มีถึง ${to}`
+          + ` — ${gap} วันหลังจากนั้นระบบจะเดากะให้จากกะที่แต่ละคนขึ้นบ่อยล่าสุด`
+          + ' ถ้ามีใครเปลี่ยนกะในช่วงนี้ ให้อัปตารางกะด้วย' });
+      }
+      if (!schInfo && !this.rememberedSch) {
+        flags.push({ hard: false, text: 'ยังไม่มีตารางกะในระบบ — ทุกวันจะขึ้นเป็น "ไม่มีกะ" สีแดง และจะหาคนมาสายไม่ได้' });
+      }
       if (curIds.size && Math.abs(newIds.size - curIds.size) / curIds.size > 0.2) {
         flags.push({ hard: true, text: `จำนวนคนต่างจากบนชีตมาก — บนชีต ${curIds.size} คน ไฟล์นี้ ${newIds.size} คน` });
       }
