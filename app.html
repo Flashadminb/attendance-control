@@ -2163,14 +2163,27 @@ class Component extends DCLogic {
     else if (e.deltaMode === 2) d *= el.clientHeight;
     if (!d) return;
     e.preventDefault();
+
+    /* เมาส์สมัยใหม่กับทัชแพดส่งค่ามาเป็นชุดเล็ก ๆ หลายสิบครั้งต่อการหมุนหนึ่งคลิก
+       ถ้าขยับหนึ่งแถวต่อหนึ่งครั้งที่ได้รับ จะกลายเป็นไหลยาวหลายสิบแถว
+       จึงบวกสะสมไว้ก่อน ครบหนึ่งคลิกค่อยขยับหนึ่งที แล้วเริ่มนับใหม่
+       เว้นจากคลิกก่อนหน้านานหรือหมุนกลับทาง ให้ล้างตัวสะสมทิ้ง          */
+    const now = Date.now();
+    if (now - (this._wheelAt || 0) > 260 || (this._wheelAcc || 0) * d < 0) this._wheelAcc = 0;
+    this._wheelAt = now;
+    this._wheelAcc = (this._wheelAcc || 0) + d;
+    const NOTCH = 90;                               // หนึ่งคลิกของล้อมาตรฐานราว 100px
+    if (Math.abs(this._wheelAcc) < NOTCH) return;
+    const dir = this._wheelAcc > 0 ? 1 : -1;
+    this._wheelAcc = 0;
+
     /* เลื่อนเป็นจำนวนแถวเต็ม ๆ แล้วหยุดตรงขอบแถวพอดีเสมอ
        ของเดิมเลื่อนเป็นพิกเซล แถวบนสุดจึงมักโดนตัดครึ่งค้างอยู่ใต้หัวตาราง
        ตาเลยอ่านไม่ออกว่าบรรทัดที่เห็นเป็นของใคร รู้สึกเหมือนเลื่อนทั้งก้อน */
     const step = GRID_ROW_H;
     const max = Math.max(0, el.scrollHeight - el.clientHeight);
     const here = Math.round(el.scrollTop / step) * step;
-    const next = here + (d > 0 ? rows : -rows) * step;
-    el.scrollTop = Math.max(0, Math.min(max, next));
+    el.scrollTop = Math.max(0, Math.min(max, here + dir * rows * step));
   };
 
   onGridScroll = (e) => {
