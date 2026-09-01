@@ -1350,6 +1350,9 @@ class Component extends DCLogic {
     /* ต้องผูกเองแบบ passive:false ถึงจะห้ามการเลื่อนปกติแล้วไหลเองแทนได้
        React ผูก wheel ให้แบบ passive ซึ่งห้ามไม่ได้ จึงใช้วิธีนี้            */
     document.addEventListener('wheel', this.onWheelCapture, { passive: false, capture: true });
+    // จดหน้าแรกไว้เป็นจุดเริ่ม ปุ่มย้อนกลับจะได้มีที่ให้ถอยกลับมา
+    try { history.replaceState({ hcm: this.navState() }, ''); } catch (e) {}
+    window.addEventListener('popstate', this.onPopState);
     try {
       const w = parseFloat(localStorage.getItem(this.WHEEL_KEY));
       if (w > 0 && w <= 1) this.setState({ wheelSpeed: w });
@@ -1373,8 +1376,35 @@ class Component extends DCLogic {
     window.removeEventListener('resize', this._ro);
     document.removeEventListener('visibilitychange', this._vis);
     document.removeEventListener('wheel', this.onWheelCapture, { capture: true });
+    window.removeEventListener('popstate', this.onPopState);
     clearInterval(this._poll);
   }
+
+  /* ── ปุ่มย้อนกลับของเบราว์เซอร์ ────────────────────────────────────────
+     ทั้งเว็บเป็นหน้าเดียว เปลี่ยนหน้าด้วยการวาดใหม่ ไม่ได้เปลี่ยนที่อยู่
+     เบราว์เซอร์จึงไม่รู้ว่ามีการเดินทาง กดย้อนกลับทีเดียวเลยเด้งออกไปหน้าล็อกอิน
+     ทำงานต่อไม่ได้ ต้องไล่กดเข้ามาใหม่ทุกครั้ง
+
+     แก้โดยจดหน้าที่กำลังดูลงประวัติของเบราว์เซอร์ทุกครั้งที่เปลี่ยน
+     กดย้อนกลับก็ถอยทีละหน้าเหมือนเว็บทั่วไป จนสุดแล้วค่อยออกจากแอป   */
+  navKeys = ['screen', 'selId', 'fPos', 'gShift', 'dashTab', 'pickDay', 'hShift'];
+  navState() {
+    const out = {};
+    this.navKeys.forEach(k => { out[k] = this.state[k]; });
+    return out;
+  }
+  // ใช้แทน setState ทุกที่ที่พาผู้ใช้ย้ายหน้า เพื่อให้มีรอยไว้ให้ย้อนกลับ
+  goTo(patch) {
+    this.setState(patch, () => {
+      try { history.pushState({ hcm: this.navState() }, ''); } catch (e) {}
+    });
+  }
+  onPopState = (e) => {
+    const st = e.state && e.state.hcm;
+    if (!st) return;
+    // กลับไปหน้าเดิมเฉย ๆ ห้ามจดซ้ำ ไม่งั้นจะย้อนออกไม่ได้เลย
+    this.setState(st);
+  };
 
   cfg() { const s = this.state; return { grace: s.grace, earlyGrace: s.earlyGrace, flagNoShift: s.flagNoShift, flagShiftOnHoliday: s.flagShiftOnHoliday, holidays: s.holidays, customCodes: s.customCodes, dropOpenDay: s.dropOpenDay }; }
   addLog(m) { this.setState(s => ({ log: [{ t: now(), m }, ...s.log].slice(0, 40) })); }
@@ -2183,7 +2213,7 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state, m = s.model, E = this.eng;
     const set = (patch, cb) => this.setState(patch, cb);
-    const go = (k) => () => this.setState({ screen: k });
+    const go = (k) => () => this.goTo({ screen: k });
     /* เมนูที่คนนี้เข้าได้ มาจากคอลัมน์ "เมนูที่เข้าได้" ในชีต DATA
        เมนูที่ไม่มีสิทธิ์จะไม่ถูกวาด และเปิดตรงด้วย URL ก็ไม่ได้
        (ตัวกันจริงอยู่ที่เซิร์ฟเวอร์ — ข้อมูลกะอื่นไม่ถูกส่งมาตั้งแต่ต้นทาง) */
@@ -2434,7 +2464,7 @@ class Component extends DCLogic {
       months: [...new Set(p.months)].sort().join(', '),
       countStyle: `display:inline-block; padding:1px 8px; font-family:Archivo; font-weight:800; font-size:12px; background:${p.count >= 3 ? RED : p.count === 2 ? YEL : GRY2}; color:${p.count >= 3 ? '#fff' : '#121110'};`,
       levelStyle: this.tagStyle(String(p.level).includes('2') ? 'red' : 'yellow'),
-      open: () => this.setState({ screen: 'emp', selId: p.id }),
+      open: () => this.goTo({ screen: 'emp', selId: p.id, pickDay: '' }),
     }));
     const thisMonth = new Date().toISOString().slice(0, 7);
     V.warnKpis = [
@@ -2627,7 +2657,7 @@ class Component extends DCLogic {
           shiftName: this.shiftOf(c).name,
           time: c.in != null ? `${E.fmtMin(c.in)}–${c.out != null ? E.fmtMin(c.out) : '--'}` : '—',
           sev: c.color === 'red' ? 0 : 1,
-          open: () => this.setState({ screen: 'emp', selId: e.id }),
+          open: () => this.goTo({ screen: 'emp', selId: e.id, pickDay: '' }),
         });
       }
     });
@@ -2678,7 +2708,7 @@ class Component extends DCLogic {
           gap: `อีก ${near.gap} ${E.metricUnit(near.r.metric)} → ${near.r.level}`,
           gapStyle: this.tagStyle(near.gap <= 1 ? 'red' : 'yellow'),
           history: hist.length ? `${hist.length} ครั้ง (ล่าสุด ${hist[0].date})` : 'ยังไม่เคย',
-          open: () => this.setState({ screen: 'emp', selId: e0.id }) };
+          open: () => this.goTo({ screen: 'emp', selId: e0.id, pickDay: '' }) };
       });
 
     const attRate = tPersonDays ? Math.round(tPresent / tPersonDays * 1000) / 10 : 0;
@@ -2716,9 +2746,9 @@ class Component extends DCLogic {
     }));
     V.posShiftHint = s.hShift === 'all' ? 'รวมทุกกะ' : 'นับเฉพาะวันที่พนักงานถูกตั้งกะนี้';
     V.hubRows = posHubs.map(h => ({ ...h, onTime: h.onTime + '%', attRate: h.attRate + '%', openPos: h.branch,
-      attStyle: `display:inline-block; padding:1px 6px; font-family:Archivo; font-weight:800; font-size:11px; background:${h.attRate < 50 ? '#fbecb0' : 'transparent'};`, open: () => this.setState({ screen: 'grid', fPos: h.branch, scrollTop: 0 }),
+      attStyle: `display:inline-block; padding:1px 6px; font-family:Archivo; font-weight:800; font-size:11px; background:${h.attRate < 50 ? '#fbecb0' : 'transparent'};`, open: () => this.goTo({ screen: 'grid', fPos: h.branch, scrollTop: 0 }),
       barStyle: `display:block; height:10px; width:${Math.max(2, h.onTime)}%; background:${h.onTime < 88 ? RED : h.onTime < 94 ? YEL : '#121110'};` }));
-    V.hubBars = hubs.slice(0, 6).map(h => ({ branch: h.branch, onTime: h.onTime + '%', open: () => this.setState({ screen: 'grid', fPos: h.branch, scrollTop: 0 }),
+    V.hubBars = hubs.slice(0, 6).map(h => ({ branch: h.branch, onTime: h.onTime + '%', open: () => this.goTo({ screen: 'grid', fPos: h.branch, scrollTop: 0 }),
       barStyle: `display:block; height:12px; width:${Math.max(2, h.onTime)}%; background:${h.onTime < 88 ? RED : h.onTime < 94 ? YEL : '#121110'};` }));
 
     /* หน้า "หนังสือเตือน" เก็บแต่ประวัติ เปิดมาแล้วเห็น 0 ทุกช่องจนไม่รู้ว่าต้องไปกดที่ไหน
@@ -2731,12 +2761,13 @@ class Component extends DCLogic {
     /* พาไปหน้าแดชบอร์ดแล้วเลื่อนลงไปที่ตารางให้เลย ไม่ต้องให้ไล่หาเอง
        เลื่อนซ้ำสองสามจังหวะ เพราะกราฟกับตารางด้านบนยังทยอยขึ้น
        ตำแหน่งของตารางจึงขยับลงเรื่อย ๆ เลื่อนครั้งเดียวจะไปไม่ถึง            */
-    V.goDashWarn = () => this.setState({ screen: 'dash', dashTab: 'all' }, () => {
+    V.goDashWarn = () => {
+      this.goTo({ screen: 'dash', dashTab: 'all' });
       [150, 450, 900].forEach(ms => setTimeout(() => {
         const el = document.getElementById('warnlist');
         if (el) el.scrollIntoView({ block: 'start' });
       }, ms));
-    });
+    };
     V.warnHintStyle = 'display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:12px 16px;'
       + ` border:2px solid ${warnPending ? RED : 'rgba(32,30,29,.4)'};`
       + ` background:${warnPending ? '#fdf6d9' : '#f2efe6'};`;
@@ -2761,7 +2792,7 @@ class Component extends DCLogic {
           issued: !!rec, issuedLabel: rec ? `ส่งแล้ว ${rec.date}` : 'ยังไม่ส่ง',
           stop: (ev) => ev.stopPropagation(),
           toggleIssue: (ev) => { ev.stopPropagation(); if (ev.target.checked) this.issueWarning(e, hit.level, month); else this.revokeWarning(key); },
-          open: () => this.setState({ screen: 'emp', selId: e.id }) };
+          open: () => this.goTo({ screen: 'emp', selId: e.id, pickDay: '' }) };
       });
 
     // ── dashboard: per-shift
@@ -2787,7 +2818,7 @@ class Component extends DCLogic {
           shift: sh.name, name: e.name, branch: e.position,
           status: c.code === 'AB' ? 'ขาดงาน' : c.code === 'NS' ? 'ไม่มีการแสกน' : c.code === 'INC' ? 'แสกนไม่ครบ' : c.code === 'NoS' ? 'ไม่มีกะ' : c.code === 'OFF!' ? 'กะในวันหยุด' : isLate ? `สาย ${c.late} น.` : `ออกก่อน ${c.early} น.`,
           tagStyle: this.tagStyle(c.color === 'red' || c.color2 === 'red' ? 'red' : 'yellow'), sev: c.color === 'red' ? 0 : 1,
-          open: () => this.setState({ screen: 'emp', selId: e.id }),
+          open: () => this.goTo({ screen: 'emp', selId: e.id, pickDay: '' }),
         });
       });
       const groups = [...g.values()].filter(x => x.headcount).sort((a, b) => b.headcount - a.headcount);
@@ -2852,7 +2883,7 @@ class Component extends DCLogic {
         return { shift: R.shift, branch: R.branch, headcount: R.ids.size, absent: R.absent, late: R.late, attRate: att + '%',
           avgLate: R.late ? Math.round(R.lateMin / R.late) : 0, early: R.early, onTime: rate + '%',
           barStyle: `display:block; height:10px; width:${Math.max(2, rate)}%; background:${rate < 88 ? RED : rate < 94 ? YEL : '#121110'};`,
-          open: () => this.setState({ screen: 'grid', fPos: R.branch, scrollTop: 0 }), sort: rate };
+          open: () => this.goTo({ screen: 'grid', fPos: R.branch, scrollTop: 0 }), sort: rate };
       }).sort((a, b) => a.sort - b.sort).slice(0, 24);
     }
 
@@ -2896,7 +2927,7 @@ class Component extends DCLogic {
       rate: (e.cells.filter(c => c.color !== 'out').length ? Math.round(e.cells.filter(c => this.eng.isPresent(c)).length / e.cells.filter(c => c.color !== 'out').length * 100) : 0) + '%',
       rowStyle: `display:flex; height:${RH}px; border-bottom:1px solid #eeeade; background:${(first + i) % 2 ? '#f7f4ec' : '#fff'};`,
       nameStyle: `width:236px; flex:none; position:sticky; left:0; z-index:1; background:${(first + i) % 2 ? '#f7f4ec' : '#fff'}; border-right:1px solid #ddd8c9; display:flex; align-items:center; gap:6px; padding:0 8px; font-size:11.5px; cursor:pointer;`,
-      open: () => this.setState({ screen: 'emp', selId: e.id }),
+      open: () => this.goTo({ screen: 'emp', selId: e.id, pickDay: '' }),
       cells: e.cells.map((c, j) => ({ code: this.cellText(c), tip: `${c.tip}`,
         style: this.cellStyle(c, CW) + (weekEdge[j] ? ' border-left:2px solid rgba(32,30,29,.42);' : '') })),
     }));

@@ -114,7 +114,7 @@
       sess.me.isAdmin ? 'แอดมิน — เห็นทุกกะ' : ('หัวหน้ากะ — ดูแล ' + (sess.me.shiftText || '—'));
     back.style.display = 'block';
     f.style.display = 'none';
-    document.getElementById('cont').onclick = function () { location.href = './app.html'; };
+    document.getElementById('cont').onclick = function () { location.replace('./app.html'); };
     document.getElementById('switch').onclick = function () {
       // แจ้งเซิร์ฟเวอร์ให้ทิ้งบัตรผ่านใบเดิมด้วย ไม่ใช่ลบแค่ในเครื่อง
       try {
@@ -175,7 +175,7 @@
       } catch (e2) {}
 
       say('ยินดีต้อนรับ ' + (d.me.name || d.me.user), 'ok');
-      location.href = './app.html';
+      location.replace('./app.html');   // replace ไม่ใช่ href — หน้าล็อกอินจะได้ไม่ค้างในประวัติให้ปุ่มย้อนกลับเด้งกลับมา
     } catch (err) {
       done();
       // ต่อไม่ติด — กางช่องตั้งค่าให้แอดมินแก้ URL ได้ทันที
