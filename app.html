@@ -1297,7 +1297,7 @@ class Component extends DCLogic {
     dashFrom: '', dashTo: '', rangePreset: 'month', gShift: 'all',
     archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
     search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
-    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelSpeed: 0.26, pickDay: '',
+    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelRows: 1, pickDay: '',
     // flagShiftOnHoliday ปิดไว้: ไฟล์ตารางกะที่ HCM ส่งออกมาตั้งกะให้ทุกคนทุกวัน
     // ไม่เคยเขียนว่า "วันหยุด" กฎนี้จึงยิงธงแดงมั่วทุกวันหยุดจริง เปิดได้ถ้าไฟล์กะแยกวันหยุด
     grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
@@ -1355,7 +1355,7 @@ class Component extends DCLogic {
     window.addEventListener('popstate', this.onPopState);
     try {
       const w = parseFloat(localStorage.getItem(this.WHEEL_KEY));
-      if (w > 0 && w <= 1) this.setState({ wheelSpeed: w });
+      if (w >= 1 && w <= 8) this.setState({ wheelRows: Math.round(w) });
     } catch (e) {}
     this.loadArchive();
     this.loadSchedule();
@@ -2156,15 +2156,21 @@ class Component extends DCLogic {
   onWheelCapture = (e) => {
     const el = document.getElementById('gridScroll');
     if (!el || !el.contains(e.target)) return;
-    const f = this.state.wheelSpeed;
-    if (!(f > 0) || f >= 1) return;                 // ปกติ = ปล่อยให้เบราว์เซอร์จัดการเอง
+    const rows = this.state.wheelRows;
+    if (!(rows > 0)) return;
     let d = e.deltaY;
     if (e.deltaMode === 1) d *= 16;                 // ล้อที่ส่งค่ามาเป็นบรรทัด
     else if (e.deltaMode === 2) d *= el.clientHeight;
     if (!d) return;
     e.preventDefault();
+    /* เลื่อนเป็นจำนวนแถวเต็ม ๆ แล้วหยุดตรงขอบแถวพอดีเสมอ
+       ของเดิมเลื่อนเป็นพิกเซล แถวบนสุดจึงมักโดนตัดครึ่งค้างอยู่ใต้หัวตาราง
+       ตาเลยอ่านไม่ออกว่าบรรทัดที่เห็นเป็นของใคร รู้สึกเหมือนเลื่อนทั้งก้อน */
+    const step = GRID_ROW_H;
     const max = Math.max(0, el.scrollHeight - el.clientHeight);
-    el.scrollTop = Math.max(0, Math.min(max, el.scrollTop + d * f));
+    const here = Math.round(el.scrollTop / step) * step;
+    const next = here + (d > 0 ? rows : -rows) * step;
+    el.scrollTop = Math.max(0, Math.min(max, next));
   };
 
   onGridScroll = (e) => {
@@ -2688,14 +2694,18 @@ class Component extends DCLogic {
     const warnPending = warnHits.filter(e =>
       !(s.warnings || []).some(w => w.key === `${e.id}|${win.period}`)).length;
     // ใกล้ถึงเกณฑ์ = ยังไม่เข้ากฎไหนเลย แต่เหลืออีกไม่เกิน nearGap ก็จะเข้ากฎใดกฎหนึ่ง
+    /* คืนทุกกฎที่ใกล้เข้าเกณฑ์ ไม่ใช่แค่กฎที่ใกล้ที่สุด
+       คนหนึ่งอาจเหลือขาดอีกวันเดียว และเหลือสายอีกครั้งเดียวพร้อมกัน
+       ต้องบอกให้ครบ ไม่งั้นไปเตือนเขาไม่ครบเรื่อง                          */
     const nearOf = (st) => {
-      let best = null;
+      const hits = [];
       (s.warnRules || []).filter(r => r.on).forEach(r => {
         const gap = Number(r.value) - Number(st[r.metric] || 0);
         if (gap <= 0 || gap > s.nearGap) return;
-        if (!best || gap < best.gap) best = { gap, r };
+        hits.push({ gap, r });
       });
-      return best;
+      hits.sort((a, b) => a.gap - b.gap);
+      return hits.length ? { gap: hits[0].gap, r: hits[0].r, all: hits } : null;
     };
     V.nearList = demps.map(e0 => ({ e0, st: wsx(e0) }))
       .filter(({ st }) => !E.matchWarnRules(st, s.warnRules))
@@ -2705,7 +2715,8 @@ class Component extends DCLogic {
       .slice(0, 15).map(({ e0, st, near }) => {
         const hist = s.warnings.filter(w => w.id === e0.id);
         return { name: e0.name, position: e0.position, absent: st.absent, late: st.late,
-          gap: `อีก ${near.gap} ${E.metricUnit(near.r.metric)} → ${near.r.level}`,
+          // บอกให้ครบว่าเหลืออะไรอีกเท่าไหร่ และเหลือแล้วจะได้ใบไหน
+          gap: near.all.map(h => E.gapText(h.r.metric, h.gap)).join(' หรือ ') + ` → ${near.r.level}`,
           gapStyle: this.tagStyle(near.gap <= 1 ? 'red' : 'yellow'),
           history: hist.length ? `${hist.length} ครั้ง (ล่าสุด ${hist[0].date})` : 'ยังไม่เคย',
           open: () => this.goTo({ screen: 'emp', selId: e0.id, pickDay: '' }) };
@@ -2900,13 +2911,13 @@ class Component extends DCLogic {
     }));
     V.gridCountLabel = gb ? `แสดง ${gemps.length} คนในกะนี้` : `แสดง ${emps.length} คน`;
     // ความเร็วเลื่อน — จำไว้ในเครื่องของแต่ละคน ใครชอบเร็วแบบเดิมก็เลือก "ปกติ"
-    V.wheelOpts = [[1, "ปกติ"], [0.5, "ทีละ 2 แถว"], [0.26, "ทีละ 1 แถว"]].map(([v, l]) => ({
+    V.wheelOpts = [[1, "ทีละ 1 แถว"], [2, "ทีละ 2 แถว"], [4, "ทีละ 4 แถว"]].map(([v, l]) => ({
       label: l,
-      pick: () => { try { localStorage.setItem(this.WHEEL_KEY, String(v)); } catch (e) {} set({ wheelSpeed: v }); },
+      pick: () => { try { localStorage.setItem(this.WHEEL_KEY, String(v)); } catch (e) {} set({ wheelRows: v }); },
       style: `padding:0 11px; height:100%; border:0; cursor:pointer; font-size:12px;`
         + ` font-family:Archivo,"Noto Sans Thai",sans-serif;`
-        + ` background:${s.wheelSpeed === v ? '#121110' : 'transparent'};`
-        + ` color:${s.wheelSpeed === v ? '#f5c518' : '#121110'};`,
+        + ` background:${s.wheelRows === v ? '#121110' : 'transparent'};`
+        + ` color:${s.wheelRows === v ? '#f5c518' : '#121110'};`,
     }));
     const CW = dates.length > 24 ? 30 : 38, RH = GRID_ROW_H;
     /* ขีดเส้นหนาที่ต้นสัปดาห์ (วันจันทร์) — ตารางกว้าง 25-31 ช่องที่หน้าตาเหมือนกันหมด

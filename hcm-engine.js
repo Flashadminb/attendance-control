@@ -808,6 +808,20 @@ export const metricLabel = (k) => (WARN_METRICS.find(m => m[0] === k) || [k, k, 
 export const metricUnit = (k) => (WARN_METRICS.find(m => m[0] === k) || [k, k, ''])[2];
 export const ruleText = (r) => `${metricLabel(r.metric)} ≥ ${r.value} ${metricUnit(r.metric)} → ${r.level}`;
 
+/* ประโยคบอกว่าเหลืออีกเท่าไหร่จะเข้ากฎ — ต้องบอกด้วยว่าเหลือ "อะไร"
+   เขียนว่า "อีก 1 วัน" เฉย ๆ แล้วเอาไปคุยกับพนักงานไม่ได้
+   ว่าเหลือขาดงานอีกวัน หรือเหลือมาสายอีกครั้ง                              */
+const GAP_PHRASE = {
+  absent: (n) => `ขาดอีก ${n} วัน`,
+  late: (n) => `สายอีก ${n} ครั้ง`,
+  lateMin: (n) => `สายรวมอีก ${n} นาที`,
+  maxLate: (n) => `สายครั้งเดียวอีก ${n} นาที`,
+  incomplete: (n) => `แสกนไม่ครบอีก ${n} ครั้ง`,
+  early: (n) => `ออกก่อนเวลาอีก ${n} ครั้ง`,
+};
+export const gapText = (metric, n) =>
+  (GAP_PHRASE[metric] || ((x) => `${metricLabel(metric)} อีก ${x} ${metricUnit(metric)}`))(n);
+
 // คืนกฎที่รุนแรงที่สุดที่พนักงานคนนี้เข้าเกณฑ์ (null = ยังไม่ถึงเกณฑ์ใด)
 export function matchWarnRules(stat, rules) {
   let best = null;
