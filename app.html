@@ -62,7 +62,7 @@
     </div>
   </aside>
 
-  <main style="flex:1; min-width:0; overflow:auto; display:flex; flex-direction:column;">
+  <main style="{{ mainStyle }}">
 
     <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:22px 28px 14px; border-bottom:2px solid rgba(32,30,29,.4);">
       <div>
@@ -2262,6 +2262,11 @@ class Component extends DCLogic {
       screenTitle: scr[3], screenKicker: scr[2],
       isUpload: scr[0] === 'upload', isDash: scr[0] === 'dash', isGrid: scr[0] === 'grid',
       isEmp: scr[0] === 'emp', isHub: scr[0] === 'hub', isExport: scr[0] === 'export', isRules: scr[0] === 'rules', isUsers: scr[0] === 'users',
+      /* หน้าตารางสีกับหน้ารายพนักงานมีพื้นที่เลื่อนของตัวเองอยู่ข้างในแล้ว
+         ถ้าปล่อยให้ตัวหน้าเลื่อนได้อีกชั้น พอเลื่อนในตารางจนสุดมันจะไหลต่อ
+         ไปเลื่อนทั้งหน้าแทน กลายเป็นไหลยาวคุมไม่ได้ จึงปิดการเลื่อนชั้นนอก */
+      mainStyle: 'flex:1; min-width:0; display:flex; flex-direction:column;'
+        + (scr[0] === 'grid' || scr[0] === 'emp' ? ' overflow:hidden;' : ' overflow:auto;'),
       goExport: go('export'), canExport,
       goRules: go('rules'),
       periodLabel: m && m.dates.length ? m.dates[0].slice(0, 7) : '—',
