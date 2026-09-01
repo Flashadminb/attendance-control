@@ -10,41 +10,42 @@
 <style>
   *,*::before,*::after{box-sizing:border-box}
   body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;
-       font-family:"Archivo","Noto Sans Thai",system-ui,sans-serif;background:#f3f2f2;color:#201e1d}
+       font-family:"Archivo","Noto Sans Thai",system-ui,sans-serif;background:#faf8f2;color:#121110}
   .wrap{width:min(430px,100%)}
   h1{font-size:clamp(26px,6vw,34px);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:0}
-  .kick{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#7d7979;margin:8px 0 26px}
-  form{border:2px solid rgba(32,30,29,.4);background:#eae9e9;padding:20px}
-  label{display:block;font-size:12px;color:#605d5d;margin-bottom:5px}
-  input{width:100%;min-height:40px;padding:8px 10px;font:inherit;font-size:15px;color:#201e1d;
+  .kick{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#7a776f;margin:8px 0 26px}
+  form{border:2px solid rgba(32,30,29,.4);background:#f2efe6;padding:20px}
+  label{display:block;font-size:12px;color:#57544c;margin-bottom:5px}
+  input{width:100%;min-height:40px;padding:8px 10px;font:inherit;font-size:15px;color:#121110;
         background:#fff;border:1px solid rgba(32,30,29,.4);border-radius:0}
-  input:focus-visible{outline:none;border-color:#ec3013}
+  input:focus-visible{outline:none;border-color:#a37f00}
   .field+.field{margin-top:14px}
-  button{width:100%;margin-top:18px;min-height:44px;border:0;cursor:pointer;background:#ec3013;color:#f3f2f2;
+  button{width:100%;margin-top:18px;min-height:44px;border:0;cursor:pointer;background:#121110;color:#f5c518;
          font-family:inherit;font-weight:800;font-size:15px}
-  button:hover{background:#dd2b0f}
+  button:hover{background:#2b2924}
   button:disabled{opacity:.5;cursor:not-allowed}
-  .remember{display:flex;gap:8px;align-items:flex-start;margin-top:14px;font-size:12px;color:#605d5d;cursor:pointer;line-height:1.4}
-  .remember input{width:16px;height:16px;min-height:0;flex:none;margin-top:1px;accent-color:#ec3013;cursor:pointer}
+  .remember{display:flex;gap:8px;align-items:flex-start;margin-top:14px;font-size:12px;color:#57544c;cursor:pointer;line-height:1.4}
+  .remember input{width:16px;height:16px;min-height:0;flex:none;margin-top:1px;accent-color:#121110;cursor:pointer}
   .msg{margin-top:14px;font-size:13px;padding:10px 12px;display:none}
-  .msg.err{display:block;background:#ffe0d9;border:1px solid #ec3013;color:#7c1405}
+  .msg.err{display:block;background:#fbd3c8;border:1px solid #a37f00;color:#7d1704}
   .msg.ok{display:block;background:#e6f4ec;border:1px solid #5cb87f;color:#1f5c39}
-  .setup{margin-top:18px;border-top:2px solid rgba(32,30,29,.4);padding-top:14px;font-size:12px;color:#605d5d;line-height:1.6}
-  .setup summary{cursor:pointer;font-weight:600;color:#201e1d}
+  .setup{margin-top:18px;border-top:2px solid rgba(32,30,29,.4);padding-top:14px;font-size:12px;color:#57544c;line-height:1.6}
+  .setup summary{cursor:pointer;font-weight:600;color:#121110}
   .setup input{margin-top:8px;font-size:13px;min-height:34px}
-  code{font-family:ui-monospace,monospace;font-size:11px;background:#f8f4f4;padding:1px 4px}
+  code{font-family:ui-monospace,monospace;font-size:11px;background:#f7f4ec;padding:1px 4px}
 </style>
 </head>
 <body>
 <main class="wrap">
   <h1>ATTENDANCE CONTROL</h1>
+  <div style="width:34px;height:3px;background:#f5c518;margin:11px 0 0"></div>
   <div class="kick">HCM Daily Processing</div>
 
   <!-- ถ้าเคยล็อกอินค้างไว้ ไม่ต้องกรอกซ้ำ — แต่ยังเปลี่ยนไปใช้ชื่ออื่นได้ -->
-  <div id="back" style="display:none;border:2px solid rgba(32,30,29,.4);background:#eae9e9;padding:20px;">
-    <div style="font-size:12px;color:#605d5d;">เข้าสู่ระบบค้างไว้ในชื่อ</div>
+  <div id="back" style="display:none;border:2px solid rgba(32,30,29,.4);background:#f2efe6;padding:20px;">
+    <div style="font-size:12px;color:#57544c;">เข้าสู่ระบบค้างไว้ในชื่อ</div>
     <div id="backwho" style="font-weight:800;font-size:20px;margin:4px 0 2px;"></div>
-    <div id="backrole" style="font-size:12px;color:#605d5d;"></div>
+    <div id="backrole" style="font-size:12px;color:#57544c;"></div>
     <button id="cont" type="button">เข้าใช้งานต่อ</button>
     <button id="switch" type="button"
       style="background:transparent;color:#ae1800;border:1px solid rgba(32,30,29,.4);margin-top:8px;">
@@ -76,6 +77,7 @@
       <input id="ep" placeholder="https://script.google.com/macros/s/..../exec">
     </details>
   </form>
+  <div style="margin-top:22px;font-size:8.5px;letter-spacing:.14em;color:#c0bbaa;text-align:center">จัดทำโดย THANAWAT PHUTTARIT</div>
 </main>
 
 <script>
