@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Attendance Control — เทียบทิศทางหน้าตา</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+<style>
+  :root { --s: 0.325; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#e8e6e2; color:#1c1b1f;
+         font-family:"Archivo","Noto Sans Thai",system-ui,sans-serif; padding:20px 22px 40px; }
+  h1 { font-size:20px; font-weight:800; letter-spacing:-.02em; margin:0 0 2px; }
+  .sub { font-size:12.5px; color:#6b6a70; margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px 16px; }
+  .colhead { font-size:13px; font-weight:800; letter-spacing:-.01em; padding-bottom:2px; }
+  .colnote { font-size:11px; color:#6b6a70; line-height:1.45; min-height:44px; }
+  .cell { }
+  .cap { font-size:11px; color:#6b6a70; margin:0 0 5px; display:flex; gap:6px; align-items:baseline; }
+  .cap b { font-size:11.5px; color:#1c1b1f; font-weight:600; }
+  .shot { background:#fff; border:1px solid #cfccc7; overflow:hidden; position:relative; }
+  .shot iframe { border:0; transform-origin:0 0; transform:scale(var(--s)); position:absolute; top:0; left:0; }
+</style>
+</head>
+<body>
+  <h1>Attendance Control — เทียบทิศทางหน้าตา</h1>
+  <div class="sub">ตัวเลขและรายชื่อทั้งหมดเป็นของจริงจากไฟล์ 2026-08 · Attendance Rate 74.8% · แสกนไม่ครบ 16 · ถึงเกณฑ์เตือน 8 คน</div>
+
+  <div class="grid">
+    <div>
+      <div class="colhead">ปัจจุบัน</div>
+      <div class="colnote">ธีม modernist ที่ใช้อยู่ — ขอบ 2px ทุกกล่อง มุมเหลี่ยม แข็งแรงและอ่านง่าย แต่ทุกอย่างดังเท่ากันหมด</div>
+    </div>
+    <div>
+      <div class="colhead">ทิศทาง A — Console</div>
+      <div class="colnote">แถบซ้ายสีเข้ม พื้นที่ทำงานขาว การ์ดขอบบางมุมมน สีใช้เฉพาะบอกสถานะ · ทันสมัย ลำดับความสำคัญชัด แต่เอกลักษณ์เดิมหายไป</div>
+    </div>
+    <div>
+      <div class="colhead">ทิศทาง B — Editorial</div>
+      <div class="colnote">เก็บ DNA แบบสวิสเดิมไว้ เปลี่ยนขอบหนาเป็นเส้นบาง ใช้ที่ว่างแทนกรอบ ตัวเลขใหญ่ขึ้นมาก · ยังเป็นของเรา แต่เห็นแถวน้อยลง</div>
+    </div>
+
+    <div class="cell"><div class="cap"><b>แดชบอร์ด</b><span>ปัจจุบัน</span></div>
+      <div class="shot" style="width:468px; height:293px;"><iframe src="./Main.dc.html" width="1440" height="900" scrolling="no"></iframe></div></div>
+    <div class="cell"><div class="cap"><b>แดชบอร์ด</b><span>ทิศทาง A</span></div>
+      <div class="shot" style="width:468px; height:293px;"><iframe src="./DirectionA.dc.html" width="1440" height="900" scrolling="no"></iframe></div></div>
+    <div class="cell"><div class="cap"><b>แดชบอร์ด</b><span>ทิศทาง B</span></div>
+      <div class="shot" style="width:468px; height:293px;"><iframe src="./DirectionB.dc.html" width="1440" height="900" scrolling="no"></iframe></div></div>
+
+    <div class="cell"><div class="cap"><b>ตารางสี</b><span>ปัจจุบัน · สีเต็มช่อง ตัวอักษร 9px</span></div>
+      <div class="shot" style="width:468px; height:247px;"><iframe src="./MatrixNow.dc.html" width="1440" height="760" scrolling="no"></iframe></div></div>
+    <div class="cell"><div class="cap"><b>ตารางสี</b><span>ทิศทาง A · สีอ่อน ตัวหนังสือเข้ม</span></div>
+      <div class="shot" style="width:468px; height:247px;"><iframe src="./MatrixA.dc.html" width="1440" height="760" scrolling="no"></iframe></div></div>
+    <div class="cell"><div class="cap"><b>ตารางสี</b><span>ทิศทาง B · โชว์เฉพาะวันที่มีปัญหา</span></div>
+      <div class="shot" style="width:468px; height:247px;"><iframe src="./MatrixB.dc.html" width="1440" height="760" scrolling="no"></iframe></div></div>
+
+    <div class="cell"><div class="cap"><b>อัปโหลด</b><span>ปัจจุบัน</span></div>
+      <div class="shot" style="width:403px; height:267px;"><iframe src="./UploadNow.dc.html" width="1240" height="820" scrolling="no"></iframe></div></div>
+    <div class="cell"><div class="cap"><b>อัปโหลด</b><span>ทิศทาง A · มีตัวบอกขั้นตอน 1-2-3</span></div>
+      <div class="shot" style="width:403px; height:267px;"><iframe src="./UploadA.dc.html" width="1240" height="820" scrolling="no"></iframe></div></div>
+    <div class="cell"><div class="cap"><b>อัปโหลด</b><span>ทิศทาง B</span></div>
+      <div class="shot" style="width:403px; height:267px;"><iframe src="./UploadB.dc.html" width="1240" height="820" scrolling="no"></iframe></div></div>
+  </div>
+</body>
+</html>

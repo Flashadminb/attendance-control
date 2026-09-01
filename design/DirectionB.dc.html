@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Noto+Sans+Thai:wght@400;500;600;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Archivo","Noto Sans Thai",system-ui,sans-serif; }
+    a { color: #ec3013; } a:hover { color: #b8250d; }
+    .b-nav { display:grid; grid-template-columns:26px 1fr; align-items:baseline; padding:9px 0; font-size:14px; color:#3d3a33; border-bottom:1px solid #e7e2d7; }
+    .b-idx { font-size:11px; font-weight:600; color:#a49c8b; font-variant-numeric:tabular-nums; }
+    .b-th { text-align:left; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#a49c8b; font-weight:600; padding:0 0 10px; }
+    .b-td { padding:15px 0; border-top:1px solid #e7e2d7; font-size:14px; color:#16150f; }
+    .b-num { font-variant-numeric:tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width:1440px; height:900px; display:flex; background:#f7f5f0; color:#16150f; overflow:hidden;">
+
+  <div style="width:246px; flex:none; padding:34px 26px 26px 34px; display:flex; flex-direction:column;">
+    <div style="font-weight:800; font-size:15px; letter-spacing:.02em; line-height:1.25;">ATTENDANCE<br>CONTROL</div>
+    <div style="width:26px; height:2px; background:#ec3013; margin:12px 0 30px;"></div>
+
+    <div class="b-nav"><span class="b-idx">01</span><span>อัปโหลดไฟล์</span></div>
+    <div class="b-nav" style="color:#16150f; font-weight:600;"><span class="b-idx" style="color:#ec3013;">02</span><span>แดชบอร์ด</span></div>
+    <div class="b-nav"><span class="b-idx">03</span><span>ตารางสี</span></div>
+    <div class="b-nav"><span class="b-idx">04</span><span>รายพนักงาน</span></div>
+    <div class="b-nav"><span class="b-idx">05</span><span>รายตำแหน่ง</span></div>
+    <div class="b-nav"><span class="b-idx">06</span><span>หนังสือเตือน</span><span></span><span style="font-size:11px; color:#ec3013; font-weight:600;">8 รอออก</span></div>
+    <div class="b-nav"><span class="b-idx">07</span><span>คลังสถิติย้อนหลัง</span></div>
+    <div class="b-nav"><span class="b-idx">08</span><span>ตั้งค่ากฎสี</span></div>
+    <div class="b-nav" style="border-bottom:0;"><span class="b-idx">09</span><span>ผู้ใช้และสิทธิ์</span></div>
+
+    <div style="margin-top:auto; font-size:12px; color:#75705f; line-height:1.9;">
+      <div style="display:flex; justify-content:space-between;"><span>ชุดข้อมูล</span><span class="b-num" style="color:#16150f;">2026-08</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>พนักงาน</span><span class="b-num" style="color:#16150f;">112</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>แหล่งข้อมูล</span><span style="color:#16150f;">ชีต</span></div>
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column; padding:34px 44px 0 0;">
+
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:22px; border-bottom:1px solid #16150f;">
+      <div>
+        <div style="font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#a49c8b;">ภาพรวมการมาทำงาน</div>
+        <div style="display:flex; align-items:baseline; gap:14px; margin-top:6px;">
+          <h2 style="margin:0; font-size:38px; font-weight:800; letter-spacing:-.03em; line-height:1;">สิงหาคม 2026</h2>
+          <span class="b-num" style="font-size:14px; color:#75705f;">112 คน · 25 วัน</span>
+        </div>
+      </div>
+      <div style="display:flex; gap:22px; align-items:center; font-size:13px;">
+        <span style="color:#75705f;">ทุกกะ</span>
+        <span style="color:#c3bcab;">03:00-12:00</span>
+        <span style="color:#c3bcab;">09:00-18:00</span>
+        <span style="color:#c3bcab;">12:00-21:00</span>
+        <span style="color:#c3bcab;">15:00-00:00</span>
+        <span style="color:#c3bcab;">18:00-03:00</span>
+        <span style="border-bottom:2px solid #16150f; padding-bottom:2px; font-weight:600;">ส่งออก</span>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:0; padding:30px 0 34px;">
+      <div style="padding-right:28px;">
+        <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#a49c8b;">Attendance Rate</div>
+        <div class="b-num" style="font-size:56px; font-weight:800; letter-spacing:-.045em; line-height:1; margin-top:12px;">74.8<span style="font-size:26px; color:#a49c8b;">%</span></div>
+        <div style="font-size:12.5px; color:#75705f; margin-top:8px;">เฉลี่ยรายวันของ 25 วัน</div>
+      </div>
+      <div style="padding:0 28px; border-left:1px solid #e7e2d7;">
+        <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#a49c8b;">อัตราตรงเวลา</div>
+        <div class="b-num" style="font-size:56px; font-weight:800; letter-spacing:-.045em; line-height:1; margin-top:12px;">91.8<span style="font-size:26px; color:#a49c8b;">%</span></div>
+        <div style="font-size:12.5px; color:#75705f; margin-top:8px;">หักขาด สาย ออกก่อน แสกนไม่ครบ</div>
+      </div>
+      <div style="padding:0 28px; border-left:1px solid #e7e2d7;">
+        <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#a49c8b;">แสกนไม่ครบ</div>
+        <div class="b-num" style="font-size:56px; font-weight:800; letter-spacing:-.045em; line-height:1; margin-top:12px;">16</div>
+        <div style="font-size:12.5px; color:#75705f; margin-top:8px;">นับเป็นขาดงานในอัตรา</div>
+      </div>
+      <div style="padding-left:28px; border-left:1px solid #e7e2d7;">
+        <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#ec3013;">ถึงเกณฑ์หนังสือเตือน</div>
+        <div class="b-num" style="font-size:56px; font-weight:800; letter-spacing:-.045em; line-height:1; margin-top:12px; color:#ec3013;">8</div>
+        <div style="font-size:12.5px; color:#75705f; margin-top:8px;">รอออกหนังสือ · นับรอบเดือนนี้</div>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px;">
+        <h4 style="margin:0; font-size:19px; font-weight:800; letter-spacing:-.02em;">รายชื่อที่ถึงเกณฑ์ออกหนังสือเตือน</h4>
+        <div style="display:flex; gap:20px; font-size:12.5px; color:#75705f;">
+          <span style="border-bottom:1px solid #c3bcab; padding-bottom:1px;">ตั้งกฎ</span>
+          <span style="border-bottom:1px solid #c3bcab; padding-bottom:1px;">ดาวน์โหลด CSV</span>
+        </div>
+      </div>
+      <div style="font-size:12.5px; color:#75705f; margin-bottom:14px;">ติ๊กช่องขวาสุดเมื่อออกหนังสือให้เขาแล้ว</div>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th class="b-th" style="width:34%;">พนักงาน</th>
+            <th class="b-th">ขาด</th><th class="b-th">สาย</th><th class="b-th">สายสูงสุด/วัน</th>
+            <th class="b-th" style="width:26%;">เข้ากฎข้อไหน</th>
+            <th class="b-th">ระดับ</th><th class="b-th">หนังสือ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="b-td"><div style="font-weight:500;">นางสาว ญาสุมินทร์ แก้วสุกข์</div><div style="font-size:12px; color:#a49c8b; margin-top:2px;">Hub Staff</div></td>
+            <td class="b-td b-num" style="font-weight:800; color:#ec3013;">23</td>
+            <td class="b-td b-num" style="color:#a49c8b;">0</td>
+            <td class="b-td b-num" style="color:#a49c8b;">—</td>
+            <td class="b-td" style="color:#75705f;">ขาดงาน ≥ 6 วัน</td>
+            <td class="b-td"><span style="border-bottom:2px solid #ec3013; padding-bottom:2px; font-weight:600;">เตือนครั้งที่ 2</span></td>
+            <td class="b-td"><div style="width:15px; height:15px; border:1px solid #16150f;"></div></td>
+          </tr>
+          <tr>
+            <td class="b-td"><div style="font-weight:500;">นาย จักรกฤษ ถาวร</div><div style="font-size:12px; color:#a49c8b; margin-top:2px;">Hub Staff</div></td>
+            <td class="b-td b-num" style="font-weight:800; color:#ec3013;">23</td>
+            <td class="b-td b-num" style="color:#a49c8b;">0</td>
+            <td class="b-td b-num" style="color:#a49c8b;">—</td>
+            <td class="b-td" style="color:#75705f;">ขาดงาน ≥ 6 วัน</td>
+            <td class="b-td"><span style="border-bottom:2px solid #ec3013; padding-bottom:2px; font-weight:600;">เตือนครั้งที่ 2</span></td>
+            <td class="b-td"><div style="width:15px; height:15px; border:1px solid #16150f;"></div></td>
+          </tr>
+          <tr>
+            <td class="b-td"><div style="font-weight:500;">นางสาว โนรี มณฑาประเสรืฐ</div><div style="font-size:12px; color:#a49c8b; margin-top:2px;">Hub Staff</div></td>
+            <td class="b-td b-num" style="color:#a49c8b;">0</td>
+            <td class="b-td b-num">1</td>
+            <td class="b-td b-num" style="font-weight:800;">261 น.</td>
+            <td class="b-td" style="color:#75705f;">สายครั้งเดียวเกิน ≥ 120 นาที</td>
+            <td class="b-td"><span style="border-bottom:2px solid #e8a400; padding-bottom:2px; font-weight:600;">เตือนครั้งที่ 1</span></td>
+            <td class="b-td"><div style="width:15px; height:15px; border:1px solid #16150f;"></div></td>
+          </tr>
+          <tr>
+            <td class="b-td"><div style="font-weight:500;">นางสาว ขวัญสุข แก่นนอก</div><div style="font-size:12px; color:#a49c8b; margin-top:2px;">Hub Staff Leader</div></td>
+            <td class="b-td b-num" style="color:#a49c8b;">0</td>
+            <td class="b-td b-num">1</td>
+            <td class="b-td b-num" style="font-weight:800;">219 น.</td>
+            <td class="b-td" style="color:#75705f;">สายครั้งเดียวเกิน ≥ 120 นาที</td>
+            <td class="b-td"><span style="border-bottom:2px solid #e8a400; padding-bottom:2px; font-weight:600;">เตือนครั้งที่ 1</span></td>
+            <td class="b-td"><div style="width:15px; height:15px; border:1px solid #16150f;"></div></td>
+          </tr>
+          <tr>
+            <td class="b-td"><div style="font-weight:500;">นางสาว ศรีสุดา อิ่มสบาย</div><div style="font-size:12px; color:#a49c8b; margin-top:2px;">Hub Staff</div></td>
+            <td class="b-td b-num" style="font-weight:800;">3</td>
+            <td class="b-td b-num" style="color:#a49c8b;">0</td>
+            <td class="b-td b-num" style="color:#a49c8b;">—</td>
+            <td class="b-td" style="color:#75705f;">ขาดงาน ≥ 3 วัน</td>
+            <td class="b-td"><span style="border-bottom:2px solid #e8a400; padding-bottom:2px; font-weight:600;">เตือนครั้งที่ 1</span></td>
+            <td class="b-td"><div style="width:15px; height:15px; border:1px solid #16150f;"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -23,6 +23,9 @@
   ::-webkit-scrollbar { width:10px; height:10px; }
   ::-webkit-scrollbar-thumb { background:#bab6b6; }
   ::-webkit-scrollbar-track { background:#eae7e7; }
+  /* ไล่สายตาตามคนเดียวข้ามทั้งเดือนได้ ไม่หลุดแถวตอนเลื่อน
+     ต้องย้ำที่ช่องชื่อด้วย เพราะช่องชื่อมีพื้นของตัวเองไว้ค้างตอนเลื่อนแนวนอน */
+  .grow:hover, .grow:hover > div:first-child { background:#fdf3cf !important; }
   @media print { .noprint { display:none !important; } }
 </style>
 </helmet>
@@ -545,7 +548,7 @@
           </div>
           <div style="{{ spacerTopStyle }}"></div>
           <sc-for list="{{ visibleRows }}" as="r" hint-placeholder-count="16">
-            <div style="{{ r.rowStyle }}">
+            <div class="grow" style="{{ r.rowStyle }}">
               <div onClick="{{ r.open }}" style="{{ r.nameStyle }}">
                 <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">{{ r.name }}</span>
                 <span style="font-family:Archivo; font-size:10px; color:#7d7979; flex:none;">{{ r.id }}</span>
@@ -1217,6 +1220,8 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;grace&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:30,&quot;unit&quot;:&quot;นาที&quot;,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;earlyGrace&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:30,&quot;unit&quot;:&quot;นาที&quot;,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;warnAbsent&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:10,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;warnLate&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:20,&quot;section&quot;:&quot;เกณฑ์&quot;},&quot;cellDetail&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;code&quot;,&quot;options&quot;:[&quot;code&quot;,&quot;plain&quot;,&quot;time&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;การแสดงผล&quot;},&quot;demoSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:640,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:50,&quot;max&quot;:2000,&quot;step&quot;:10,&quot;section&quot;:&quot;การแสดงผล&quot;}}">
 const RED = '#ec3013', YEL = '#e8a400', GRY = '#d7d3d3', GRY2 = '#eae7e7', OK = '#5cb87f';   // เขียว = มาทำงานปกติ
+// ความสูงหนึ่งแถวของตารางสี — ใช้ทั้งตอนคำนวณแถวที่ต้องวาด และตอนตัดสินว่าเลื่อนพอจะวาดใหม่หรือยัง
+const GRID_ROW_H = 26;
 // กล่องรับไฟล์ — มีไฟล์แล้วเป็นสีเขียว ยังว่างเป็นสีเทา ไม่ใช้แดงเพราะไม่ได้ผิดอะไร
 const dropBox = (filled) => `border:2px solid ${filled ? '#3f9c6d' : 'rgba(32,30,29,.4)'};`
   + ` background:${filled ? '#eef7f2' : '#eae9e9'}; padding:18px; min-height:210px;`
@@ -2065,6 +2070,18 @@ class Component extends DCLogic {
       return { ...e, cells, stat: this.bucketStat(cells) };
     }).filter(e => e.cells.some(c => c !== OUT));
   }
+  /* ── ตอนเลื่อนตารางสี ────────────────────────────────────────────────────
+     เดิมสั่งวาดใหม่ทุกครั้งที่จอขยับแม้แต่พิกเซลเดียว หนึ่งครั้งหมุนล้อเมาส์
+     จึงสั่งวาดใหม่หลายสิบรอบ แต่ละรอบคำนวณทั้งหน้าใหม่หมด ภาพเลยกระตุกและตามตาไม่ทัน
+     ตอนนี้วาดใหม่เฉพาะตอนที่แถวบนสุดเปลี่ยนจริง และรอจังหวะวาดภาพของเบราว์เซอร์ */
+  onGridScroll = (e) => {
+    const top = e.target.scrollTop;
+    // วาดใหม่เฉพาะตอนที่แถวบนสุดเปลี่ยนจริง ๆ ไม่ใช่ทุกพิกเซลที่จอขยับ
+    // ลดจำนวนครั้งที่ต้องคำนวณทั้งหน้าใหม่ลงราวยี่สิบเท่าในการหมุนล้อหนึ่งครั้ง
+    if (Math.floor(top / GRID_ROW_H) === Math.floor((this.state.scrollTop || 0) / GRID_ROW_H)) return;
+    this.setState({ scrollTop: top });
+  };
+
   gridEmployees() {
     const gb = this.state.gShift;
     const emps = this.filtered();
@@ -2315,7 +2332,7 @@ class Component extends DCLogic {
       dates: [], dayTotals: [], dayIssues: [], kpis: [], trendGrid: [], trendTicks: [], trendLate: '', trendAbsent: '',
       hubBars: [], watchlist: [], warnRule: `ขาด ≥ ${s.warnAbsent} วัน หรือ สาย ≥ ${s.warnLate} ครั้ง`,
       branchOpts: ['ทั้งหมด'], posOpts: ['ทั้งหมด'], visibleRows: [], dayCols: [], hubRows: [],
-      gridRef: (el) => { this.gridEl = el; }, onGridScroll: (e) => this.setState({ scrollTop: e.target.scrollTop }),
+      gridRef: (el) => { this.gridEl = el; }, onGridScroll: this.onGridScroll,
       gridInnerStyle: 'min-width:max-content; position:relative;', gridHeadStyle: 'display:flex; position:sticky; top:0; z-index:2; height:30px; border-bottom:2px solid rgba(32,30,29,.4);',
       spacerTopStyle: 'height:0px;', spacerBottomStyle: 'height:0px;',
       empListShort: [], empListCount: '', empName: '—', empMeta: '', empOnTime: '—', empStats: [], empStrip: [], empIssues: [],
@@ -2784,8 +2801,15 @@ class Component extends DCLogic {
       style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.gShift === k ? '#201e1d' : 'transparent'}; color:${s.gShift === k ? '#fff' : '#201e1d'};`,
     }));
     V.gridCountLabel = gb ? `แสดง ${gemps.length} คนในกะนี้` : `แสดง ${emps.length} คน`;
-    const CW = dates.length > 24 ? 30 : 38, RH = 26;
-    V.dayCols = dates.map(d => ({ label: d.slice(-2), style: `width:${CW}px; flex:none; background:#201e1d; color:#fff; display:flex; align-items:center; justify-content:center; font-family:Archivo; font-size:10px; border-left:1px solid #444141;` }));
+    const CW = dates.length > 24 ? 30 : 38, RH = GRID_ROW_H;
+    /* ขีดเส้นหนาที่ต้นสัปดาห์ (วันจันทร์) — ตารางกว้าง 25-31 ช่องที่หน้าตาเหมือนกันหมด
+       ทำให้ตาไม่มีที่เกาะตอนเลื่อน มีเส้นแบ่งสัปดาห์แล้วกะตำแหน่งได้ว่าอยู่ช่วงไหนของเดือน */
+    const isWeekStart = (d) => new Date(d + 'T00:00:00').getDay() === 1;
+    const weekEdge = dates.map(isWeekStart);
+    V.dayCols = dates.map((d, i) => ({ label: d.slice(-2),
+      style: `width:${CW}px; flex:none; background:#201e1d; color:#fff; display:flex; align-items:center;`
+        + ` justify-content:center; font-family:Archivo; font-size:10px;`
+        + ` border-left:${weekEdge[i] ? '2px solid #f3f2f2' : '1px solid #444141'};` }));
     const viewport = Math.max(320, s.viewH - 220);
     const first = Math.max(0, Math.floor(s.scrollTop / RH) - 6);
     const last = Math.min(gemps.length, first + Math.ceil(viewport / RH) + 12);
@@ -2797,7 +2821,8 @@ class Component extends DCLogic {
       rowStyle: `display:flex; height:${RH}px; border-bottom:1px solid #eae7e7; background:${(first + i) % 2 ? '#fbfafa' : '#fff'};`,
       nameStyle: `width:236px; flex:none; position:sticky; left:0; z-index:1; background:${(first + i) % 2 ? '#fbfafa' : '#fff'}; border-right:1px solid #d7d3d3; display:flex; align-items:center; gap:6px; padding:0 8px; font-size:11.5px; cursor:pointer;`,
       open: () => this.setState({ screen: 'emp', selId: e.id }),
-      cells: e.cells.map(c => ({ code: this.cellText(c), tip: `${c.tip}`, style: this.cellStyle(c, CW) })),
+      cells: e.cells.map((c, j) => ({ code: this.cellText(c), tip: `${c.tip}`,
+        style: this.cellStyle(c, CW) + (weekEdge[j] ? ' border-left:2px solid rgba(32,30,29,.42);' : '') })),
     }));
 
     // ── employee

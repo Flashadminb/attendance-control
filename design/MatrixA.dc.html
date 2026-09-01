@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "Archivo","Noto Sans Thai",system-ui,sans-serif; }
+    a { color: #c2410c; } a:hover { color: #9a3412; }
+    .m-num { font-variant-numeric:tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width:1440px; height:760px; display:flex; flex-direction:column; background:#faf9f7; color:#1c1b1f; overflow:hidden;">
+
+  <div style="height:60px; flex:none; display:flex; align-items:center; gap:14px; padding:0 26px; background:#fff; border-bottom:1px solid #e6e4e1;">
+    <div style="font-size:15.5px; font-weight:600; letter-spacing:-.01em;">ตารางสี — พนักงาน × วันที่</div>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:9px;">
+      <div style="height:34px; width:250px; border:1px solid #ddd9d4; border-radius:7px; display:flex; align-items:center; gap:8px; padding:0 11px; font-size:12.5px; color:#9a979d; background:#fff;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        ค้นหาชื่อ หรือ รหัสพนักงาน
+      </div>
+      <div style="height:34px; border-radius:7px; display:flex; align-items:center; gap:7px; padding:0 13px; font-size:12.5px; font-weight:600; background:#1a191d; color:#fff;">ส่งออก</div>
+    </div>
+  </div>
+
+  <div style="padding:14px 26px 12px; display:flex; align-items:center; gap:6px;">
+    <div style="padding:6px 13px; border-radius:999px; background:#1a191d; color:#fff; font-size:12.5px; font-weight:600;">ทุกกะ</div>
+    <div style="padding:6px 13px; border-radius:999px; background:#fff; border:1px solid #e6e4e1; font-size:12.5px; color:#57555c;">03:00-12:00</div>
+    <div style="padding:6px 13px; border-radius:999px; background:#fff; border:1px solid #e6e4e1; font-size:12.5px; color:#57555c;">09:00-18:00</div>
+    <div style="padding:6px 13px; border-radius:999px; background:#fff; border:1px solid #e6e4e1; font-size:12.5px; color:#57555c;">18:00-03:00</div>
+    <div style="margin-left:auto; display:flex; gap:14px; align-items:center; font-size:11.5px; color:#78767d;">
+      <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#cfe6d8; vertical-align:-1px;"></span> มาทำงาน</span>
+      <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#f6e6c4; vertical-align:-1px;"></span> สาย/ออกก่อน</span>
+      <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#f6cec2; vertical-align:-1px;"></span> ขาด/ไม่ครบ</span>
+      <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#eceae6; vertical-align:-1px;"></span> ลา/หยุด</span>
+    </div>
+  </div>
+
+  <div style="margin:0 26px; background:#fff; border:1px solid #e6e4e1; border-radius:10px; overflow:hidden; box-shadow:0 1px 2px rgba(28,27,31,.04);">
+    <div style="display:flex; background:#fbfaf9; border-bottom:1px solid #e6e4e1; padding:9px 0;">
+      <div style="width:224px; flex:none; padding-left:16px; font-size:11.5px; color:#78767d; font-weight:500;">พนักงาน</div>
+      <div style="width:46px; flex:none; text-align:center; font-size:11.5px; color:#78767d; font-weight:500;">ขาด</div>
+      <div style="width:46px; flex:none; text-align:center; font-size:11.5px; color:#78767d; font-weight:500;">สาย</div>
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="25">
+        <div style="{{ d.headStyle }}">
+          <div style="font-size:9px; color:#a5a2a8; line-height:1.1;">{{ d.wd }}</div>
+          <div class="m-num" style="font-size:11px; font-weight:600; line-height:1.2;">{{ d.n }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="13">
+      <div style="{{ r.rowStyle }}">
+        <div style="width:224px; flex:none; padding-left:16px; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</div>
+        <div class="m-num" style="{{ r.absStyle }}">{{ r.absent }}</div>
+        <div class="m-num" style="{{ r.lateStyle }}">{{ r.late }}</div>
+        <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="25">
+          <div style="{{ c.style }}">{{ c.code }}</div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const NAMES = [
+      'นาย นุกูล จินดาศรี','นางสาว ดวงใจ จำปา','นางสาว เปมิกา เข็มเพชร','นาย จีรพงษ์ สระโร',
+      'นาย สายัณห์ ฉิมพลีสวรรค์','นางสาว วนิดา จันทร์สิงห์','นาย นันตระพร จันทร์ตัน',
+      'นางสาว ณัฐกานต์ แจ้งไพร','นางสาว รุ่งธิวา แบบทอง','นาย โรจนรัตน์ ฉิมเอม',
+      'Mr. Tian Fubei','นาย อุทร ธนูชาญ','นางสาว พีรยา บุญอยู่'
+    ];
+    const WD = ['ส','อา','จ','อ','พ','พฤ','ศ'];
+    const days = [];
+    for (let d = 1; d <= 25; d++) {
+      const wd = WD[(d + 5) % 7];
+      const off = wd === 'ส' || wd === 'อา';
+      days.push({ n: String(d).padStart(2, '0'), wd,
+        headStyle: 'width:36px; flex:none; text-align:center;' + (off ? ' background:#f5f3f0;' : '') });
+    }
+
+    // สีอ่อนลง ตัวหนังสือเข้ม อ่านง่ายกว่าพื้นสีจัดตัวขาว
+    const TINT = { ok: '#e4f1e9', yellow: '#f8edd6', red: '#f9ded5', gray: '#f1efec' };
+    const INK  = { ok: '#2f7d55', yellow: '#8a5c12', red: '#a33418', gray: '#8d8a92' };
+
+    const rows = NAMES.map((name, i) => {
+      let absent = 0, late = 0;
+      const cells = days.map((d, j) => {
+        const k = (i * 7 + j * 3) % 17;
+        let color = 'ok', code = '';
+        if (d.wd === 'อา') { color = 'gray'; code = 'OFF'; }
+        else if (k === 4) { color = 'gray'; code = 'AL'; }
+        else if (k === 11) { color = 'gray'; code = 'SL'; }
+        else if (k === 9) { color = 'yellow'; code = 'L' + (8 + (k * 3) % 40); late++; }
+        else if (k === 15) { color = 'red'; code = 'INC'; }
+        else if (k === 2 && i % 5 === 0) { color = 'red'; code = 'AB'; absent++; }
+        return { code, style: 'width:36px; flex:none; height:30px; display:flex; align-items:center;'
+          + ' justify-content:center; font-size:9.5px; font-weight:600; letter-spacing:-.01em;'
+          + ' background:' + TINT[color] + '; color:' + INK[color] + ';'
+          + ' box-shadow:inset -1px 0 0 #fff, inset 0 -1px 0 #fff; overflow:hidden;' };
+      });
+      const stat = 'width:46px; flex:none; text-align:center; font-size:12px;';
+      return { name, absent, late, cells,
+        rowStyle: 'display:flex; align-items:center;' + (i % 2 ? ' background:#fdfcfb;' : ''),
+        absStyle: stat + (absent ? ' color:#a33418; font-weight:700;' : ' color:#b8b5bb;'),
+        lateStyle: stat + (late ? ' color:#8a5c12; font-weight:700;' : ' color:#b8b5bb;') };
+    });
+    return { days, rows };
+  }
+}
+</script>
+</body>
+</html>

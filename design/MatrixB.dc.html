@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Noto+Sans+Thai:wght@400;500;600;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Archivo","Noto Sans Thai",system-ui,sans-serif; }
+    a { color: #ec3013; } a:hover { color: #b8250d; }
+    .m-num { font-variant-numeric:tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width:1440px; height:760px; display:flex; flex-direction:column; background:#f7f5f0; color:#16150f; overflow:hidden; padding:34px 44px 0;">
+
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:20px; border-bottom:1px solid #16150f;">
+    <div>
+      <div style="font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#a49c8b;">ตารางสี</div>
+      <div style="display:flex; align-items:baseline; gap:14px; margin-top:6px;">
+        <h2 style="margin:0; font-size:34px; font-weight:800; letter-spacing:-.03em; line-height:1;">พนักงาน × วันที่</h2>
+        <span class="m-num" style="font-size:13.5px; color:#75705f;">สิงหาคม 2026 · 25 วัน</span>
+      </div>
+    </div>
+    <div style="display:flex; gap:22px; align-items:center; font-size:13px; color:#75705f;">
+      <span style="border-bottom:1px solid #c3bcab; padding-bottom:1px;">ค้นหาพนักงาน</span>
+      <span style="border-bottom:2px solid #16150f; padding-bottom:2px; color:#16150f; font-weight:600;">ส่งออก</span>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:26px; padding:16px 0 18px; font-size:12px; color:#75705f;">
+    <span style="color:#16150f; font-weight:600;">แสดงเฉพาะวันที่มีปัญหา</span>
+    <span><span style="display:inline-block; width:11px; height:11px; background:#ec3013; vertical-align:-1px;"></span> ขาด / แสกนไม่ครบ</span>
+    <span><span style="display:inline-block; width:11px; height:11px; background:#e8a400; vertical-align:-1px;"></span> สาย / ออกก่อน</span>
+    <span><span style="display:inline-block; width:11px; height:11px; border:1px solid #c3bcab; background:#eeebe2; vertical-align:-1px;"></span> ลา / วันหยุด</span>
+    <span><span style="display:inline-block; width:11px; height:11px; border:1px solid #e0dbcf; vertical-align:-1px;"></span> มาทำงานปกติ</span>
+  </div>
+
+  <div>
+    <div style="display:flex; align-items:flex-end; border-bottom:1px solid #16150f; padding-bottom:7px;">
+      <div style="width:236px; flex:none; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#a49c8b; font-weight:600;">พนักงาน</div>
+      <div style="width:52px; flex:none; text-align:center; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#a49c8b; font-weight:600;">ขาด</div>
+      <div style="width:52px; flex:none; text-align:center; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#a49c8b; font-weight:600;">สาย</div>
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="25">
+        <div class="m-num" style="{{ d.headStyle }}">{{ d.n }}</div>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="12">
+      <div style="display:flex; align-items:center; border-bottom:1px solid #e7e2d7;">
+        <div style="width:236px; flex:none; font-size:13px; padding:9px 10px 9px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</div>
+        <div class="m-num" style="{{ r.absStyle }}">{{ r.absent }}</div>
+        <div class="m-num" style="{{ r.lateStyle }}">{{ r.late }}</div>
+        <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="25">
+          <div style="{{ c.style }}">{{ c.code }}</div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const NAMES = [
+      'นาย นุกูล จินดาศรี','นางสาว ดวงใจ จำปา','นางสาว เปมิกา เข็มเพชร','นาย จีรพงษ์ สระโร',
+      'นาย สายัณห์ ฉิมพลีสวรรค์','นางสาว วนิดา จันทร์สิงห์','นาย นันตระพร จันทร์ตัน',
+      'นางสาว ณัฐกานต์ แจ้งไพร','นางสาว รุ่งธิวา แบบทอง','นาย โรจนรัตน์ ฉิมเอม',
+      'Mr. Tian Fubei','นาย อุทร ธนูชาญ'
+    ];
+    const days = [];
+    for (let d = 1; d <= 25; d++) {
+      days.push({ n: String(d).padStart(2, '0'),
+        headStyle: 'width:36px; flex:none; text-align:center; font-size:10.5px; color:#a49c8b; font-weight:600;' });
+    }
+
+    /* วันปกติปล่อยว่าง เห็นแต่วันที่มีปัญหา — ตาไปหยุดตรงที่ต้องจัดการทันที */
+    const rows = NAMES.map((name, i) => {
+      let absent = 0, late = 0;
+      const cells = days.map((d, j) => {
+        const k = (i * 7 + j * 3) % 17;
+        let bg = 'transparent', fg = '#c3bcab', code = '·', weight = '400';
+        if ((i + j) % 7 === 6) { bg = '#eeebe2'; fg = '#8c8574'; code = 'OFF'; }
+        else if (k === 4) { bg = '#eeebe2'; fg = '#8c8574'; code = 'AL'; }
+        else if (k === 11) { bg = '#eeebe2'; fg = '#8c8574'; code = 'SL'; }
+        else if (k === 9) { bg = '#e8a400'; fg = '#16150f'; code = 'L' + (8 + (k * 3) % 40); weight = '700'; late++; }
+        else if (k === 15) { bg = '#ec3013'; fg = '#fff'; code = 'INC'; weight = '700'; }
+        else if (k === 2 && i % 5 === 0) { bg = '#ec3013'; fg = '#fff'; code = 'AB'; weight = '700'; absent++; }
+        return { code, style: 'width:36px; flex:none; height:30px; display:flex; align-items:center;'
+          + ' justify-content:center; font-size:9.5px; font-weight:' + weight + '; letter-spacing:-.01em;'
+          + ' background:' + bg + '; color:' + fg + '; overflow:hidden;' };
+      });
+      const stat = 'width:52px; flex:none; text-align:center; font-size:13px;';
+      return { name, absent, late, cells,
+        absStyle: stat + (absent ? ' color:#ec3013; font-weight:800;' : ' color:#c3bcab;'),
+        lateStyle: stat + (late ? ' color:#16150f; font-weight:800;' : ' color:#c3bcab;') };
+    });
+    return { days, rows };
+  }
+}
+</script>
+</body>
+</html>

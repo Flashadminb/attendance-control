@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Noto+Sans+Thai:wght@400;500;600;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Archivo","Noto Sans Thai",system-ui,sans-serif; }
+    a { color: #ec3013; } a:hover { color: #b8250d; }
+    .u-num { font-variant-numeric:tabular-nums; }
+    .u-lab { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#a49c8b; font-weight:600; }
+  </style>
+</helmet>
+
+<div style="width:1240px; height:820px; display:flex; flex-direction:column; background:#f7f5f0; color:#16150f; overflow:hidden; padding:34px 44px 0;">
+
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:22px; border-bottom:1px solid #16150f;">
+    <div>
+      <div class="u-lab" style="letter-spacing:.18em;">อัปโหลดไฟล์ประจำวัน</div>
+      <h2 style="margin:6px 0 0; font-size:36px; font-weight:800; letter-spacing:-.03em; line-height:1;">ตรวจก่อนเขียนลงชีต</h2>
+    </div>
+    <div style="display:flex; gap:22px; align-items:center; font-size:13px; color:#75705f;">
+      <span>ขั้นที่ 1 เลือกไฟล์</span>
+      <span style="color:#16150f; font-weight:600; border-bottom:2px solid #ec3013; padding-bottom:2px;">ขั้นที่ 2 ตรวจสอบ</span>
+      <span style="color:#c3bcab;">ขั้นที่ 3 เขียนลงชีต</span>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:0; padding:26px 0 30px;">
+    <div style="padding-right:30px;">
+      <div class="u-lab">ไฟล์ที่ 1 — จำเป็น</div>
+      <div style="font-size:21px; font-weight:800; letter-spacing:-.02em; margin-top:8px;">เวลาทำงาน</div>
+      <div style="font-size:12.5px; color:#75705f; margin-top:6px;">ไฟล์ .xlsx จาก HCM · ลากมาวางหรือกดเลือก</div>
+      <div style="margin-top:14px; display:flex; align-items:center; gap:14px;">
+        <span style="border:1px solid #16150f; padding:8px 16px; font-size:13px; font-weight:600;">เลือกไฟล์</span>
+        <span style="font-size:12.5px; color:#a49c8b;">ยังไม่ได้เลือกไฟล์</span>
+      </div>
+    </div>
+    <div style="padding-left:30px; border-left:1px solid #e7e2d7;">
+      <div class="u-lab">ไฟล์ที่ 2 — เฉพาะตอนมีคนใหม่หรือเปลี่ยนกะ</div>
+      <div style="font-size:21px; font-weight:800; letter-spacing:-.02em; margin-top:8px;">ตารางกะ</div>
+      <div style="font-size:12.5px; color:#75705f; margin-top:6px;">Schedule_of_staff20260826110857.xlsx</div>
+      <div class="u-num" style="font-size:12.5px; margin-top:14px; display:flex; align-items:baseline; gap:10px;">
+        <span style="font-weight:800; font-size:15px;">112 คน × 31 วัน</span>
+        <span style="color:#75705f;">2026-08-01 → 2026-08-31</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid #16150f; padding-top:22px;">
+    <div style="display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:0; padding-bottom:24px;">
+      <div style="padding-right:22px;">
+        <div class="u-lab">ไฟล์</div>
+        <div style="font-size:13px; font-weight:500; margin-top:7px; line-height:1.4;">attendance_branch_th<br>_6a8e62acd5b80.xlsx</div>
+      </div>
+      <div style="padding:0 22px; border-left:1px solid #e7e2d7;">
+        <div class="u-lab">รอบข้อมูล</div>
+        <div class="u-num" style="font-size:28px; font-weight:800; letter-spacing:-.03em; margin-top:5px;">2026-08</div>
+      </div>
+      <div style="padding:0 22px; border-left:1px solid #e7e2d7;">
+        <div class="u-lab">ช่วงวันที่</div>
+        <div class="u-num" style="font-size:28px; font-weight:800; letter-spacing:-.03em; margin-top:5px;">01–31</div>
+      </div>
+      <div style="padding:0 22px; border-left:1px solid #e7e2d7;">
+        <div class="u-lab">ในไฟล์</div>
+        <div class="u-num" style="font-size:28px; font-weight:800; letter-spacing:-.03em; margin-top:5px;">112 <span style="font-size:15px; color:#a49c8b;">คน</span></div>
+      </div>
+      <div style="padding-left:22px; border-left:1px solid #e7e2d7;">
+        <div class="u-lab">บนชีตตอนนี้</div>
+        <div class="u-num" style="font-size:28px; font-weight:800; letter-spacing:-.03em; margin-top:5px;">112 <span style="font-size:15px; color:#a49c8b;">คน</span></div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:0; border-top:1px solid #e7e2d7;">
+      <div style="display:flex; gap:18px; padding:16px 0; border-bottom:1px solid #e7e2d7;">
+        <div style="width:3px; flex:none; background:#a49c8b;"></div>
+        <div style="font-size:13px;">
+          <div style="font-weight:600;">คนที่ไม่มีในไฟล์นี้ 2 คน — จะถูกตัดออกจากชีต</div>
+          <div style="color:#75705f; margin-top:4px;">733995 นางสาว เจนจิรา ศรีเพชร · 699693 นางสาว ศิริเพ็ญ ห้องทอง</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:18px; padding:16px 0;">
+        <div style="width:3px; flex:none; background:#e8a400;"></div>
+        <div style="font-size:13px;">
+          <div style="font-weight:600;">ตารางกะตามไม่ทันไฟล์นี้</div>
+          <div style="color:#75705f; margin-top:4px; max-width:840px;">ตารางกะมีถึงแค่ 10 ส.ค. แต่ไฟล์มีถึง 31 ส.ค. — <strong style="color:#16150f;">21 วัน</strong> หลังจากนั้นระบบจะเดากะให้จากกะที่แต่ละคนขึ้นบ่อยล่าสุด ถ้ามีใครเปลี่ยนกะในช่วงนี้ ให้อัปตารางกะด้วย</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:16px; align-items:center; padding-top:24px; border-top:1px solid #16150f; margin-top:6px;">
+      <span style="background:#ec3013; color:#f7f5f0; padding:12px 22px; font-size:14px; font-weight:800; letter-spacing:-.01em;">ยืนยัน เขียนลงชีต</span>
+      <span style="border-bottom:1px solid #c3bcab; padding-bottom:2px; font-size:13.5px; color:#75705f;">ยกเลิก</span>
+      <span style="font-size:12.5px; color:#a49c8b; margin-left:auto;">กดยืนยันแล้วข้อมูลบนชีตจะถูกเขียนทับ และทุกคนจะเห็นชุดนี้ภายใน 2 นาที</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

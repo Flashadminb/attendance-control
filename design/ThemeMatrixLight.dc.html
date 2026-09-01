@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Archivo","Noto Sans Thai",system-ui,sans-serif; }
+    a { color: #a37800; } a:hover { color: #7a5a00; }
+    .tabnum { font-variant-numeric:tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width:1440px; height:760px; display:flex; flex-direction:column; background-color:#faf8f2; color:#121110; overflow:hidden;">
+
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:20px 28px 14px; border-bottom:2px solid #121110;">
+    <div>
+      <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7a776f;">Matrix</div>
+      <h2 style="margin:2px 0 0; font-size:29px; font-weight:800; letter-spacing:-.025em;">พนักงาน × วันที่</h2>
+    </div>
+    <div style="display:flex; gap:9px; align-items:center;">
+      <div style="height:34px; width:230px; border:1px solid #c9c5b8; background:#fff; display:flex; align-items:center; padding:0 11px; font-size:12.5px; color:#a9a49a;">ค้นหาชื่อ หรือ รหัสพนักงาน</div>
+      <div style="height:34px; background:#121110; color:#f5c518; display:flex; align-items:center; padding:0 15px; font-size:13px; font-weight:800;">ส่งออก</div>
+    </div>
+  </div>
+
+  <div style="padding:12px 28px; display:flex; align-items:center; border-bottom:2px solid #121110;">
+    <div style="display:flex;">
+      <div style="padding:8px 15px; font-size:12.5px; background:#121110; color:#f5c518; font-weight:800;">ทุกกะ</div>
+      <div style="padding:8px 15px; font-size:12.5px; color:#57544c;">03:00-12:00</div>
+      <div style="padding:8px 15px; font-size:12.5px; color:#57544c;">09:00-18:00</div>
+      <div style="padding:8px 15px; font-size:12.5px; color:#57544c;">18:00-03:00</div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:15px; align-items:center; font-size:11.5px; color:#57544c;">
+      <span><span style="{{ okSwatch }}"></span> มาทำงาน</span>
+      <span><span style="display:inline-block; width:10px; height:10px; background:#f5c518; vertical-align:-1px;"></span> สาย/ออกก่อน</span>
+      <span><span style="display:inline-block; width:10px; height:10px; background:#d92d0d; vertical-align:-1px;"></span> ขาด/ไม่ครบ</span>
+      <span><span style="display:inline-block; width:10px; height:10px; background:#e5e1d5; vertical-align:-1px;"></span> ลา/หยุด</span>
+    </div>
+  </div>
+
+  <div style="padding:0 28px; overflow:hidden;">
+    <div style="display:flex; align-items:flex-end; border-bottom:2px solid #121110; padding:9px 0 6px;">
+      <div style="width:216px; flex:none; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#7a776f; font-weight:600;">พนักงาน</div>
+      <div style="width:46px; flex:none; text-align:center; font-size:11px; text-transform:uppercase; color:#7a776f; font-weight:600;">ขาด</div>
+      <div style="width:46px; flex:none; text-align:center; font-size:11px; text-transform:uppercase; color:#7a776f; font-weight:600;">สาย</div>
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="25">
+        <div class="tabnum" style="{{ d.style }}">{{ d.n }}</div>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="14">
+      <div style="{{ r.rowStyle }}">
+        <div style="width:216px; flex:none; font-size:12.5px; padding:0 8px 0 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</div>
+        <div class="tabnum" style="{{ r.absStyle }}">{{ r.absent }}</div>
+        <div class="tabnum" style="{{ r.lateStyle }}">{{ r.late }}</div>
+        <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="25">
+          <div style="{{ c.style }}">{{ c.code }}</div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const NAMES = [
+      'นาย นุกูล จินดาศรี','นางสาว ดวงใจ จำปา','นางสาว เปมิกา เข็มเพชร','นาย จีรพงษ์ สระโร',
+      'นาย สายัณห์ ฉิมพลีสวรรค์','นางสาว วนิดา จันทร์สิงห์','นาย นันตระพร จันทร์ตัน',
+      'นางสาว ณัฐกานต์ แจ้งไพร','นางสาว รุ่งธิวา แบบทอง','นาย โรจนรัตน์ ฉิมเอม',
+      'Mr. Tian Fubei','นาย อุทร ธนูชาญ','นางสาว พีรยา บุญอยู่','นางสาว ประภาศรี ดิดขุนทด'
+    ];
+    const days = [];
+    for (let d = 1; d <= 25; d++) {
+      days.push({ n: String(d).padStart(2, '0'),
+        style: 'width:35px; flex:none; text-align:center; font-size:10.5px; font-weight:800; color:#7a776f;' });
+    }
+
+    /* สาย = เหลืองของธีม · ขาด/ไม่ครบ = แดง · ลา/หยุด = เทากระดาษ
+       ส่วน "มาทำงาน" มีให้เลือกความเข้ม 4 ระดับ ส่งมาทาง ?g=1..4 เพื่อเทียบกันในหน้าเดียว */
+    const GREENS = [
+      { bg:'#e2eee6', fg:'#1f6b41' },   // 1 อ่อนสุด
+      { bg:'#c3e2d1', fg:'#17583a' },   // 2
+      { bg:'#93c9ab', fg:'#0e3d24' },   // 3
+      { bg:'#3f8f5f', fg:'#ffffff' },   // 4 เข้มสุด ตัวหนังสือขาว
+    ];
+    let gi = 2;
+    const m = String(location.search || '').match(/g=(\d)/);
+    if (m) gi = Math.min(3, Math.max(0, (+m[1]) - 1));
+    const G = GREENS[gi];
+
+    const BG = { ok:G.bg, late:'#f5c518', bad:'#d92d0d', off:'#e5e1d5' };
+    const FG = { ok:G.fg, late:'#121110', bad:'#fff',    off:'#8a857a' };
+
+    const rows = NAMES.map((name, i) => {
+      let absent = 0, late = 0;
+      const cells = days.map((d, j) => {
+        const k = (i * 7 + j * 3) % 17;
+        let t = 'ok', code = '';
+        if ((i + j) % 7 === 6) { t = 'off'; code = 'OFF'; }
+        else if (k === 4) { t = 'off'; code = 'AL'; }
+        else if (k === 11) { t = 'off'; code = 'SL'; }
+        else if (k === 9) { t = 'late'; code = 'L' + (8 + (k * 3) % 40); late++; }
+        else if (k === 15) { t = 'bad'; code = 'INC'; }
+        else if (k === 2 && i % 5 === 0) { t = 'bad'; code = 'AB'; absent++; }
+        return { code, style: 'width:35px; flex:none; height:28px; display:flex; align-items:center;'
+          + ' justify-content:center; font-weight:800; font-size:9.5px; letter-spacing:-.02em;'
+          + ' background:' + BG[t] + '; color:' + FG[t] + ';'
+          + ' box-shadow:inset -1px 0 0 #faf8f2, inset 0 -1px 0 #faf8f2; overflow:hidden;' };
+      });
+      const stat = 'width:46px; flex:none; text-align:center; font-size:12.5px;';
+      return { name, absent, late, cells,
+        rowStyle: 'display:flex; align-items:center; padding:2px 0;' + (i % 2 ? ' background:#f4f1e8;' : ''),
+        absStyle: stat + (absent ? ' color:#c92a0f; font-weight:800;' : ' color:#b3afa4;'),
+        lateStyle: stat + (late ? ' font-weight:800;' : ' color:#b3afa4;') };
+    });
+    const okSwatch = 'display:inline-block; width:10px; height:10px; vertical-align:-1px;'
+      + ' background:' + G.bg + '; box-shadow:inset 0 0 0 1px rgba(18,17,16,.18);';
+    return { days, rows, okSwatch };
+  }
+}
+</script>
+</body>
+</html>

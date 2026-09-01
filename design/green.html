@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>เลือกความเข้มของสีเขียว "มาทำงาน"</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+<style>
+  :root { --s: 0.485; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#e8e6e2; color:#121110;
+         font-family:"Archivo","Noto Sans Thai",system-ui,sans-serif; padding:20px 22px 40px; }
+  h1 { font-size:20px; font-weight:800; letter-spacing:-.02em; margin:0 0 3px; }
+  .sub { font-size:12.5px; color:#57544c; margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:16px 18px; }
+  .cap { display:flex; align-items:center; gap:9px; margin:0 0 6px; }
+  .cap b { font-size:14px; font-weight:800; }
+  .cap span { font-size:11.5px; color:#57544c; }
+  .sw { width:30px; height:18px; display:inline-block; box-shadow:inset 0 0 0 1px rgba(18,17,16,.2); }
+  .shot { background:#fff; border:1px solid #cfccc7; overflow:hidden; position:relative;
+          width:698px; height:369px; }
+  .shot iframe { border:0; transform-origin:0 0; transform:scale(var(--s)); position:absolute; top:0; left:0; }
+</style>
+</head>
+<body>
+  <h1>สีเขียว “มาทำงาน” — เลือกความเข้ม</h1>
+  <div class="sub">สีอื่นคงเดิมทั้งหมด · เหลือง #f5c518 = สาย · แดง #d92d0d = ขาด/ไม่ครบ · เทา #e5e1d5 = ลา/หยุด</div>
+
+  <div class="grid">
+    <div>
+      <div class="cap"><span class="sw" style="background:#e2eee6;"></span><b>ระดับ 1</b><span>#e2eee6 — ที่โชว์ไปรอบก่อน อ่อนสุด</span></div>
+      <div class="shot"><iframe src="./ThemeMatrixLight.dc.html?g=1" width="1440" height="760" scrolling="no"></iframe></div>
+    </div>
+    <div>
+      <div class="cap"><span class="sw" style="background:#c3e2d1;"></span><b>ระดับ 2</b><span>#c3e2d1 — เข้มขึ้นนิดเดียว</span></div>
+      <div class="shot"><iframe src="./ThemeMatrixLight.dc.html?g=2" width="1440" height="760" scrolling="no"></iframe></div>
+    </div>
+    <div>
+      <div class="cap"><span class="sw" style="background:#93c9ab;"></span><b>ระดับ 3</b><span>#93c9ab — เห็นเป็นเขียวชัดเจน ยังอ่านรหัสในช่องออก</span></div>
+      <div class="shot"><iframe src="./ThemeMatrixLight.dc.html?g=3" width="1440" height="760" scrolling="no"></iframe></div>
+    </div>
+    <div>
+      <div class="cap"><span class="sw" style="background:#3f8f5f;"></span><b>ระดับ 4</b><span>#3f8f5f — เขียวเต็ม ตัวหนังสือขาว ใกล้ของเดิมที่สุด</span></div>
+      <div class="shot"><iframe src="./ThemeMatrixLight.dc.html?g=4" width="1440" height="760" scrolling="no"></iframe></div>
+    </div>
+  </div>
+</body>
+</html>

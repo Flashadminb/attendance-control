@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Archivo","Noto Sans Thai",system-ui,sans-serif; }
+    a { color: #ec3013; } a:hover { color: #b8250d; }
+  </style>
+</helmet>
+
+<div style="width:1440px; height:760px; display:flex; flex-direction:column; background:#f3f2f2; color:#201e1d; overflow:hidden;">
+
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:22px 28px 14px; border-bottom:2px solid rgba(32,30,29,.4);">
+    <div>
+      <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7d7979;">Matrix</div>
+      <h2 style="margin:2px 0 0; font-size:29px; font-weight:800; letter-spacing:-.02em;">พนักงาน × วันที่</h2>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <div style="height:34px; border:1px solid rgba(32,30,29,.4); background:#fff; display:flex; align-items:center; padding:0 10px; font-size:12px; width:220px; color:#7d7979;">ค้นหาชื่อ หรือ รหัสพนักงาน</div>
+      <div style="height:34px; border:2px solid #201e1d; display:flex; align-items:center; padding:0 14px; font-size:13px; font-weight:600;">ส่งออก</div>
+    </div>
+  </div>
+
+  <div style="padding:14px 28px 10px; display:flex; gap:0; border-bottom:2px solid rgba(32,30,29,.4);">
+    <div style="padding:8px 14px; font-size:12px; background:#201e1d; color:#f3f2f2; font-weight:800;">ทุกกะ</div>
+    <div style="padding:8px 14px; font-size:12px;">03:00-12:00</div>
+    <div style="padding:8px 14px; font-size:12px;">09:00-18:00</div>
+    <div style="padding:8px 14px; font-size:12px;">12:00-21:00</div>
+    <div style="padding:8px 14px; font-size:12px;">15:00-00:00</div>
+    <div style="padding:8px 14px; font-size:12px;">18:00-03:00</div>
+    <div style="margin-left:auto; display:flex; gap:12px; align-items:center; font-size:11px; color:#605d5d; padding:8px 0;">
+      <span><span style="display:inline-block; width:10px; height:10px; background:#5cb87f; vertical-align:-1px;"></span> มาทำงาน</span>
+      <span><span style="display:inline-block; width:10px; height:10px; background:#e8a400; vertical-align:-1px;"></span> สาย/ออกก่อน</span>
+      <span><span style="display:inline-block; width:10px; height:10px; background:#ec3013; vertical-align:-1px;"></span> ขาด/ไม่ครบ</span>
+      <span><span style="display:inline-block; width:10px; height:10px; background:#d7d3d3; vertical-align:-1px;"></span> ลา/หยุด</span>
+    </div>
+  </div>
+
+  <div style="padding:0 28px; overflow:hidden;">
+    <div style="display:flex; border-bottom:2px solid rgba(32,30,29,.4); padding:8px 0 6px;">
+      <div style="width:210px; flex:none; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#7d7979; font-weight:600;">พนักงาน</div>
+      <div style="width:52px; flex:none; font-size:11px; text-transform:uppercase; color:#7d7979; font-weight:600;">ขาด</div>
+      <div style="width:52px; flex:none; font-size:11px; text-transform:uppercase; color:#7d7979; font-weight:600;">สาย</div>
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="25">
+        <div style="width:34px; flex:none; text-align:center; font-family:Archivo; font-weight:800; font-size:10px; color:#7d7979;">{{ d }}</div>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="14">
+      <div style="display:flex; align-items:center; border-bottom:1px solid #d7d3d3;">
+        <div style="width:210px; flex:none; font-size:12px; padding:4px 8px 4px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</div>
+        <div style="width:52px; flex:none; font-family:Archivo; font-weight:800; font-size:12px;">{{ r.absent }}</div>
+        <div style="width:52px; flex:none; font-family:Archivo; font-weight:800; font-size:12px;">{{ r.late }}</div>
+        <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="25">
+          <div style="{{ c.style }}">{{ c.code }}</div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const NAMES = [
+      'นาย นุกูล จินดาศรี','นางสาว ดวงใจ จำปา','นางสาว เปมิกา เข็มเพชร','นาย จีรพงษ์ สระโร',
+      'นาย สายัณห์ ฉิมพลีสวรรค์','นางสาว วนิดา จันทร์สิงห์','นาย นันตระพร จันทร์ตัน',
+      'นางสาว ณัฐกานต์ แจ้งไพร','นางสาว รุ่งธิวา แบบทอง','นาย โรจนรัตน์ ฉิมเอม',
+      'Mr. Tian Fubei','นาย อุทร ธนูชาญ','นางสาว พีรยา บุญอยู่','นางสาว ประภาศรี ดิดขุนทด'
+    ];
+    const days = [];
+    for (let d = 1; d <= 25; d++) days.push(String(d).padStart(2, '0'));
+
+    const CMAP = { ok: '#5cb87f', yellow: '#e8a400', red: '#ec3013', gray: '#d7d3d3' };
+    const rows = NAMES.map((name, i) => {
+      let absent = 0, late = 0;
+      const cells = days.map((d, j) => {
+        const k = (i * 7 + j * 3) % 17;
+        let color = 'ok', code = '';
+        if ((i + j) % 7 === 6) { color = 'gray'; code = 'OFF'; }
+        else if (k === 4) { color = 'gray'; code = 'AL'; }
+        else if (k === 11) { color = 'gray'; code = 'SL'; }
+        else if (k === 9) { color = 'yellow'; code = 'L' + (8 + (k * 3) % 40); late++; }
+        else if (k === 15) { color = 'red'; code = 'INC'; }
+        else if (k === 2 && i % 5 === 0) { color = 'red'; code = 'AB'; absent++; }
+        const fg = color === 'red' ? '#fff' : '#201e1d';
+        return { code, style: 'width:34px; flex:none; height:26px; display:flex; align-items:center;'
+          + ' justify-content:center; font-family:Archivo; font-weight:800; font-size:9px;'
+          + ' letter-spacing:-.02em; border-right:1px solid rgba(255,255,255,.55);'
+          + ' background-color:' + CMAP[color] + '; color:' + fg + '; overflow:hidden;' };
+      });
+      return { name, absent, late, cells };
+    });
+    return { days, rows };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Archivo","Noto Sans Thai",system-ui,sans-serif; }
+    a { color: #ec3013; } a:hover { color: #b8250d; }
+  </style>
+</helmet>
+
+<div style="width:1240px; height:820px; display:flex; flex-direction:column; background:#f3f2f2; color:#201e1d; overflow:hidden;">
+
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; padding:22px 28px 14px; border-bottom:2px solid rgba(32,30,29,.4);">
+    <div>
+      <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7d7979;">Ingest</div>
+      <h2 style="margin:2px 0 0; font-size:29px; font-weight:800; letter-spacing:-.02em;">อัปโหลดไฟล์ประจำวัน</h2>
+    </div>
+    <div style="height:34px; border:2px solid #201e1d; display:flex; align-items:center; padding:0 14px; font-size:13px; font-weight:600;">ส่งออก</div>
+  </div>
+
+  <div style="padding:24px 28px; display:flex; flex-direction:column; gap:22px;">
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:20px;">
+      <div style="border:2px solid rgba(32,30,29,.4); background:#eae9e9; padding:18px; min-height:196px; display:flex; flex-direction:column;">
+        <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7d7979;">ไฟล์ที่ 1 — จำเป็น</div>
+        <div style="font-weight:800; font-size:21px; margin-top:4px;">เวลาทำงาน (Attendance)</div>
+        <div style="font-size:12px; color:#605d5d; margin-top:6px;">คอลัมน์ 01–31 เก็บข้อความ เช่น in:08:45 out:20:32 / วันหยุด / ลาพักร้อน1วัน</div>
+        <div style="margin-top:auto; padding-top:16px; display:flex; align-items:center; gap:10px;">
+          <span style="background:#ec3013; color:#f3f2f2; height:34px; display:flex; align-items:center; padding:0 14px; font-size:13px; font-weight:800;">เลือกไฟล์</span>
+          <span style="font-size:12px; color:#605d5d;">หรือลากไฟล์มาวางที่นี่</span>
+        </div>
+        <div style="margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px;">ยังไม่ได้เลือกไฟล์</div>
+      </div>
+      <div style="border:2px solid #3f9c6d; background:#eef7f2; padding:18px; min-height:196px; display:flex; flex-direction:column;">
+        <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#7d7979;">ไฟล์ที่ 2 — อัปเฉพาะตอนมีคนใหม่หรือเปลี่ยนกะ</div>
+        <div style="font-weight:800; font-size:21px; margin-top:4px;">ตารางกะ (Schedule)</div>
+        <div style="font-size:12px; color:#605d5d; margin-top:6px;">ค่าในช่องคือชื่อกะ+เวลา เช่น กะเช้า09:00-18:00 · ระบบจำไฟล์ล่าสุดไว้ให้</div>
+        <div style="margin-top:auto; padding-top:16px; display:flex; align-items:center; gap:10px;">
+          <span style="background:#ec3013; color:#f3f2f2; height:34px; display:flex; align-items:center; padding:0 14px; font-size:13px; font-weight:800;">เลือกไฟล์</span>
+          <span style="font-size:12px; color:#605d5d;">หรือลากไฟล์มาวางที่นี่</span>
+        </div>
+        <div style="margin-top:12px; border-top:2px solid rgba(32,30,29,.4); padding-top:10px; font-size:12px; color:#2e7d4f; font-weight:600;">
+          Schedule_of_staff20260826110857.xlsx · ในไฟล์ 112 คน
+          <div style="color:#605d5d; font-weight:400; margin-top:3px;">112 คน × 31 วัน · 2026-08-01 → 2026-08-31 · อัปล่าสุด 2026-08-26</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="border:2px solid #201e1d; background:#eae9e9;">
+      <div style="padding:12px 16px; background:#201e1d; color:#f3f2f2; font-weight:800; font-size:14px;">ตรวจก่อนเขียนลงชีต — ยังไม่มีอะไรถูกแก้</div>
+      <div style="padding:16px; display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; flex-wrap:wrap; gap:22px; font-size:13px;">
+          <div><div style="font-size:11px; color:#7d7979;">ไฟล์</div><strong>attendance_branch_th_6a8e62acd5b80.xlsx</strong></div>
+          <div><div style="font-size:11px; color:#7d7979;">รอบข้อมูล</div><strong style="font-weight:800;">2026-08</strong></div>
+          <div><div style="font-size:11px; color:#7d7979;">ช่วงวันที่</div><strong style="font-weight:800;">2026-08-01 → 2026-08-31</strong></div>
+          <div><div style="font-size:11px; color:#7d7979;">พนักงานในไฟล์</div><strong style="font-weight:800;">112 คน</strong></div>
+          <div><div style="font-size:11px; color:#7d7979;">บนชีตตอนนี้</div><strong style="font-weight:800;">112 คน</strong></div>
+        </div>
+        <div style="border-left:4px solid #7d7979; padding:8px 12px; background:#f3f2f2; font-size:12px;">
+          <strong>คนที่ไม่มีในไฟล์นี้ 2 คน — จะถูกตัดออกจากชีต</strong><br>
+          <span style="color:#605d5d;">733995 นางสาว เจนจิรา ศรีเพชร · 699693 นางสาว ศิริเพ็ญ ห้องทอง</span>
+        </div>
+        <div style="border-left:4px solid #d0a215; padding:8px 12px; font-size:12px; background:#fdf6e3;">
+          ตารางกะมีถึงแค่ 2026-08-10 แต่ไฟล์นี้มีถึง 2026-08-31 — 21 วันหลังจากนั้นระบบจะเดากะให้จากกะที่แต่ละคนขึ้นบ่อยล่าสุด
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span style="background:#ec3013; color:#f3f2f2; height:38px; display:flex; align-items:center; padding:0 16px; font-size:13px; font-weight:800;">ยืนยัน เขียนลงชีต</span>
+          <span style="border:1px solid rgba(32,30,29,.4); height:38px; display:flex; align-items:center; padding:0 16px; font-size:13px;">ยกเลิก</span>
+          <span style="font-size:12px; color:#605d5d;">กดยืนยันแล้วข้อมูลบนชีตจะถูกเขียนทับ และทุกคนจะเห็นชุดนี้</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Attendance Control — ธีมดำเหลือง</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+<style>
+  :root { --s: 0.485; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#e8e6e2; color:#121110;
+         font-family:"Archivo","Noto Sans Thai",system-ui,sans-serif; padding:20px 22px 40px; }
+  h1 { font-size:20px; font-weight:800; letter-spacing:-.02em; margin:0 0 2px; }
+  .sub { font-size:12.5px; color:#6b6a70; margin-bottom:8px; }
+  .sw { display:flex; gap:8px; align-items:center; font-size:11.5px; color:#57544c; margin-bottom:18px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #cfccc7; padding:4px 9px; }
+  .dot { width:13px; height:13px; display:inline-block; }
+  .grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:16px 18px; }
+  .colhead { font-size:14px; font-weight:800; letter-spacing:-.01em; }
+  .colnote { font-size:11.5px; color:#57544c; line-height:1.5; margin-top:3px; min-height:34px; }
+  .cap { font-size:11px; color:#6b6a70; margin:10px 0 5px; }
+  .cap b { font-size:11.5px; color:#121110; font-weight:600; }
+  .shot { background:#fff; border:1px solid #cfccc7; overflow:hidden; position:relative; }
+  .shot iframe { border:0; transform-origin:0 0; transform:scale(var(--s)); position:absolute; top:0; left:0; }
+</style>
+</head>
+<body>
+  <h1>ธีมดำ–เหลือง · ตัวอย่างก่อนลงมือทำจริง</h1>
+  <div class="sub">ตัวเลขและรายชื่อเป็นของจริงจากไฟล์ 2026-08 · ลายน้ำ THANAWAT PHUTTARIT ฝังไว้จาง ๆ ทั่วพื้นที่ทำงานทุกหน้า</div>
+  <div class="sw">
+    <span>สีที่ใช้</span>
+    <span class="chip"><span class="dot" style="background:#121110;"></span> ดำ #121110</span>
+    <span class="chip"><span class="dot" style="background:#f5c518;"></span> เหลือง #f5c518 — แบรนด์ + สาย</span>
+    <span class="chip"><span class="dot" style="background:#d92d0d;"></span> แดง — ขาด/ไม่ครบ</span>
+    <span class="chip"><span class="dot" style="background:#e2eee6; border:1px solid #b7d3c2;"></span> เขียวอ่อน — มาทำงาน</span>
+    <span class="chip"><span class="dot" style="background:#e5e1d5;"></span> เทา — ลา/หยุด</span>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="colhead">แบบที่ 1 — พื้นสว่าง แถบดำ</div>
+      <div class="colnote">แถบซ้ายกับหัวปุ่มเป็นดำ–เหลือง ส่วนพื้นที่อ่านข้อมูลยังสว่างเหมือนเดิม · อ่านตารางหนา ๆ ได้สบายตาที่สุด และปรินต์ออกมาแล้วยังใช้ได้</div>
+      <div class="cap"><b>แดชบอร์ด</b></div>
+      <div class="shot" style="width:698px; height:437px;"><iframe src="./ThemeLight.dc.html" width="1440" height="900" scrolling="no"></iframe></div>
+      <div class="cap"><b>ตารางสี</b> — จุดวัดว่าอ่านง่ายจริงไหม</div>
+      <div class="shot" style="width:698px; height:369px;"><iframe src="./ThemeMatrixLight.dc.html" width="1440" height="760" scrolling="no"></iframe></div>
+    </div>
+
+    <div>
+      <div class="colhead">แบบที่ 2 — ดำทั้งหน้า</div>
+      <div class="colnote">ดำทั้งจอ เหลืองเป็นตัวเดินเรื่อง · ดูเท่กว่าชัดเจน แต่จ้องตารางนาน ๆ ล้าตากว่า และปรินต์ไม่ได้ (กินหมึกและอ่านไม่ออก)</div>
+      <div class="cap"><b>แดชบอร์ด</b></div>
+      <div class="shot" style="width:698px; height:437px;"><iframe src="./ThemeDark.dc.html" width="1440" height="900" scrolling="no"></iframe></div>
+      <div class="cap"><b>ตารางสี</b> — จุดวัดว่าอ่านง่ายจริงไหม</div>
+      <div class="shot" style="width:698px; height:369px;"><iframe src="./ThemeMatrixDark.dc.html" width="1440" height="760" scrolling="no"></iframe></div>
+    </div>
+  </div>
+</body>
+</html>
