@@ -523,6 +523,12 @@
               <button type="button" class="seg-opt" onClick="{{ s.pick }}" style="{{ s.style }}">{{ s.label }}</button>
             </sc-for>
           </div></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ความเร็วเลื่อน</label>
+          <div class="seg" style="height:36px;">
+            <sc-for list="{{ wheelOpts }}" as="w" hint-placeholder-count="3">
+              <button type="button" class="seg-opt" onClick="{{ w.pick }}" style="{{ w.style }}">{{ w.label }}</button>
+            </sc-for>
+          </div></div>
         <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
           <span style="font-size:12px; color:#57544c;">{{ gridCountLabel }}</span>
           <button type="button" class="btn btn-ghost" onClick="{{ resetFilters }}" style="height:32px;">ล้างตัวกรอง</button>
@@ -536,7 +542,7 @@
         </sc-for>
       </div>
 
-      <div ref="{{ gridRef }}" onScroll="{{ onGridScroll }}" style="flex:1; min-height:0; overflow:auto; background:#fff;">
+      <div id="gridScroll" ref="{{ gridRef }}" onScroll="{{ onGridScroll }}" style="flex:1; min-height:0; overflow:auto; background:#fff;">
         <div style="{{ gridInnerStyle }}">
           <div style="{{ gridHeadStyle }}">
             <div style="width:236px; flex:none; position:sticky; left:0; z-index:3; background:#121110; color:#fff; padding:0 8px; display:flex; align-items:center; font-size:11px; letter-spacing:.08em; text-transform:uppercase;">พนักงาน</div>
@@ -625,15 +631,40 @@
           </sc-for>
         </div>
 
-        <h5 style="margin:0 0 8px;">ปฏิทินรายวัน</h5>
-        <div style="display:flex; flex-wrap:wrap; gap:3px; margin-bottom:22px;">
+        <div style="display:flex; align-items:baseline; gap:10px; margin:0 0 8px;">
+          <h5 style="margin:0;">ปฏิทินรายวัน</h5>
+          <span style="font-size:11px; color:#7a776f;">กดที่ช่องวันไหนก็ได้ เพื่อดูรายละเอียดของวันนั้น</span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:3px; margin-bottom:18px;">
           <sc-for list="{{ empStrip }}" as="c" hint-placeholder-count="31">
-            <div title="{{ c.tip }}" style="{{ c.style }}">
+            <div title="{{ c.tip }}" onClick="{{ c.pick }}" style="{{ c.style }}">
               <div style="font-size:9px; opacity:.75; font-family:Archivo;">{{ c.day }}</div>
               <div style="font-family:Archivo; font-weight:800; font-size:11px;">{{ c.code }}</div>
             </div>
           </sc-for>
         </div>
+
+        <sc-if value="{{ hasPickDay }}" hint-placeholder-val="{{ false }}">
+          <div style="border:2px solid #121110; background:#fff; margin-bottom:22px;">
+            <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:#121110; color:#f5c518;">
+              <strong style="font-family:Archivo; font-size:14px;">{{ pickDayTitle }}</strong>
+              <span style="{{ pickDayTagStyle }}">{{ pickDayTag }}</span>
+              <button type="button" onClick="{{ clearPickDay }}"
+                style="margin-left:auto; background:transparent; border:1px solid #3a3831; color:#e8e5da;
+                       font-family:inherit; font-size:11px; padding:4px 10px; cursor:pointer;">ปิด</button>
+            </div>
+            <table class="table" style="width:100%; font-size:12.5px;">
+              <tbody>
+                <sc-for list="{{ pickDayRows }}" as="r" hint-placeholder-count="7">
+                  <tr>
+                    <td style="width:190px; color:#57544c;">{{ r.k }}</td>
+                    <td style="font-weight:600;">{{ r.v }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
 
         <h5 style="margin:0 0 8px;">รายละเอียดวันที่มีปัญหา</h5>
         <table class="table" style="width:100%; font-size:12px;">
@@ -1266,7 +1297,7 @@ class Component extends DCLogic {
     dashFrom: '', dashTo: '', rangePreset: 'month', gShift: 'all',
     archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
     search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
-    dayKey: '', selId: null, scrollTop: 0, viewH: 600,
+    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelSpeed: 0.5, pickDay: '',
     // flagShiftOnHoliday ปิดไว้: ไฟล์ตารางกะที่ HCM ส่งออกมาตั้งกะให้ทุกคนทุกวัน
     // ไม่เคยเขียนว่า "วันหยุด" กฎนี้จึงยิงธงแดงมั่วทุกวันหยุดจริง เปิดได้ถ้าไฟล์กะแยกวันหยุด
     grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
@@ -1316,6 +1347,15 @@ class Component extends DCLogic {
     // กลับมาที่แท็บนี้เมื่อไหร่ เช็คให้รอบหนึ่งทันที ไม่ต้องรอครบรอบ
     this._vis = () => { if (!document.hidden && !this.state.writing) this.refreshCloud(); };
     document.addEventListener('visibilitychange', this._vis);
+    /* ต้องผูกเองแบบ passive:false ถึงจะห้ามการเลื่อนปกติแล้วไหลเองแทนได้
+       React ผูก wheel ให้แบบ passive ซึ่งห้ามไม่ได้ จึงใช้วิธีนี้            */
+    document.addEventListener('wheel', this.onWheelCapture, { passive: false, capture: true });
+    document.addEventListener('mousedown', this.stopGlide);
+    document.addEventListener('keydown', this.stopGlide);
+    try {
+      const w = parseFloat(localStorage.getItem(this.WHEEL_KEY));
+      if (w > 0 && w <= 1) this.setState({ wheelSpeed: w });
+    } catch (e) {}
     this.loadArchive();
     this.loadSchedule();
     this.loadWarnings();
@@ -1334,6 +1374,10 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('resize', this._ro);
     document.removeEventListener('visibilitychange', this._vis);
+    document.removeEventListener('wheel', this.onWheelCapture, { capture: true });
+    document.removeEventListener('mousedown', this.stopGlide);
+    document.removeEventListener('keydown', this.stopGlide);
+    if (this._glide) cancelAnimationFrame(this._glide);
     clearInterval(this._poll);
   }
 
@@ -2078,6 +2122,50 @@ class Component extends DCLogic {
      เดิมสั่งวาดใหม่ทุกครั้งที่จอขยับแม้แต่พิกเซลเดียว หนึ่งครั้งหมุนล้อเมาส์
      จึงสั่งวาดใหม่หลายสิบรอบ แต่ละรอบคำนวณทั้งหน้าใหม่หมด ภาพเลยกระตุกและตามตาไม่ทัน
      ตอนนี้วาดใหม่เฉพาะตอนที่แถวบนสุดเปลี่ยนจริง และรอจังหวะวาดภาพของเบราว์เซอร์ */
+  /* ── เลื่อนตารางแบบค่อย ๆ ไหล ──────────────────────────────────────────
+     ล้อเมาส์หนึ่งคลิกเลื่อนราวร้อยพิกเซลในพริบตา = กระโดดทีละสี่แถว
+     ตารางที่ทุกช่องหน้าตาคล้ายกันแบบนี้ ตาตามไม่ทันแล้วหลงว่าอยู่แถวไหน
+     จึงรับค่าล้อมาเป็น "เป้าหมาย" แล้วค่อย ๆ ไหลเข้าหาทีละนิดจนถึง
+     ปรับความเร็วได้เองที่แถบเครื่องมือ เผื่อบางคนชอบเร็วแบบเดิม
+     แตะจอกับลากแถบเลื่อนไม่ถูกแตะต้อง ทำงานเหมือนเดิมทุกอย่าง          */
+  WHEEL_KEY = 'hcm-wheel-speed-v1';
+  onWheelCapture = (e) => {
+    const el = document.getElementById('gridScroll');
+    if (!el || !el.contains(e.target)) return;
+    const f = this.state.wheelSpeed;
+    if (!(f > 0) || f >= 1) return;                 // ปกติ = ปล่อยให้เบราว์เซอร์จัดการเอง
+    let d = e.deltaY;
+    if (e.deltaMode === 1) d *= 16;                 // ล้อที่ส่งค่ามาเป็นบรรทัด
+    else if (e.deltaMode === 2) d *= el.clientHeight;
+    if (!d) return;
+    e.preventDefault();
+    const max = Math.max(0, el.scrollHeight - el.clientHeight);
+    const from = this._wheelTarget == null ? el.scrollTop : this._wheelTarget;
+    this._wheelTarget = Math.max(0, Math.min(max, from + d * f));
+    this.glide(el);
+    /* กันเหนียว — จังหวะวาดภาพหยุดเดินได้ในบางสถานการณ์ (เช่นหน้าต่างถูกบัง)
+       ถ้าไหลไม่ถึงเป้าภายในเสี้ยววินาที ให้กระโดดไปเลย ดีกว่าเลื่อนไม่ได้ */
+    clearTimeout(this._glideFail);
+    this._glideFail = setTimeout(() => {
+      if (this._wheelTarget == null) return;
+      el.scrollTop = this._wheelTarget;
+      this._wheelTarget = null;
+    }, 260);
+  };
+  glide(el) {
+    if (this._glide) return;
+    this._glide = requestAnimationFrame(() => {
+      this._glide = 0;
+      if (this._wheelTarget == null) return;
+      const diff = this._wheelTarget - el.scrollTop;
+      if (Math.abs(diff) < 0.7) { el.scrollTop = this._wheelTarget; this._wheelTarget = null; return; }
+      el.scrollTop += diff * 0.2;                   // ยิ่งใกล้เป้ายิ่งช้าลง ได้จังหวะที่ตาตามทัน
+      this.glide(el);
+    });
+  }
+  // ลากแถบเลื่อนหรือกดปุ่มลูกศรเมื่อไหร่ ให้เลิกไหลทันที ไม่งั้นจะแย่งกันคุมตำแหน่ง
+  stopGlide = () => { this._wheelTarget = null; clearTimeout(this._glideFail); };
+
   onGridScroll = (e) => {
     const top = e.target.scrollTop;
     // วาดใหม่เฉพาะตอนที่แถวบนสุดเปลี่ยนจริง ๆ ไม่ใช่ทุกพิกเซลที่จอขยับ
@@ -2809,6 +2897,15 @@ class Component extends DCLogic {
       style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${s.gShift === k ? '#121110' : 'transparent'}; color:${s.gShift === k ? '#fff' : '#121110'};`,
     }));
     V.gridCountLabel = gb ? `แสดง ${gemps.length} คนในกะนี้` : `แสดง ${emps.length} คน`;
+    // ความเร็วเลื่อน — จำไว้ในเครื่องของแต่ละคน ใครชอบเร็วแบบเดิมก็เลือก "ปกติ"
+    V.wheelOpts = [[1, 'ปกติ'], [0.5, 'ช้า'], [0.28, 'ช้ามาก']].map(([v, l]) => ({
+      label: l,
+      pick: () => { try { localStorage.setItem(this.WHEEL_KEY, String(v)); } catch (e) {} set({ wheelSpeed: v }); },
+      style: `padding:0 11px; height:100%; border:0; cursor:pointer; font-size:12px;`
+        + ` font-family:Archivo,"Noto Sans Thai",sans-serif;`
+        + ` background:${s.wheelSpeed === v ? '#121110' : 'transparent'};`
+        + ` color:${s.wheelSpeed === v ? '#f5c518' : '#121110'};`,
+    }));
     const CW = dates.length > 24 ? 30 : 38, RH = GRID_ROW_H;
     /* ขีดเส้นหนาที่ต้นสัปดาห์ (วันจันทร์) — ตารางกว้าง 25-31 ช่องที่หน้าตาเหมือนกันหมด
        ทำให้ตาไม่มีที่เกาะตอนเลื่อน มีเส้นแบ่งสัปดาห์แล้วกะตำแหน่งได้ว่าอยู่ช่วงไหนของเดือน */
@@ -2858,13 +2955,44 @@ class Component extends DCLogic {
       const codeBox = 'flex:1; padding:8px 10px; border-right:1px solid #ddd8c9; text-align:center;';
       V.empCodes = [...E.HCM_CODES.map(k => ({ code: k, value: st.codes[k] || 0, style: codeBox })),
         { code: 'TOTAL', value: E.HCM_CODES.reduce((n, k) => n + (st.codes[k] || 0), 0), style: codeBox + 'background:#f2efe6;' }];
+      /* กดช่องไหนก็ได้ในปฏิทิน แล้วดูรายละเอียดวันนั้นตรงข้างล่างเลย
+         ไม่ต้องเลื่อนหาในตาราง และไม่ต้องเอาเมาส์ไปจ่อค้างไว้อ่าน tooltip */
       V.empStrip = sel.cells.map((c, i) => ({
         day: dates[i] ? dates[i].slice(-2) : '', code: c.code || '·', tip: `${dates[i]} — ${c.tip}`,
-        style: this.cellStyle(c, 42).replace('height:26px', 'height:46px').replace('font-size:9px', 'font-size:10px') + 'flex-direction:column; gap:1px; justify-content:center;',
+        pick: () => set({ pickDay: s.pickDay === dates[i] ? '' : dates[i] }),
+        style: this.cellStyle(c, 42).replace('height:26px', 'height:46px').replace('font-size:9px', 'font-size:10px')
+          + 'flex-direction:column; gap:1px; justify-content:center; cursor:pointer;'
+          + (s.pickDay === dates[i] ? ' outline:3px solid #121110; outline-offset:-3px;' : ''),
       }));
       V.empIssues = sel.cells.map((c, i) => ({ c, i })).filter(({ c }) => c.color === 'red' || c.color === 'yellow' || c.color2)
         .map(({ c, i }) => ({ date: dates[i], shift: c.shift || '—', scan: c.in != null ? `${E.fmtMin(c.in)} – ${c.out != null ? E.fmtMin(c.out) : '--'}` : '—',
           code: c.code || '—', tip: c.tip, tagStyle: this.tagStyle(c.color2 || c.color) }));
+
+      // ── รายละเอียดของวันที่กดเลือก
+      const di = dates.indexOf(s.pickDay);
+      V.hasPickDay = di >= 0;
+      V.clearPickDay = () => set({ pickDay: '' });
+      if (di >= 0) {
+        const c = sel.cells[di];
+        const WD = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+        const sh = this.eng.parseShift(c.shift);
+        const late = c.late || 0, early = c.early || 0;
+        const fmt = (v) => v == null ? '—' : E.fmtMin(v);
+        V.pickDayTitle = `${s.pickDay} · วัน${WD[new Date(s.pickDay + 'T00:00:00').getDay()]}`;
+        V.pickDayTag = c.code || (c.color === 'ok' ? 'มาทำงาน' : '—');
+        V.pickDayTagStyle = this.tagStyle(c.color2 || c.color);
+        V.pickDayRows = [
+          ['กะที่กำหนด', c.shift || 'ไม่ได้กำหนดกะ'],
+          ['เวลาเข้า–ออกจริง', c.in == null && c.out == null ? 'ไม่มีการแสกน' : `${fmt(c.in)} – ${fmt(c.out)}`],
+          ['ควรเข้า–ออกตามกะ', sh ? `${E.fmtMin(sh.start)} – ${E.fmtMin(sh.end % 1440)}` : '—'],
+          ['มาสาย', late ? `${late} นาที` : 'ไม่สาย'],
+          ['ออกก่อนเวลา', early ? `${early} นาที` : 'ไม่ได้ออกก่อน'],
+          ['นับเป็นมาทำงาน', E.isPresent(c) ? 'ใช่' : 'ไม่ — ไม่เข้าตัวเศษของ Attendance Rate'],
+          ['ผลการประเมิน', c.tip || '—'],
+        ].map(([k, v]) => ({ k, v }));
+      } else {
+        V.pickDayTitle = ''; V.pickDayTag = ''; V.pickDayTagStyle = ''; V.pickDayRows = [];
+      }
     }
     return V;
   }
