@@ -523,7 +523,7 @@
               <button type="button" class="seg-opt" onClick="{{ s.pick }}" style="{{ s.style }}">{{ s.label }}</button>
             </sc-for>
           </div></div>
-        <div class="field" style="margin:0;"><label style="font-size:11px;">ความเร็วเลื่อน</label>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">หมุนล้อ 1 ครั้งเลื่อน</label>
           <div class="seg" style="height:36px;">
             <sc-for list="{{ wheelOpts }}" as="w" hint-placeholder-count="3">
               <button type="button" class="seg-opt" onClick="{{ w.pick }}" style="{{ w.style }}">{{ w.label }}</button>
@@ -542,7 +542,7 @@
         </sc-for>
       </div>
 
-      <div id="gridScroll" ref="{{ gridRef }}" onScroll="{{ onGridScroll }}" style="flex:1; min-height:0; overflow:auto; background:#fff;">
+      <div id="gridScroll" ref="{{ gridRef }}" onScroll="{{ onGridScroll }}" style="flex:1; min-height:0; overflow:auto; background:#fff; scroll-behavior:auto; overscroll-behavior:contain;">
         <div style="{{ gridInnerStyle }}">
           <div style="{{ gridHeadStyle }}">
             <div style="width:236px; flex:none; position:sticky; left:0; z-index:3; background:#121110; color:#fff; padding:0 8px; display:flex; align-items:center; font-size:11px; letter-spacing:.08em; text-transform:uppercase;">พนักงาน</div>
@@ -1297,7 +1297,7 @@ class Component extends DCLogic {
     dashFrom: '', dashTo: '', rangePreset: 'month', gShift: 'all',
     archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
     search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
-    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelSpeed: 0.5, pickDay: '',
+    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelSpeed: 0.26, pickDay: '',
     // flagShiftOnHoliday ปิดไว้: ไฟล์ตารางกะที่ HCM ส่งออกมาตั้งกะให้ทุกคนทุกวัน
     // ไม่เคยเขียนว่า "วันหยุด" กฎนี้จึงยิงธงแดงมั่วทุกวันหยุดจริง เปิดได้ถ้าไฟล์กะแยกวันหยุด
     grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
@@ -1350,8 +1350,6 @@ class Component extends DCLogic {
     /* ต้องผูกเองแบบ passive:false ถึงจะห้ามการเลื่อนปกติแล้วไหลเองแทนได้
        React ผูก wheel ให้แบบ passive ซึ่งห้ามไม่ได้ จึงใช้วิธีนี้            */
     document.addEventListener('wheel', this.onWheelCapture, { passive: false, capture: true });
-    document.addEventListener('mousedown', this.stopGlide);
-    document.addEventListener('keydown', this.stopGlide);
     try {
       const w = parseFloat(localStorage.getItem(this.WHEEL_KEY));
       if (w > 0 && w <= 1) this.setState({ wheelSpeed: w });
@@ -1375,9 +1373,6 @@ class Component extends DCLogic {
     window.removeEventListener('resize', this._ro);
     document.removeEventListener('visibilitychange', this._vis);
     document.removeEventListener('wheel', this.onWheelCapture, { capture: true });
-    document.removeEventListener('mousedown', this.stopGlide);
-    document.removeEventListener('keydown', this.stopGlide);
-    if (this._glide) cancelAnimationFrame(this._glide);
     clearInterval(this._poll);
   }
 
@@ -2122,12 +2117,11 @@ class Component extends DCLogic {
      เดิมสั่งวาดใหม่ทุกครั้งที่จอขยับแม้แต่พิกเซลเดียว หนึ่งครั้งหมุนล้อเมาส์
      จึงสั่งวาดใหม่หลายสิบรอบ แต่ละรอบคำนวณทั้งหน้าใหม่หมด ภาพเลยกระตุกและตามตาไม่ทัน
      ตอนนี้วาดใหม่เฉพาะตอนที่แถวบนสุดเปลี่ยนจริง และรอจังหวะวาดภาพของเบราว์เซอร์ */
-  /* ── เลื่อนตารางแบบค่อย ๆ ไหล ──────────────────────────────────────────
-     ล้อเมาส์หนึ่งคลิกเลื่อนราวร้อยพิกเซลในพริบตา = กระโดดทีละสี่แถว
-     ตารางที่ทุกช่องหน้าตาคล้ายกันแบบนี้ ตาตามไม่ทันแล้วหลงว่าอยู่แถวไหน
-     จึงรับค่าล้อมาเป็น "เป้าหมาย" แล้วค่อย ๆ ไหลเข้าหาทีละนิดจนถึง
-     ปรับความเร็วได้เองที่แถบเครื่องมือ เผื่อบางคนชอบเร็วแบบเดิม
-     แตะจอกับลากแถบเลื่อนไม่ถูกแตะต้อง ทำงานเหมือนเดิมทุกอย่าง          */
+  /* ── เลื่อนตารางสี ───────────────────────────────────────────────────────
+     ปัญหาคือหมุนล้อทีเดียวแล้วจอไหลต่อไปยาว ๆ กว่าจะหยุด ตาตามไม่ทัน
+     จึงดักค่าล้อไว้แล้วขยับเองทันทีทีละนิด — ขยับแล้วหยุดตรงนั้นเลย
+     ไม่มีการไหลต่อ ไม่มีแรงเฉื่อย หมุนกี่คลิกก็ได้ระยะเท่านั้นพอดี
+     เลือกระยะได้เองที่แถบเครื่องมือ แตะจอกับลากแถบเลื่อนไม่ถูกแตะต้อง   */
   WHEEL_KEY = 'hcm-wheel-speed-v1';
   onWheelCapture = (e) => {
     const el = document.getElementById('gridScroll');
@@ -2140,31 +2134,8 @@ class Component extends DCLogic {
     if (!d) return;
     e.preventDefault();
     const max = Math.max(0, el.scrollHeight - el.clientHeight);
-    const from = this._wheelTarget == null ? el.scrollTop : this._wheelTarget;
-    this._wheelTarget = Math.max(0, Math.min(max, from + d * f));
-    this.glide(el);
-    /* กันเหนียว — จังหวะวาดภาพหยุดเดินได้ในบางสถานการณ์ (เช่นหน้าต่างถูกบัง)
-       ถ้าไหลไม่ถึงเป้าภายในเสี้ยววินาที ให้กระโดดไปเลย ดีกว่าเลื่อนไม่ได้ */
-    clearTimeout(this._glideFail);
-    this._glideFail = setTimeout(() => {
-      if (this._wheelTarget == null) return;
-      el.scrollTop = this._wheelTarget;
-      this._wheelTarget = null;
-    }, 260);
+    el.scrollTop = Math.max(0, Math.min(max, el.scrollTop + d * f));
   };
-  glide(el) {
-    if (this._glide) return;
-    this._glide = requestAnimationFrame(() => {
-      this._glide = 0;
-      if (this._wheelTarget == null) return;
-      const diff = this._wheelTarget - el.scrollTop;
-      if (Math.abs(diff) < 0.7) { el.scrollTop = this._wheelTarget; this._wheelTarget = null; return; }
-      el.scrollTop += diff * 0.2;                   // ยิ่งใกล้เป้ายิ่งช้าลง ได้จังหวะที่ตาตามทัน
-      this.glide(el);
-    });
-  }
-  // ลากแถบเลื่อนหรือกดปุ่มลูกศรเมื่อไหร่ ให้เลิกไหลทันที ไม่งั้นจะแย่งกันคุมตำแหน่ง
-  stopGlide = () => { this._wheelTarget = null; clearTimeout(this._glideFail); };
 
   onGridScroll = (e) => {
     const top = e.target.scrollTop;
@@ -2898,7 +2869,7 @@ class Component extends DCLogic {
     }));
     V.gridCountLabel = gb ? `แสดง ${gemps.length} คนในกะนี้` : `แสดง ${emps.length} คน`;
     // ความเร็วเลื่อน — จำไว้ในเครื่องของแต่ละคน ใครชอบเร็วแบบเดิมก็เลือก "ปกติ"
-    V.wheelOpts = [[1, 'ปกติ'], [0.5, 'ช้า'], [0.28, 'ช้ามาก']].map(([v, l]) => ({
+    V.wheelOpts = [[1, "ปกติ"], [0.5, "ทีละ 2 แถว"], [0.26, "ทีละ 1 แถว"]].map(([v, l]) => ({
       label: l,
       pick: () => { try { localStorage.setItem(this.WHEEL_KEY, String(v)); } catch (e) {} set({ wheelSpeed: v }); },
       style: `padding:0 11px; height:100%; border:0; cursor:pointer; font-size:12px;`
