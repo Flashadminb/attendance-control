@@ -491,7 +491,10 @@ export function demoData(count = 640, year = 2026, month = 8) {
 }
 
 /* ── exporters ───────────────────────────────────────────────────────────── */
-export const CELL_HEX = { red: 'EC3013', yellow: 'E8A400', gray: 'D7D3D3', 'gray-half': 'EAE7E7', ok: 'FFFFFF' };
+/* สีพื้นของช่องในไฟล์ Excel ที่โหลดออกไป — ให้ตรงกับสีบนหน้าเว็บ
+   เปิดไฟล์แล้วต้องอ่านได้เหมือนกันกับที่เห็นบนจอ ไม่ใช่คนละชุดสี         */
+export const CELL_HEX = { red: 'D92D0D', yellow: 'F5C518', gray: 'DDD8C9', 'gray-half': 'EEEADE', ok: '93C9AB' };
+const CELL_INK = { red: 'FFFFFF', yellow: '121110', gray: '57544C', 'gray-half': '57544C', ok: '0E3D24' };
 
 export function toCSV(header, rows) {
   const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -501,7 +504,7 @@ export function toCSV(header, rows) {
 export function toSpreadsheetML(header, rows, colorRows, meta) {
   const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const styles = Object.entries(CELL_HEX).map(([k, hex]) =>
-    `<Style ss:ID="c_${k.replace('-', '_')}"><Interior ss:Color="#${hex}" ss:Pattern="Solid"/><Font ss:Color="${k === 'red' ? '#FFFFFF' : '#201E1D'}" ss:Size="9"/><Alignment ss:Horizontal="Center"/></Style>`).join('');
+    `<Style ss:ID="c_${k.replace('-', '_')}"><Interior ss:Color="#${hex}" ss:Pattern="Solid"/><Font ss:Color="#${CELL_INK[k] || '121110'}" ss:Size="9"/><Alignment ss:Horizontal="Center"/></Style>`).join('');
   const body = rows.map((r, ri) => '<Row>' + r.map((v, ci) => {
     const color = colorRows[ri] && colorRows[ri][ci];
     return `<Cell${color ? ` ss:StyleID="c_${color.replace('-', '_')}"` : ''}><Data ss:Type="String">${esc(v)}</Data></Cell>`;

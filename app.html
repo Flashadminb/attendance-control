@@ -3061,7 +3061,10 @@ class Component extends DCLogic {
       const pres = e.cells.filter(c => E.isPresent(c)).length;
       const shift = (e.cells.find(c => c.shift) || {}).shift || '';
       rows.push([e.id, e.name, e.position, shift, e.stat.absent, e.stat.late, e.stat.lateMin, e.stat.incomplete,
-        (days ? Math.round(pres / days * 1000) / 10 : 0) + '%', ...R.idx.map(i => this.cellText(e.cells[i]) || e.cells[i].code || '')]);
+        (days ? Math.round(pres / days * 1000) / 10 : 0) + '%',
+        // ช่องที่มีการแสกนลงเวลาจริง ไม่ใช่ปล่อยว่าง — เปิดไฟล์แล้วรู้เลยว่าเข้ากี่โมงออกกี่โมง
+        // รูปแบบเดียวกับที่ลงชีตสำรอง 08:45-20:32 / L15 09:00-20:32 / INC 08:45-
+        ...R.idx.map(i => E.cellText(e.cells[i]))]);
       colors.push([...Array(9).fill(null), ...R.idx.map(i => e.cells[i].color)]);
     });
     if (kind === 'csv') this.eng.download(this.gridFileName('csv'), E.toCSV(header, rows), 'text/csv;charset=utf-8');
