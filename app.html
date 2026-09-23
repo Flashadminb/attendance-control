@@ -2226,7 +2226,7 @@ class Component extends DCLogic {
     const header = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'ตำแหน่ง', 'ขาด', 'สาย', 'นาทีสาย', 'ลา', 'มาทำงาน', 'Attendance Rate', ...this.eng.HCM_CODES, 'TOTAL', ...R.dates.map(d => d.slice(-2))];
     const rows = [], colors = [];
     emps.forEach(e => {
-      const days = e.cells.filter(c => c.color !== 'out').length;
+      const days = e.cells.filter(c => c.color !== 'out' && !c.blank).length;
       const pres = e.cells.filter(c => this.eng.isPresent(c)).length;
       const codes = this.eng.HCM_CODES.map(k => (e.stat.codes && e.stat.codes[k]) || 0);
       rows.push([e.id, e.name, e.position, e.stat.absent, e.stat.late, e.stat.lateMin, e.stat.leave,
@@ -2698,13 +2698,15 @@ class Component extends DCLogic {
     issues.sort((a, b) => a.sev - b.sev);
     V.dayIssues = issues.slice(0, 120);
     const cellStat = (label, value) => ({ label, value, style: 'flex:1; padding:10px 14px; border-right:1px solid #ddd8c9;' });
-    const dayAtt = demps.length ? Math.round(dPresent / demps.length * 1000) / 10 : 0;
+    // ตัวหารรายวัน = คนที่มีข้อมูลในวันนั้น (COUNTA ของส่วนกลาง) ไม่ใช่ทุกคนในไฟล์
+    const dayHead = demps.filter(e => { const c = e.cells[di]; return c && c !== MASK && !c.blank; }).length;
+    const dayAtt = dayHead ? Math.round(dPresent / dayHead * 1000) / 10 : 0;
     V.dayTotals = [cellStat('Attendance Rate', dayAtt + '%'), cellStat('มาทำงาน (คน)', dPresent), cellStat('ขาด/ไม่แสกน', dAbs), cellStat('สาย/ออกก่อน', dLate), cellStat('ลา', dLeave), cellStat('แสกนไม่ครบ', dInc)];
 
     let slots = 0, bad = 0, tLate = 0, tAbs = 0, tLeave = 0, tPresent = 0, tPersonDays = 0;
     demps.forEach(e => {
       tPresent += e.cells.filter(c => this.eng.isPresent(c)).length;
-      tPersonDays += e.cells.filter(c => c !== MASK).length;
+      tPersonDays += e.cells.filter(c => c !== MASK && !c.blank).length;
       slots += e.cells.filter(c => c.code !== 'OFF' && c.code !== 'PH' && !c.leave).length;
       bad += e.stat.absent + e.stat.late + e.stat.incomplete;
       tLate += e.stat.late; tAbs += e.stat.absent; tLeave += e.stat.leave;
@@ -2750,9 +2752,19 @@ class Component extends DCLogic {
           open: () => this.goTo({ screen: 'emp', selId: e0.id, pickDay: '' }) };
       });
 
-    const attRate = tPersonDays ? Math.round(tPresent / tPersonDays * 1000) / 10 : 0;
+    /* Attendance Rate ทั้งเดือน = ค่าเฉลี่ยของอัตรารายวัน ตามรายงานส่วนกลาง
+         รายวัน   = COUNTIF(คอลัมน์วัน,"*in*") ÷ (COUNTA(คอลัมน์วัน) − 1)
+         ทั้งเดือน = AVERAGE(รายวัน)
+       ไม่ใช่เอาผลรวมทั้งเดือนมาหารกัน สองวิธีให้เลขต่างกันเมื่อคนแต่ละวันไม่เท่ากัน */
+    const dailyRates = rDates.map((d, j) => {
+      const i = i0 + j;
+      let pres = 0, head = 0;
+      demps.forEach(e => { const c = e.cells[i]; if (!c || c === MASK || c.blank) return; head++; if (this.eng.isPresent(c)) pres++; });
+      return head ? pres / head : null;
+    }).filter(r => r != null);
+    const attRate = dailyRates.length ? Math.round(dailyRates.reduce((s, r) => s + r, 0) / dailyRates.length * 1000) / 10 : 0;
     V.kpis = [
-      { label: 'Attendance Rate', value: attRate + '%', sub: `มาทำงาน ${tPresent.toLocaleString()} ÷ ${tPersonDays.toLocaleString()} วัน-คน (สูตรเดียวกับชีต)`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4); background:#121110; color:#fff;' },
+      { label: 'Attendance Rate', value: attRate + '%', sub: `เฉลี่ยของอัตรารายวัน ${dailyRates.length} วัน · รวม ${tPresent.toLocaleString()} ÷ ${tPersonDays.toLocaleString()} วัน-คน (สูตรส่วนกลาง)`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4); background:#121110; color:#fff;' },
       { label: 'อัตรามาทำงานตรงเวลา', value: onTime + '%', sub: `จาก ${slots.toLocaleString()} วันทำงาน (ตัดวันหยุด/ลา)`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4);' },
       { label: 'ขาดงานสะสม (วัน)', value: tAbs.toLocaleString(), sub: `${(demps.filter(e => e.stat.absent).length)} คนมีวันขาด`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4); background:#fdf6d9;' },
       { label: 'มาสายสะสม (ครั้ง)', value: tLate.toLocaleString(), sub: `รวม ${demps.reduce((a, e) => a + e.stat.lateMin, 0).toLocaleString()} นาที`, style: 'padding:16px 18px; border-right:2px solid rgba(32,30,29,.4);' },
@@ -2764,7 +2776,7 @@ class Component extends DCLogic {
       let a = 0, l = 0, n = 0;
       demps.forEach(e => { const c = e.cells[i]; if (!c || c.code === 'OFF' || c.code === 'PH') return; n++; if (c.color === 'red') a++; else if (c.color === 'yellow' || c.color2 === 'yellow') l++; });
       let pres = 0, head = 0;
-      demps.forEach(e => { const c = e.cells[i]; if (!c || c === MASK) return; head++; if (this.eng.isPresent(c)) pres++; });
+      demps.forEach(e => { const c = e.cells[i]; if (!c || c === MASK || c.blank) return; head++; if (this.eng.isPresent(c)) pres++; });
       return { d, a: n ? a / n * 100 : 0, l: n ? l / n * 100 : 0, r: head ? pres / head * 100 : 0 };
     });
     const maxY = Math.max(12, ...perDay.map(p => Math.max(p.a, p.l, p.r))) * 1.1;
@@ -2963,7 +2975,7 @@ class Component extends DCLogic {
     V.spacerBottomStyle = `height:${Math.max(0, (gemps.length - last) * RH)}px;`;
     V.visibleRows = gemps.slice(first, last).map((e, i) => ({
       name: e.name, id: e.id, absent: e.stat.absent || '', late: e.stat.late || '',
-      rate: (e.cells.filter(c => c.color !== 'out').length ? Math.round(e.cells.filter(c => this.eng.isPresent(c)).length / e.cells.filter(c => c.color !== 'out').length * 100) : 0) + '%',
+      rate: (e.cells.filter(c => c.color !== 'out' && !c.blank).length ? Math.round(e.cells.filter(c => this.eng.isPresent(c)).length / e.cells.filter(c => c.color !== 'out' && !c.blank).length * 100) : 0) + '%',
       rowStyle: `display:flex; height:${RH}px; border-bottom:1px solid #eeeade; background:${(first + i) % 2 ? '#f7f4ec' : '#fff'};`,
       nameStyle: `width:236px; flex:none; position:sticky; left:0; z-index:1; background:${(first + i) % 2 ? '#f7f4ec' : '#fff'}; border-right:1px solid #ddd8c9; display:flex; align-items:center; gap:6px; padding:0 8px; font-size:11.5px; cursor:pointer;`,
       open: () => this.goTo({ screen: 'emp', selId: e.id, pickDay: '' }),
@@ -2992,7 +3004,8 @@ class Component extends DCLogic {
       const box = 'padding:12px 14px; border-right:1px solid #ddd8c9;';
       V.empStats = [['มาทำงาน (วัน)', st.present], ['ขาดงาน', st.absent], ['มาสาย', st.late], ['นาทีสาย', st.lateMin], ['ออกก่อนเวลา', st.early], ['แสกนไม่ครบ', st.incomplete], ['ลา', st.leave], ['วันหยุด', st.off]]
         .map(([label, value]) => ({ label, value, style: box }));
-      V.empAttRate = (sel.cells.length ? Math.round(st.present / sel.cells.length * 1000) / 10 : 0) + '%';
+      const empDays = sel.cells.filter(c => !c.blank).length;
+      V.empAttRate = (empDays ? Math.round(st.present / empDays * 1000) / 10 : 0) + '%';
       const codeBox = 'flex:1; padding:8px 10px; border-right:1px solid #ddd8c9; text-align:center;';
       V.empCodes = [...E.HCM_CODES.map(k => ({ code: k, value: st.codes[k] || 0, style: codeBox })),
         { code: 'TOTAL', value: E.HCM_CODES.reduce((n, k) => n + (st.codes[k] || 0), 0), style: codeBox + 'background:#f2efe6;' }];
@@ -3057,7 +3070,7 @@ class Component extends DCLogic {
       'Attendance Rate', ...R.dates.map(d => d.slice(-2))];
     const rows = [], colors = [];
     emps.forEach(e => {
-      const days = e.cells.filter(c => c.color !== 'out').length;
+      const days = e.cells.filter(c => c.color !== 'out' && !c.blank).length;
       const pres = e.cells.filter(c => E.isPresent(c)).length;
       const shift = (e.cells.find(c => c.shift) || {}).shift || '';
       rows.push([e.id, e.name, e.position, shift, e.stat.absent, e.stat.late, e.stat.lateMin, e.stat.incomplete,
@@ -3091,7 +3104,7 @@ class Component extends DCLogic {
         E.isPresent(c) ? 'ใช่' : 'ไม่', c.tip || '']);
       colors.push([null, null, null, null, null, c.color, null, null, null, null]);
     });
-    const days = e.cells.filter(c => c.color !== 'out').length;
+    const days = e.cells.filter(c => c.color !== 'out' && !c.blank).length;
     const pres = e.cells.filter(c => E.isPresent(c)).length;
     rows.push([]);
     rows.push(['สรุป', `${e.name} (${e.id})`, e.position || '', '', '', '', '', '', '', '']);

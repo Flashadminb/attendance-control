@@ -234,7 +234,9 @@ export function classify(cellText, shiftText, cfg, dateKey) {
   // แสกนมาข้างเดียว (มีแค่ in หรือ out) — ตัดสินตรงนี้ก่อนแยกสาขา เพราะสาขา NoS/PH
   // คืนค่าออกไปก่อนจะถึงจุดที่ตรวจ INC ทำให้ช่องพวกนั้นรอดกฎ "แสกนไม่ครบ = ขาดงาน" ไปได้
   const inc = !!scan && (inM == null) !== (outM == null);
-  const R = { code: '', tip: t || '—', late: 0, early: 0, leave: null, pending, inc, shift: shift ? shift.raw : '', in: inM, out: outM };
+  // blank = ช่องว่างเปล่าจริง ๆ ในไฟล์ ไม่นับเป็นวัน-คนในตัวหารของ Attendance Rate
+  // ตรงกับ COUNTA ของส่วนกลางที่ข้ามช่องว่าง — คนที่ย้ายเข้ากลางเดือนจะได้ไม่ไปถ่วงตัวหาร
+  const R = { code: '', tip: t || '—', late: 0, early: 0, leave: null, pending, inc, blank: !t, shift: shift ? shift.raw : '', in: inM, out: outM };
 
   // กฎแปลงรหัสที่แอดมินเพิ่มเอง — มาก่อนกฎมาตรฐาน เพื่อให้เขียนทับได้
   // ใช้รองรับคำใหม่ ๆ ที่ HCM ส่งมาโดยที่ระบบยังไม่รู้จัก เช่น "ทำงานนอกสถานที่"
@@ -314,7 +316,12 @@ export function classify(cellText, shiftText, cfg, dateKey) {
 export function hcmCode(text) {
   const t = String(text || '');
   if (!t.trim()) return '';
-  if (/[023456789]/.test(t)) return '1';              // any real clock digit → present
+  /* "มาทำงาน" = ช่องมีคำว่า in — เลียนแบบสูตรของส่วนกลางตรง ๆ
+       =COUNTIF(คอลัมน์วัน,"*in*")
+     ส่วนกลางไม่สนว่าแสกนครบไหม มีลาแนบมาไหม หรือเวลาเป็น -- ทั้งคู่
+     ขอแค่มี in ก็นับ ถ้าเว็บคิดต่างจากนี้ตัวเลขจะไม่ตรงกับรายงานส่วนกลาง
+     ซึ่งเคยเกิดแล้ว — เว็บเคยตัดแสกนไม่ครบทิ้ง ได้ 72% ขณะที่ส่วนกลางได้ 87% */
+  if (/in/i.test(t)) return '1';
   if (/วันหยุด\s*PH/.test(t)) return 'PH';
   if (/ตั้งค่าทำงานในวันหยุด/.test(t)) return 'PH';
   if (/วันหยุด/.test(t)) return 'OFF';
@@ -329,12 +336,14 @@ export function hcmCode(text) {
 export const HCM_CODES = ['OFF', 'SL', 'PL', 'AB', 'AL', 'UL', 'PH', 'ML'];
 
 /* ── "มาทำงาน" สำหรับคิด Attendance Rate ─────────────────────────────────
-   แสกนไม่ครบ (มีแค่ in หรือ out) ไม่นับเป็นมาทำงาน — คิดเท่ากับขาดงาน
-   แต่ยังโชว์รหัส INC และสีแดงตามเดิม
-   ถ้าพนักงานยื่นแสกนย้อนหลังจนอนุมัติแล้ว ไฟล์รอบใหม่จาก HCM จะมีเวลาครบ
-   พออัปโหลดทับ สถานะจะกลับมาเป็นมาทำงานเองโดยไม่ต้องแก้อะไร               */
+   ใช้กฎเดียวกับรายงานส่วนกลางเป๊ะ: ช่องมี in = มาทำงาน จบ
+   แสกนไม่ครบ (INC) จึง "นับเป็นมา" ในอัตรานี้ — ต่างจากที่เคยตั้งไว้ตอนแรก
+   ว่าให้คิดเป็นขาด เพราะเทียบกับไฟล์ส่วนกลางแล้วเขานับเป็นมา
+   ถ้าเว็บนับต่างจากส่วนกลาง ตัวเลขจะไม่ตรงกันและถูกมองว่าผิด
+   INC ยังโชว์สีแดงในตารางตามเดิม และยังถูกหักในอัตราตรงเวลากับกฎใบเตือน
+   แค่ไม่ถูกหักออกจาก Attendance Rate                                        */
 export const isIncompleteScan = (c) => c.inc === true || c.code === 'INC' || c.color2 === 'red';
-export const isPresent = (c) => c.hcm === '1' && !isIncompleteScan(c);
+export const isPresent = (c) => c.hcm === '1';
 
 /* ── build the model ─────────────────────────────────────────────────────── */
 export function buildModel(attRows, schedRows, cfg) {
@@ -416,7 +425,7 @@ export function hubRollup(employees) {
     h.lateMin += e.stat.lateMin; h.incomplete += e.stat.incomplete; h.worked += e.stat.worked;
     h.slots += e.cells.filter(c => c.color !== 'gray' && c.code !== 'OFF').length;
     h.present += e.cells.filter(isPresent).length;
-    h.personDays += e.cells.filter(c => c.color !== 'out').length;
+    h.personDays += e.cells.filter(c => c.color !== 'out' && !c.blank).length;
   });
   return [...map.values()].map(h => ({ ...h, attRate: attRate(h), onTime: h.slots ? Math.round((1 - (h.absent + h.late + h.incomplete) / h.slots) * 1000) / 10 : 100 }))
     .sort((a, b) => a.onTime - b.onTime);
@@ -548,6 +557,12 @@ export function shiftBucket(raw) {
 const blankAgg = () => ({ slots: 0, ok: 0, absent: 0, late: 0, lateMin: 0, early: 0, leave: 0, inc: 0, heads: 0, present: 0, personDays: 0 });
 const rate = (a) => a.slots ? Math.round(a.ok / a.slots * 1000) / 10 : 100;
 export const attRate = (a) => a.personDays ? Math.round(a.present / a.personDays * 1000) / 10 : 0;
+// ค่าเฉลี่ยของอัตรารายวัน ข้ามวันที่ไม่มีข้อมูลเลย — แบบเดียวกับ AVERAGE ของส่วนกลาง
+export const avgDailyRate = (days) => {
+  const ds = (days || []).filter(d => d.personDays > 0);
+  if (!ds.length) return 0;
+  return Math.round(ds.reduce((s, d) => s + d.present / d.personDays, 0) / ds.length * 1000) / 10;
+};
 
 export function snapshot(model, cfg, source) {
   const g = cfg.grace ?? 5, eg = cfg.earlyGrace ?? 5;
@@ -563,9 +578,9 @@ export function snapshot(model, cfg, source) {
     const B = byBranch.get(b); B.heads++;
     total.heads++;
     e.cells.forEach((c, i) => {
-      // Attendance Rate (as in the source sheet): present ÷ every employee-day, holidays included
-      total.personDays++; byDay[i].personDays++; B.personDays++;
-      const bkt0 = byShift[shiftBucket(c.shift)]; bkt0.personDays++;
+      // Attendance Rate ตามส่วนกลาง: มา ÷ ทุกวัน-คนที่มีข้อมูล (รวมวันหยุด แต่ข้ามช่องว่าง)
+      const bkt0 = byShift[shiftBucket(c.shift)];
+      if (!c.blank) { total.personDays++; byDay[i].personDays++; B.personDays++; bkt0.personDays++; }
       if (isPresent(c)) { total.present++; byDay[i].present++; B.present++; bkt0.present++; }
       if (c.code === 'OFF' || c.code === 'PH') return;
       const bucket = byShift[shiftBucket(c.shift)];
@@ -587,7 +602,10 @@ export function snapshot(model, cfg, source) {
   return {
     month, savedAt: new Date().toISOString(), source: source || 'upload',
     days: model.dates.length, employees: model.employees.length,
-    total: { ...total, onTime: rate(total), attRate: attRate(total) },
+    /* ค่ารวมทั้งเดือน = ค่าเฉลี่ยของอัตรารายวัน ไม่ใช่เอาผลรวมมาหารกัน
+       ตรงกับส่วนกลางที่ใช้ AVERAGE(อัตราวันที่1..31) — สองวิธีนี้ให้เลขต่างกันนิดหน่อย
+       เมื่อจำนวนคนแต่ละวันไม่เท่ากัน และส่วนกลางคือตัวตั้งที่ต้องตรง               */
+    total: { ...total, onTime: rate(total), attRate: avgDailyRate(byDay) },
     byDay: byDay.map(d => ({ ...d, onTime: rate(d), attRate: attRate(d) })),
     byShift: Object.fromEntries(Object.entries(byShift).map(([k, v]) => [k, { ...v, onTime: rate(v), attRate: attRate(v) }])),
     byBranch: [...byBranch.values()].map(b => ({ ...b, onTime: rate(b), attRate: attRate(b) })).sort((a, b) => a.attRate - b.attRate),
@@ -655,8 +673,10 @@ export function serializeModel(model, meta) {
   const shiftIdx = (raw) => { const s = raw || ''; let i = shifts.indexOf(s); if (i < 0) { shifts.push(s); i = shifts.length - 1; } return i; };
   const employees = model.employees.map(e => ({
     i: e.id, n: e.name, p: e.position || '', b: e.branch || '', r: e.region || '', t: e.branchType || '',
+    // ตำแหน่ง 10 = ช่องว่างเปล่าในไฟล์ (1) — ต้องติดไปกับข้อมูลบนชีตด้วย ไม่งั้นพออ่านกลับมา
+    // ตัวหารของ Attendance Rate จะนับช่องว่างเข้าไป แล้วเลขไม่ตรงกับส่วนกลาง (เคยพลาดมาแล้ว)
     c: e.cells.map(c => [c.code || '', COLORS.indexOf(c.color), c.color2 ? COLORS.indexOf(c.color2) : -1,
-      shiftIdx(c.shift), c.in ?? -1, c.out ?? -1, c.late || 0, c.early || 0, c.leave || '', c.hcm || '']),
+      shiftIdx(c.shift), c.in ?? -1, c.out ?? -1, c.late || 0, c.early || 0, c.leave || '', c.hcm || '', c.blank ? 1 : 0]),
   }));
   return { v: 2, month: (model.dates[0] || '').slice(0, 7), dates: model.dates, shifts, employees,
     savedAt: new Date().toISOString(), ...(meta || {}) };
@@ -679,6 +699,7 @@ export function deserializeModel(d) {
       if (code === 'AB' || code === 'NS') bits.push('ขาดงาน/ไม่มีการแสกน');
       if (code === 'INC') bits.push('แสกนไม่ครบ');
       return { code, color, color2, shift, in: inM, out: outM, late: a[6], early: a[7], leave: a[8] || null, hcm: a[9],
+        blank: a[10] === 1,                       // ช่องว่างเปล่า — ข้อมูลรุ่นเก่าไม่มีตำแหน่งนี้ ถือว่าไม่ว่าง
         inc: (inM == null) !== (outM == null),   // แสกนข้างเดียว — ดูจาก in/out ที่เก็บไว้ ไม่ต้องเปลี่ยนรูปแบบไฟล์
         tip: [bits.join(' · '), times, shift ? 'กะ ' + shift : ''].filter(Boolean).join(' — ') || '—' };
     });
@@ -732,7 +753,7 @@ export function statsAcross(months, from, to) {
       e.cells.forEach((c, i) => {
         const d = m.dates[i];
         if (!d || d < from || d > to) return;
-        A.personDays++;
+        if (!c.blank) A.personDays++;
         if (isPresent(c)) A.present++;
         if (c.color === 'red') A.red++;
         if (c.code === 'AB' || c.code === 'NS' || c.code === 'NoS' || c.code === 'OFF!') A.absent++;
