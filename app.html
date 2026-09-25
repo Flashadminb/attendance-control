@@ -348,17 +348,23 @@
           <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px; margin-bottom:8px;">
             <h4 style="margin:0;">สรุปรายกะ × รายชื่อพนักงาน (ทั้งเดือน)</h4>
             <div style="display:flex; gap:12px; align-items:center; font-size:11px; color:#57544c;">
+              <span>กะ</span>
+              <div class="seg noprint" style="height:28px;">
+                <sc-for list="{{ shiftEmpShiftOpts }}" as="o" hint-placeholder-count="5">
+                  <button type="button" class="seg-opt" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
               <span>แสดงเฉพาะคนที่มีในกะนั้น</span>
               <div class="seg noprint" style="height:28px;">
                 <sc-for list="{{ shiftEmpOpts }}" as="o" hint-placeholder-count="4">
                   <button type="button" class="seg-opt" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
                 </sc-for>
               </div>
-              <span>{{ shiftEmpCount }} · เรียงจากอัตราตรงเวลาต่ำสุด · กดชื่อเพื่อดูรายละเอียด</span>
+              <span>{{ shiftEmpCount }} · เรียงจาก Attendance ต่ำสุดขึ้นไป · กดชื่อเพื่อดูรายละเอียด</span>
             </div>
           </div>
           <table class="table" style="width:100%; font-size:12px;">
-            <thead><tr><th style="text-align:left;">กะ</th><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:right;">วันทำงาน</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">นาทีสาย/ครั้ง</th><th style="text-align:right;">ออกก่อน</th><th style="text-align:right;">Attendance Rate</th><th style="text-align:left; width:170px;">อัตราตรงเวลา</th></tr></thead>
+            <thead><tr><th style="text-align:left;">กะ</th><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:right;">วัน</th><th style="text-align:right;">มา</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">ลา</th><th style="text-align:right;">สาย</th><th style="text-align:right;">แสกนไม่ครบ</th><th style="text-align:left; width:190px;">Attendance Rate = มา ÷ วัน</th><th style="text-align:right;">ตรงเวลา</th></tr></thead>
             <tbody>
               <sc-for list="{{ shiftEmpRows }}" as="r" hint-placeholder-count="10">
                 <tr onClick="{{ r.open }}" style="cursor:pointer;">
@@ -366,12 +372,13 @@
                   <td style="font-weight:600;">{{ r.name }}</td>
                   <td style="color:#57544c;">{{ r.branch }}</td>
                   <td style="text-align:right; font-family:Archivo;">{{ r.days }}</td>
+                  <td style="text-align:right; font-family:Archivo; font-weight:600;">{{ r.present }}</td>
                   <td style="text-align:right; font-family:Archivo; color:#ae1f06; font-weight:600;">{{ r.absent }}</td>
+                  <td style="text-align:right; font-family:Archivo;">{{ r.leave }}</td>
                   <td style="text-align:right; font-family:Archivo;">{{ r.late }}</td>
-                  <td style="text-align:right; font-family:Archivo;">{{ r.avgLate }}</td>
-                  <td style="text-align:right; font-family:Archivo;">{{ r.early }}</td>
-                  <td style="text-align:right; font-family:Archivo; font-weight:800;">{{ r.attRate }}</td>
-                  <td><div style="display:flex; align-items:center; gap:8px;"><span style="flex:1; height:10px; background:#eeeade; display:block;"><span style="{{ r.barStyle }}"></span></span><strong style="font-family:Archivo; width:44px; text-align:right;">{{ r.onTime }}</strong></div></td>
+                  <td style="text-align:right; font-family:Archivo;">{{ r.inc }}</td>
+                  <td><div style="display:flex; align-items:center; gap:8px;"><span style="flex:1; height:10px; background:#eeeade; display:block;"><span style="{{ r.attBarStyle }}"></span></span><strong style="font-family:Archivo; width:48px; text-align:right;">{{ r.attRate }}</strong></div></td>
+                  <td style="text-align:right; font-family:Archivo;">{{ r.onTime }}</td>
                 </tr>
               </sc-for>
             </tbody>
@@ -1339,7 +1346,7 @@ class Component extends DCLogic {
     dashFrom: '', dashTo: '', rangePreset: 'month', gShift: 'all',
     archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
     search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
-    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelRows: 1, pickDay: '', seMinDays: 3,
+    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelRows: 1, pickDay: '', seMinDays: 3, seShift: 'all',
     // flagShiftOnHoliday ปิดไว้: ไฟล์ตารางกะที่ HCM ส่งออกมาตั้งกะให้ทุกคนทุกวัน
     // ไม่เคยเขียนว่า "วันหยุด" กฎนี้จึงยิงธงแดงมั่วทุกวันหยุดจริง เปิดได้ถ้าไฟล์กะแยกวันหยุด
     grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
@@ -2484,7 +2491,7 @@ class Component extends DCLogic {
       })),
       addShift: () => this.saveShiftGroups([...s.shiftGroups, { key: 'g' + Date.now().toString(36), name: 'กะใหม่', start: '08:00', end: '17:00' }]),
       resetShifts: () => this.saveShiftGroups(this.eng.DEFAULT_SHIFT_GROUPS.map(x => ({ ...x }))),
-      shiftCards: [], shiftIssues: [], shiftBranchRows: [], shiftEmpRows: [], shiftEmpCount: '', shiftEmpOpts: [], shiftTrendGrid: [], shiftTrendLines: [], shiftTrendLegend: [],
+      shiftCards: [], shiftIssues: [], shiftBranchRows: [], shiftEmpRows: [], shiftEmpCount: '', shiftEmpOpts: [], shiftEmpShiftOpts: [], shiftTrendGrid: [], shiftTrendLines: [], shiftTrendLegend: [],
       monthOpts: ((s.datasets || []).length
         ? s.datasets.map(d => ({ month: d.month, label: `${d.month} · ${d.employees} คน` }))
         : (s.model && s.model.dates && s.model.dates.length
@@ -2952,12 +2959,14 @@ class Component extends DCLogic {
       emps.forEach(e => {
         e.cells.forEach((c, idx) => {
           if (idx < i0 || idx > i1) return;
-          if (c.code === 'OFF' || c.code === 'PH') return;
+          if (c.blank) return;
           const sh = this.shiftOf(c), key = sh.key + '|' + e.position;
-          if (!sb.has(key)) sb.set(key, { shift: sh.name, branch: e.position, ids: new Set(), n: 0, ok: 0, absent: 0, late: 0, lateMin: 0, early: 0, present: 0 });
+          if (!sb.has(key)) sb.set(key, { shift: sh.name, branch: e.position, ids: new Set(), all: 0, n: 0, ok: 0, absent: 0, late: 0, lateMin: 0, early: 0, present: 0 });
           const R = sb.get(key);
-          R.ids.add(e.id); R.n++;
+          R.ids.add(e.id); R.all++;                 // ตัวหาร Attendance รวมวันหยุด ตามกฎส่วนกลาง
           if (this.eng.isPresent(c)) R.present++;
+          if (c.code === 'OFF' || c.code === 'PH') return;
+          R.n++;
           if (c.color === 'ok' || c.leave) R.ok++;
           if (c.code === 'AB' || c.code === 'NS' || c.code === 'NoS' || c.code === 'OFF!') R.absent++;
           if (c.late > s.grace) { R.late++; R.lateMin += c.late; }
@@ -2966,47 +2975,60 @@ class Component extends DCLogic {
       });
       V.shiftBranchRows = [...sb.values()].map(R => {
         const rate = R.n ? Math.round(R.ok / R.n * 1000) / 10 : 100;
-        const att = R.n ? Math.round((R.present || 0) / R.n * 1000) / 10 : 0;
+        const att = R.all ? Math.round(R.present / R.all * 1000) / 10 : 0;
         return { shift: R.shift, branch: R.branch, headcount: R.ids.size, absent: R.absent, late: R.late, attRate: att + '%',
           avgLate: R.late ? Math.round(R.lateMin / R.late) : 0, early: R.early, onTime: rate + '%',
           barStyle: `display:block; height:10px; width:${Math.max(2, rate)}%; background:${rate < 88 ? RED : rate < 94 ? YEL : '#121110'};`,
           open: () => this.goTo({ screen: 'grid', fPos: R.branch, scrollTop: 0 }), sort: rate };
       }).sort((a, b) => a.sort - b.sort).slice(0, 24);
 
-      /* สรุปรายกะ × รายชื่อพนักงาน — กฎการนับชุดเดียวกับรายกะ × ตำแหน่งทุกข้อ
-         แค่เปลี่ยนตัวจัดกลุ่มจากตำแหน่งเป็นตัวคน คนที่ขึ้นสองกะจะมีสองบรรทัด
-         เรียงจากอัตราตรงเวลาต่ำสุดขึ้นมา คนที่ต้องคุยด้วยก่อนอยู่บนสุด        */
+      /* สรุปรายกะ × รายชื่อพนักงาน — ไว้ดูว่าในช่วงวันที่เลือก ใคร Attendance ต่ำสุด
+         Attendance Rate ต่อคนใช้กฎเดียวกับส่วนกลางเป๊ะ: มา (ช่องมี in) ÷ วันที่มีข้อมูล
+         วันหยุดอยู่ในตัวหารด้วย ลาก็อยู่ในตัวหารแต่ไม่นับว่ามา — ตัวเลขทุกคนรวมกัน
+         จึงย้อนกลับเป็นตัวเลขของทั้งฮับได้พอดี
+         ส่วนอัตราตรงเวลาตัดวันหยุดออก และนับลาเป็นเรียบร้อย เพราะถามคนละเรื่อง       */
       const se = new Map();
       emps.forEach(e => {
         e.cells.forEach((c, idx) => {
-          if (idx < i0 || idx > i1) return;
-          if (c.code === 'OFF' || c.code === 'PH') return;
+          if (idx < i0 || idx > i1 || c.blank) return;
           const sh = this.shiftOf(c), key = sh.key + '|' + e.id;
-          if (!se.has(key)) se.set(key, { shift: sh.name, shiftKey: sh.key, id: e.id, name: e.name, branch: e.position, n: 0, ok: 0, absent: 0, late: 0, lateMin: 0, early: 0, present: 0 });
+          if (!se.has(key)) se.set(key, { shift: sh.name, shiftKey: sh.key, id: e.id, name: e.name, branch: e.position, all: 0, n: 0, ok: 0, absent: 0, late: 0, inc: 0, leave: 0, present: 0 });
           const R = se.get(key);
-          R.n++;
-          if (this.eng.isPresent(c)) R.present++;
+          R.all++;                                   // ทุกวันที่มีข้อมูล รวมวันหยุด = ตัวหาร Attendance
+          if (this.eng.isPresent(c)) R.present++;    // มี in ก็นับ แม้เป็นวันหยุดที่มาทำงาน
+          if (c.code === 'OFF' || c.code === 'PH') return;
+          R.n++;                                     // วันทำงาน = ตัวหารอัตราตรงเวลา
+          if (c.leave) R.leave++;
           if (c.color === 'ok' || c.leave) R.ok++;
           if (c.code === 'AB' || c.code === 'NS' || c.code === 'NoS' || c.code === 'OFF!') R.absent++;
-          if (c.late > s.grace) { R.late++; R.lateMin += c.late; }
-          if (c.early > s.earlyGrace) R.early++;
+          if (c.code === 'INC') R.inc++;
+          if (c.late > s.grace) R.late++;
         });
       });
       V.shiftEmpRows = [...se.values()].map(R => {
         const rate = R.n ? Math.round(R.ok / R.n * 1000) / 10 : 100;
-        const att = R.n ? Math.round(R.present / R.n * 1000) / 10 : 0;
-        return { shift: R.shift, name: R.name, branch: R.branch, days: R.n, absent: R.absent, late: R.late, attRate: att + '%',
-          avgLate: R.late ? Math.round(R.lateMin / R.late) : 0, early: R.early, onTime: rate + '%',
-          barStyle: `display:block; height:10px; width:${Math.max(2, rate)}%; background:${rate < 88 ? RED : rate < 94 ? YEL : '#121110'};`,
-          open: () => this.goTo({ screen: 'emp', selId: R.id, pickDay: '' }), sort: rate };
-      }).sort((a, b) => a.sort - b.sort || b.absent - a.absent);
+        const att = R.all ? Math.round(R.present / R.all * 1000) / 10 : 0;
+        return { shift: R.shift, shiftKey: R.shiftKey, name: R.name, branch: R.branch, days: R.all, present: R.present,
+          absent: R.absent, leave: R.leave, late: R.late, inc: R.inc, attRate: att + '%', onTime: rate + '%',
+          attBarStyle: `display:block; height:10px; width:${Math.max(2, att)}%; background:${att < 70 ? RED : att < 85 ? YEL : '#121110'};`,
+          open: () => this.goTo({ screen: 'emp', selId: R.id, pickDay: '' }), sortAtt: att, sortOn: rate };
+      }).sort((a, b) => a.sortAtt - b.sortAtt || a.sortOn - b.sortOn || b.absent - a.absent);
       /* คนที่โผล่ในกะนั้นแค่วันสองวัน (สลับกะชั่วคราว) จะขึ้นบนสุดด้วย 0% ทั้งที่ไม่ได้บอกอะไร
          จึงกรองด้วยจำนวนวันขั้นต่ำ ตั้งต้น 3 วัน เลือกได้ที่แถบเหนือตาราง จำไว้ในเครื่อง   */
+      // กรองกะที่เลือกก่อน แล้วค่อยกรองวันขั้นต่ำ
+      const seShift = s.seShift || 'all';
+      if (seShift !== 'all') V.shiftEmpRows = V.shiftEmpRows.filter(r => r.shiftKey === seShift);
       const seAll = V.shiftEmpRows.length;
       V.shiftEmpRows = V.shiftEmpRows.filter(r => r.days >= (s.seMinDays || 1));
       const seHidden = seAll - V.shiftEmpRows.length;
       V.shiftEmpCount = `${V.shiftEmpRows.length} บรรทัด · ${new Set(V.shiftEmpRows.map(r => r.name)).size} คน`
         + (seHidden ? ` · ซ่อน ${seHidden} บรรทัดที่น้อยกว่า ${s.seMinDays} วัน` : '');
+      V.shiftEmpShiftOpts = [['all', 'ทุกกะ'], ...(s.shiftGroups || []).map(g => [g.key, g.name]), ['none', 'ไม่มีกะ']].map(([k, l]) => ({
+        label: l, pick: () => set({ seShift: k }),
+        style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:11px;`
+          + ` font-family:Archivo,"Noto Sans Thai",sans-serif;`
+          + ` background:${seShift === k ? '#121110' : 'transparent'}; color:${seShift === k ? '#f5c518' : '#121110'};`,
+      }));
       V.shiftEmpOpts = [[1, 'ทุกคน'], [3, '≥ 3 วัน'], [5, '≥ 5 วัน'], [10, '≥ 10 วัน']].map(([v, l]) => ({
         label: l,
         pick: () => { try { localStorage.setItem('hcm-se-mindays-v1', String(v)); } catch (e) {} set({ seMinDays: v }); },
