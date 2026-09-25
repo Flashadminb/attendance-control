@@ -361,6 +361,8 @@
                 </sc-for>
               </div>
               <span>{{ shiftEmpCount }} · เรียงจาก Attendance ต่ำสุดขึ้นไป · กดชื่อเพื่อดูรายละเอียด</span>
+              <button type="button" class="btn btn-primary noprint" onClick="{{ seXLS }}" style="height:28px; font-size:11px;">โหลด Excel</button>
+              <button type="button" class="btn btn-secondary noprint" onClick="{{ seCSV }}" style="height:28px; font-size:11px;">CSV</button>
             </div>
           </div>
           <table class="table" style="width:100%; font-size:12px;">
@@ -2511,6 +2513,7 @@ class Component extends DCLogic {
       exportPNG: () => this.exportPNG(), exportXLS: () => this.exportXLS(), exportCSV: () => this.exportCSV(),
       copyTSV: () => this.copyTSV(), exportHubCSV: () => this.exportHubCSV(),
       gridXLS: () => this.gridExport('xls'), gridCSV: () => this.gridExport('csv'),
+      seXLS: () => this.seExport('xls'), seCSV: () => this.seExport('csv'),
       empXLS: () => this.empExport('xls'), empCSV: () => this.empExport('csv'),
     };
     // ── warning letters
@@ -3008,7 +3011,7 @@ class Component extends DCLogic {
       V.shiftEmpRows = [...se.values()].map(R => {
         const rate = R.n ? Math.round(R.ok / R.n * 1000) / 10 : 100;
         const att = R.all ? Math.round(R.present / R.all * 1000) / 10 : 0;
-        return { shift: R.shift, shiftKey: R.shiftKey, name: R.name, branch: R.branch, days: R.all, present: R.present,
+        return { shift: R.shift, shiftKey: R.shiftKey, id: R.id, name: R.name, branch: R.branch, days: R.all, present: R.present,
           absent: R.absent, leave: R.leave, late: R.late, inc: R.inc, attRate: att + '%', onTime: rate + '%',
           attBarStyle: `display:block; height:10px; width:${Math.max(2, att)}%; background:${att < 70 ? RED : att < 85 ? YEL : '#121110'};`,
           open: () => this.goTo({ screen: 'emp', selId: R.id, pickDay: '' }), sortAtt: att, sortOn: rate };
@@ -3029,6 +3032,9 @@ class Component extends DCLogic {
           + ` font-family:Archivo,"Noto Sans Thai",sans-serif;`
           + ` background:${seShift === k ? '#121110' : 'transparent'}; color:${seShift === k ? '#f5c518' : '#121110'};`,
       }));
+      // ปุ่มโหลดไฟล์ใช้ชุดเดียวกับที่เห็นบนจอ กรองกะกรองวันไว้ยังไงก็ได้อย่างนั้น
+      this._seRows = V.shiftEmpRows;
+      this._seRange = { from: rDates[0] || '', to: rDates[rDates.length - 1] || '', shift: seShift };
       V.shiftEmpOpts = [[1, 'ทุกคน'], [3, '≥ 3 วัน'], [5, '≥ 5 วัน'], [10, '≥ 10 วัน']].map(([v, l]) => ({
         label: l,
         pick: () => { try { localStorage.setItem('hcm-se-mindays-v1', String(v)); } catch (e) {} set({ seMinDays: v }); },
@@ -3184,6 +3190,23 @@ class Component extends DCLogic {
     if (kind === 'csv') this.eng.download(this.gridFileName('csv'), E.toCSV(header, rows), 'text/csv;charset=utf-8');
     else this.eng.download(this.gridFileName('xls'), E.toSpreadsheetML(header, rows, colors, 'ตารางสี'), 'application/vnd.ms-excel');
     this.addLog(`โหลดตารางสีแล้ว ${rows.length} คน × ${R.dates.length} วัน`);
+  }
+
+  /* ── โหลดสรุปรายกะ × รายชื่อพนักงาน เท่าที่กรองไว้บนจอ ───────────────────
+     ไว้ส่งรายงานว่าในช่วงวันที่เลือก ใคร Attendance ต่ำสุดไล่ขึ้นไป
+     คอลัมน์โชว์ตัวตั้งกับตัวหารด้วย คนอ่านรายงานจะได้ตรวจสอบเองได้           */
+  seExport(kind) {
+    const rows0 = this._seRows || [];
+    if (!rows0.length) { this.addLog('ไม่มีข้อมูลให้โหลด — เปิดแท็บเปรียบเทียบทุกกะก่อน'); return; }
+    const E = this.eng, R = this._seRange || {};
+    const header = ['กะ', 'รหัสพนักงาน', 'ชื่อ-สกุล', 'ตำแหน่ง', 'วัน (รวมหยุด)', 'มา', 'ขาด', 'ลา', 'สาย', 'แสกนไม่ครบ', 'Attendance Rate', 'อัตราตรงเวลา'];
+    const rows = rows0.map(r => [r.shift, r.id, r.name, r.branch, r.days, r.present, r.absent, r.leave, r.late, r.inc, r.attRate, r.onTime]);
+    const g = (this.state.shiftGroups || []).find(x => x.key === R.shift);
+    const tag = R.shift && R.shift !== 'all' ? '-' + (g ? g.name : R.shift).replace(/[^0-9A-Za-z:-]/g, '') : '';
+    const base = `Attendance-รายคน-${R.from}_${R.to}${tag}`;
+    if (kind === 'csv') E.download(base + '.csv', E.toCSV(header, rows), 'text/csv;charset=utf-8');
+    else E.download(base + '.xls', E.toSpreadsheetML(header, rows, rows.map(() => []), 'รายคน'), 'application/vnd.ms-excel');
+    this.addLog(`โหลดสรุปรายคนแล้ว ${rows.length} บรรทัด`);
   }
 
   /* ── โหลดข้อมูลของพนักงานคนที่เปิดอยู่คนเดียว ─────────────────────────
