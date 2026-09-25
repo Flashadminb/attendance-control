@@ -347,7 +347,15 @@
         <section>
           <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid rgba(32,30,29,.4); padding-bottom:8px; margin-bottom:8px;">
             <h4 style="margin:0;">สรุปรายกะ × รายชื่อพนักงาน (ทั้งเดือน)</h4>
-            <span style="font-size:11px; color:#57544c;">{{ shiftEmpCount }} · เรียงจากอัตราตรงเวลาต่ำสุด · กดชื่อเพื่อดูรายละเอียด</span>
+            <div style="display:flex; gap:12px; align-items:center; font-size:11px; color:#57544c;">
+              <span>แสดงเฉพาะคนที่มีในกะนั้น</span>
+              <div class="seg noprint" style="height:28px;">
+                <sc-for list="{{ shiftEmpOpts }}" as="o" hint-placeholder-count="4">
+                  <button type="button" class="seg-opt" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+              <span>{{ shiftEmpCount }} · เรียงจากอัตราตรงเวลาต่ำสุด · กดชื่อเพื่อดูรายละเอียด</span>
+            </div>
           </div>
           <table class="table" style="width:100%; font-size:12px;">
             <thead><tr><th style="text-align:left;">กะ</th><th style="text-align:left;">พนักงาน</th><th style="text-align:left;">ตำแหน่ง</th><th style="text-align:right;">วันทำงาน</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">นาทีสาย/ครั้ง</th><th style="text-align:right;">ออกก่อน</th><th style="text-align:right;">Attendance Rate</th><th style="text-align:left; width:170px;">อัตราตรงเวลา</th></tr></thead>
@@ -1331,7 +1339,7 @@ class Component extends DCLogic {
     dashFrom: '', dashTo: '', rangePreset: 'month', gShift: 'all',
     archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
     search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
-    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelRows: 1, pickDay: '',
+    dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelRows: 1, pickDay: '', seMinDays: 3,
     // flagShiftOnHoliday ปิดไว้: ไฟล์ตารางกะที่ HCM ส่งออกมาตั้งกะให้ทุกคนทุกวัน
     // ไม่เคยเขียนว่า "วันหยุด" กฎนี้จึงยิงธงแดงมั่วทุกวันหยุดจริง เปิดได้ถ้าไฟล์กะแยกวันหยุด
     grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
@@ -1390,6 +1398,8 @@ class Component extends DCLogic {
     try {
       const w = parseFloat(localStorage.getItem(this.WHEEL_KEY));
       if (w >= 1 && w <= 8) this.setState({ wheelRows: Math.round(w) });
+      const md = parseInt(localStorage.getItem("hcm-se-mindays-v1"), 10);
+      if (md >= 1 && md <= 31) this.setState({ seMinDays: md });
     } catch (e) {}
     this.loadArchive();
     this.loadSchedule();
@@ -2474,7 +2484,7 @@ class Component extends DCLogic {
       })),
       addShift: () => this.saveShiftGroups([...s.shiftGroups, { key: 'g' + Date.now().toString(36), name: 'กะใหม่', start: '08:00', end: '17:00' }]),
       resetShifts: () => this.saveShiftGroups(this.eng.DEFAULT_SHIFT_GROUPS.map(x => ({ ...x }))),
-      shiftCards: [], shiftIssues: [], shiftBranchRows: [], shiftEmpRows: [], shiftEmpCount: '', shiftTrendGrid: [], shiftTrendLines: [], shiftTrendLegend: [],
+      shiftCards: [], shiftIssues: [], shiftBranchRows: [], shiftEmpRows: [], shiftEmpCount: '', shiftEmpOpts: [], shiftTrendGrid: [], shiftTrendLines: [], shiftTrendLegend: [],
       monthOpts: ((s.datasets || []).length
         ? s.datasets.map(d => ({ month: d.month, label: `${d.month} · ${d.employees} คน` }))
         : (s.model && s.model.dates && s.model.dates.length
@@ -2990,7 +3000,21 @@ class Component extends DCLogic {
           barStyle: `display:block; height:10px; width:${Math.max(2, rate)}%; background:${rate < 88 ? RED : rate < 94 ? YEL : '#121110'};`,
           open: () => this.goTo({ screen: 'emp', selId: R.id, pickDay: '' }), sort: rate };
       }).sort((a, b) => a.sort - b.sort || b.absent - a.absent);
-      V.shiftEmpCount = `${V.shiftEmpRows.length} บรรทัด · ${new Set(V.shiftEmpRows.map(r => r.name)).size} คน`;
+      /* คนที่โผล่ในกะนั้นแค่วันสองวัน (สลับกะชั่วคราว) จะขึ้นบนสุดด้วย 0% ทั้งที่ไม่ได้บอกอะไร
+         จึงกรองด้วยจำนวนวันขั้นต่ำ ตั้งต้น 3 วัน เลือกได้ที่แถบเหนือตาราง จำไว้ในเครื่อง   */
+      const seAll = V.shiftEmpRows.length;
+      V.shiftEmpRows = V.shiftEmpRows.filter(r => r.days >= (s.seMinDays || 1));
+      const seHidden = seAll - V.shiftEmpRows.length;
+      V.shiftEmpCount = `${V.shiftEmpRows.length} บรรทัด · ${new Set(V.shiftEmpRows.map(r => r.name)).size} คน`
+        + (seHidden ? ` · ซ่อน ${seHidden} บรรทัดที่น้อยกว่า ${s.seMinDays} วัน` : '');
+      V.shiftEmpOpts = [[1, 'ทุกคน'], [3, '≥ 3 วัน'], [5, '≥ 5 วัน'], [10, '≥ 10 วัน']].map(([v, l]) => ({
+        label: l,
+        pick: () => { try { localStorage.setItem('hcm-se-mindays-v1', String(v)); } catch (e) {} set({ seMinDays: v }); },
+        style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:11px;`
+          + ` font-family:Archivo,"Noto Sans Thai",sans-serif;`
+          + ` background:${(s.seMinDays || 1) === v ? '#121110' : 'transparent'};`
+          + ` color:${(s.seMinDays || 1) === v ? '#f5c518' : '#121110'};`,
+      }));
     }
 
     // ── grid (virtualised, optionally scoped to one shift)
