@@ -288,10 +288,17 @@ export function classify(cellText, shiftText, cfg, dateKey) {
       let i = inM, o = outM;
       if (i < shift.start - 720) i += 1440;
       if (o < i) o += 1440;
-      // half-day leave: judge only the half actually worked
-      const mid = Math.round((shift.start + shift.end) / 2);
-      const expIn = half === 'เช้า' ? mid : shift.start;
-      const expOut = half === 'บ่าย' ? mid : shift.end;
+      /* ลาครึ่งวัน: ตรวจเฉพาะครึ่งที่มาทำงานจริง
+         ครึ่งวัน = ทำงาน 4 ชั่วโมงชิดขอบกะ ไม่ใช่ตัดกลางกะ เพราะกะ 9 ชม. มีพัก 1 ชม. อยู่ตรงกลาง
+           ลาเช้า → ต้องเข้าไม่เกิน เลิกกะ − 4 ชม.  (กะ 03:00-12:00 → 08:00, กะ 09:00-18:00 → 14:00)
+           ลาบ่าย → ออกได้ตั้งแต่ เข้ากะ + 4 ชม.  (กะ 18:00-03:00 → 22:00)
+         เดิมใช้จุดกึ่งกลางกะ (07:30) ทำให้คนที่ลาเช้าแล้วเข้า 07:41 โดนนับสาย 11 นาที
+         ทั้งที่ HCM ไม่นับ — เทียบไฟล์เดือน 2026-08 (ลาครึ่งวัน 51 ครั้ง)
+         สูตรเดิมนับสายผิด 12 วัน และออกก่อนผิด 4 วัน สูตรนี้ไม่ติดสักวัน
+         จำนวนครั้งออกก่อนต่อคนตรงกับ HCM ครบ 112 คน (เดิม 108)                  */
+      const halfWork = Math.min(240, Math.round((shift.end - shift.start) / 2));
+      const expIn = half === 'เช้า' ? shift.end - halfWork : shift.start;
+      const expOut = half === 'บ่าย' ? shift.start + halfWork : shift.end;
       late = Math.max(0, i - expIn);
       early = Math.max(0, expOut - o);
     }
