@@ -563,6 +563,384 @@
     </sc-if>
 
     <!-- ══ 3 · GRID ══ -->
+    <!-- ══ สรุปแบบละเอียด ══ -->
+    <sc-if value="{{ isSum }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:22px 28px 60px; display:flex; flex-direction:column; gap:18px;">
+
+      <div class="noprint" style="display:flex; align-items:center; flex-wrap:wrap; border-bottom:2px solid rgba(32,30,29,.4);">
+        <sc-for list="{{ sumTabs }}" as="t" hint-placeholder-count="3">
+          <button type="button" onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
+        </sc-for>
+        <span style="margin-left:auto; font-size:11px; color:#57544c;">{{ sumTabHint }}</span>
+      </div>
+
+      <div class="noprint" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; border:2px solid rgba(32,30,29,.4); padding:12px 14px; background:#f2efe6;">
+        <div class="field" style="margin:0;"><label style="font-size:11px;">กะ</label>
+          <select class="input" value="{{ sumShift }}" onChange="{{ onSumShift }}" style="height:32px; font-size:12px; width:150px;">
+            <sc-for list="{{ sumShiftOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+          </select></div>
+        <sc-if value="{{ sumCanPos }}" hint-placeholder-val="{{ true }}">
+          <div class="field" style="margin:0;"><label style="font-size:11px;">ตำแหน่ง</label>
+            <select class="input" value="{{ sumPos }}" onChange="{{ onSumPos }}" style="height:32px; font-size:12px; width:220px;">
+              <sc-for list="{{ sumPosOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+            </select></div>
+        </sc-if>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ตั้งแต่วันที่</label>
+          <select class="input" value="{{ sumFrom }}" onChange="{{ onSumFrom }}" style="height:32px; font-size:12px; width:150px;">
+            <sc-for list="{{ sumDateOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+          </select></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ถึงวันที่</label>
+          <select class="input" value="{{ sumTo }}" onChange="{{ onSumTo }}" style="height:32px; font-size:12px; width:150px;">
+            <sc-for list="{{ sumDateOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+          </select></div>
+        <div class="field" style="margin:0;"><label style="font-size:11px;">ช่วงสำเร็จรูป</label>
+          <div class="seg" style="height:34px;">
+            <sc-for list="{{ sumPresets }}" as="p" hint-placeholder-count="4">
+              <button type="button" class="seg-opt" onClick="{{ p.pick }}" style="{{ p.style }}">{{ p.label }}</button>
+            </sc-for>
+          </div></div>
+        <sc-if value="{{ sumIsPerson }}" hint-placeholder-val="{{ false }}">
+          <div class="field" style="margin:0;"><label style="font-size:11px;">ค้นหาชื่อ / รหัส</label>
+            <input class="input" value="{{ sumQ }}" onInput="{{ onSumQ }}" placeholder="พิมพ์เพื่อกรองรายชื่อ" style="height:32px; font-size:12px; width:170px;"></div>
+          <div class="field" style="margin:0;"><label style="font-size:11px;">พนักงาน ({{ sumPersonCount }})</label>
+            <select class="input" value="{{ sumPerson }}" onChange="{{ onSumPerson }}" style="height:32px; font-size:12px; width:340px;">
+              <sc-for list="{{ sumPersonOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+            </select></div>
+        </sc-if>
+        <div style="margin-left:auto; text-align:right; font-size:11px; color:#57544c; max-width:320px;">{{ sumScope }}</div>
+      </div>
+
+      <sc-if value="{{ sumNoData }}" hint-placeholder-val="{{ false }}">
+        <div style="border:2px dashed rgba(32,30,29,.4); padding:28px; text-align:center; color:#57544c;">{{ sumEmptyText }}</div>
+      </sc-if>
+
+      <sc-if value="{{ sumHasData }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+
+        <sc-if value="{{ sumIsPerson }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; background:#121110; color:#fff; padding:16px 20px;">
+            <div style="flex:1; min-width:240px;">
+              <div style="font-size:11px; letter-spacing:.1em; color:#f5c518;">รหัส {{ sumP.id }} · {{ sumP.position }} · กะหลัก {{ sumP.shift }}</div>
+              <div style="font-family:Archivo,'Noto Sans Thai',sans-serif; font-weight:800; font-size:24px; margin-top:2px;">{{ sumP.name }}</div>
+              <div style="font-size:12px; color:#bdb9ae; margin-top:2px;">{{ sumP.days }}</div>
+            </div>
+            <div class="noprint" style="display:flex; gap:8px;">
+              <button type="button" class="btn" onClick="{{ sumOpenEmp }}" style="height:34px; background:#f5c518; color:#121110; border:0;">เปิดหน้ารายพนักงาน</button>
+              <button type="button" class="btn" onClick="{{ sumPXLS }}" style="height:34px; background:transparent; color:#fff; border:1px solid #fff;">โหลด Excel รายวัน</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- แถว 1: ตัวเลขหลัก -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px;">
+          <sc-for list="{{ sumKpis }}" as="k" hint-placeholder-count="6">
+            <div style="position:relative; overflow:hidden; background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px 14px; min-height:104px;">
+              <svg viewBox="0 0 100 40" preserveAspectRatio="none" style="position:absolute; left:0; right:0; bottom:0; width:100%; height:58%; opacity:.22; pointer-events:none;">
+                <path d="{{ k.spark }}" fill="{{ k.sparkFill }}" stroke="none"></path>
+              </svg>
+              <div style="position:relative; font-size:12px; font-weight:700; color:#57544c;">{{ k.title }}</div>
+              <div style="{{ k.valStyle }}">{{ k.value }}</div>
+              <div style="position:relative; font-size:11px; color:#57544c; margin-top:4px; line-height:1.45;">{{ k.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- แถว 2: หน้าปัด + กราฟสายกี่นาที -->
+        <div style="display:flex; flex-wrap:wrap; gap:12px;">
+          <div style="flex:2 1 560px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
+            <sc-for list="{{ sumGauges }}" as="g" hint-placeholder-count="4">
+              <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:10px 12px; display:flex; flex-direction:column;">
+                <div style="font-size:12px; font-weight:700;">{{ g.title }}</div>
+                <div style="font-size:10.5px; color:#7a776f; min-height:15px;">{{ g.sub }}</div>
+                <svg viewBox="0 0 120 92" style="width:100%; max-width:190px; height:auto; display:block; margin:4px auto 0;">
+                  <path d="{{ g.bg }}" fill="none" stroke="#e5e1d5" stroke-width="16"></path>
+                  <path d="{{ g.val }}" fill="none" stroke="{{ g.color }}" stroke-width="16"></path>
+                  <line x1="60" y1="58" x2="{{ g.nx }}" y2="{{ g.ny }}" stroke="#121110" stroke-width="3.5" stroke-linecap="round"></line>
+                  <circle cx="60" cy="58" r="5" fill="#121110"></circle>
+                </svg>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px; margin-top:-8px;">
+                  <span style="font-size:10.5px; color:#7a776f; font-family:Archivo;">{{ g.minText }}</span>
+                  <span style="{{ g.valStyle }}">{{ g.valText }}</span>
+                  <span style="font-size:10.5px; color:#7a776f; font-family:Archivo;">{{ g.maxText }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1 1 340px; background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px; display:flex; flex-direction:column;">
+            <div style="font-size:13px; font-weight:800;">สาย / ออกก่อน กี่นาที</div>
+            <div style="font-size:10.5px; color:#7a776f;">{{ sumAgingNote }}</div>
+            <div style="height:160px; display:flex; align-items:stretch; gap:10px; margin-top:10px; border-bottom:2px solid #121110;">
+              <sc-for list="{{ sumAging }}" as="a" hint-placeholder-count="4">
+                <div style="flex:1; display:flex; flex-direction:column;">
+                  <div style="flex:1; display:flex; align-items:flex-end; justify-content:center; gap:4px;">
+                    <div style="width:34%; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;">
+                      <span style="font-size:10px; font-family:Archivo; font-weight:700;">{{ a.late }}</span>
+                      <div style="{{ a.lateStyle }}; width:100%;"></div>
+                    </div>
+                    <div style="width:34%; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;">
+                      <span style="font-size:10px; font-family:Archivo; font-weight:700;">{{ a.early }}</span>
+                      <div style="{{ a.earlyStyle }}; width:100%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:4px;">
+              <sc-for list="{{ sumAging }}" as="a" hint-placeholder-count="4">
+                <div style="flex:1; text-align:center; font-size:10.5px; color:#57544c;">{{ a.label }}</div>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:14px; justify-content:center; margin-top:8px; font-size:11.5px;">
+              <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#f5c518;"></span>มาสาย (ครั้ง)</span>
+              <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#121110;"></span>ออกก่อนเวลา (ครั้ง)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ มุมมองกลุ่ม (กะ / ตำแหน่ง) ══ -->
+        <sc-if value="{{ sumIsGroup }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; flex-direction:column; gap:18px;">
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:12px;">
+            <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+              <div style="font-size:13px; font-weight:800;">Attendance Rate เทียบ อัตรามาตรงเวลา รายวัน</div>
+              <div style="font-size:10.5px; color:#7a776f; margin-bottom:8px;">ชี้ที่จุดเพื่อดูวันที่และตัวเลข</div>
+              <div style="display:flex; height:192px;">
+                <div style="position:relative; width:38px; flex:none;">
+                  <sc-for list="{{ sumLineGrid }}" as="g" hint-placeholder-count="5"><div style="{{ g.lbl }}">{{ g.label }}</div></sc-for>
+                </div>
+                <div style="position:relative; flex:1; min-width:0;">
+                  <svg viewBox="0 0 1000 190" preserveAspectRatio="none" style="width:100%; height:190px; display:block; overflow:visible;">
+                    <sc-for list="{{ sumLineGrid }}" as="g" hint-placeholder-count="5">
+                      <line x1="0" y1="{{ g.y }}" x2="1000" y2="{{ g.y }}" stroke="#e5e1d5" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                    </sc-for>
+                    <line x1="0" y1="170" x2="1000" y2="170" stroke="#121110" stroke-width="2" vector-effect="non-scaling-stroke"></line>
+                    <path d="{{ sumLineOn }}" fill="none" stroke="#e0a800" stroke-width="2.5" vector-effect="non-scaling-stroke"></path>
+                    <path d="{{ sumLineAtt }}" fill="none" stroke="#121110" stroke-width="2.5" vector-effect="non-scaling-stroke"></path>
+                  </svg>
+                  <sc-for list="{{ sumLineDots }}" as="d" hint-placeholder-count="10">
+                    <div title="{{ d.title }}" style="{{ d.style }}"></div>
+                    <div style="{{ d.lstyle }}">{{ d.label }}</div>
+                  </sc-for>
+                  <sc-for list="{{ sumLineTicks }}" as="t" hint-placeholder-count="8"><div style="{{ t.lbl }}">{{ t.label }}</div></sc-for>
+                </div>
+              </div>
+              <div style="display:flex; gap:16px; justify-content:center; margin-top:14px; font-size:11.5px;">
+                <span style="display:inline-flex; align-items:center; gap:6px;"><span style="display:inline-block; width:20px; border-top:3px solid #121110;"></span>Attendance Rate %</span>
+                <span style="display:inline-flex; align-items:center; gap:6px;"><span style="display:inline-block; width:20px; border-top:3px solid #e0a800;"></span>อัตรามาตรงเวลา %</span>
+              </div>
+            </div>
+
+            <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+              <div style="font-size:13px; font-weight:800;">สถานะรายวัน (คน)</div>
+              <div style="font-size:10.5px; color:#7a776f; margin-bottom:8px;">ไม่นับวันหยุด · กดแท่งเพื่อเปิดวันนั้นในแดชบอร์ด · สูงสุด {{ sumStackMax }} คน/วัน</div>
+              <div style="height:180px; display:flex; align-items:stretch; gap:2px; border-bottom:2px solid #121110;">
+                <sc-for list="{{ sumStack }}" as="b" hint-placeholder-count="20">
+                  <div title="{{ b.tip }}" onClick="{{ b.pick }}" style="flex:1; min-width:0; display:flex; flex-direction:column-reverse; cursor:pointer;">
+                    <div style="{{ b.ok }}"></div><div style="{{ b.late }}"></div><div style="{{ b.bad }}"></div><div style="{{ b.leave }}"></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex; gap:2px; margin-top:3px;">
+                <sc-for list="{{ sumStack }}" as="b" hint-placeholder-count="20">
+                  <div style="flex:1; min-width:0; text-align:center; font-size:10px; color:#7a776f; font-family:Archivo; overflow:visible; white-space:nowrap;">{{ b.day }}</div>
+                </sc-for>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center; margin-top:10px; font-size:11.5px;">
+                <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#93c9ab;"></span>มาปกติ</span>
+                <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#f5c518;"></span>สาย/ออกก่อน</span>
+                <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#d92d0d;"></span>ขาด/แสกนไม่ครบ</span>
+                <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#ddd8c9;"></span>ลา</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div style="font-size:13px; font-weight:800;">{{ sumBreakTitle }} <span style="font-weight:400; font-size:11px; color:#7a776f;">· เรียงจาก Attendance ต่ำสุด · กดแถวเพื่อกรองเฉพาะกลุ่มนั้น</span></div>
+              <div class="noprint" style="display:flex; gap:8px;">
+                <button type="button" class="btn btn-primary" onClick="{{ sumXLS }}" style="height:30px; font-size:12px;">โหลด Excel รายคน</button>
+                <button type="button" class="btn btn-secondary" onClick="{{ sumPrint }}" style="height:30px; font-size:12px;">พิมพ์ / PDF</button>
+              </div>
+            </div>
+            <div style="overflow:auto; margin-top:8px;">
+            <table class="table" style="width:100%; font-size:12px;">
+              <thead><tr><th style="text-align:left;">{{ sumBreakHead }}</th><th style="text-align:right;">คน</th><th style="text-align:left; width:170px;">Attendance Rate</th><th style="text-align:left; width:170px;">ตรงเวลา</th><th style="text-align:right;">ขาด</th><th style="text-align:right;">สาย</th><th style="text-align:right;">นาทีสาย</th><th style="text-align:right;">ออกก่อน</th><th style="text-align:right;">ไม่ครบ</th><th style="text-align:right;">ลา</th></tr></thead>
+              <tbody>
+                <sc-for list="{{ sumBreakRows }}" as="r" hint-placeholder-count="5">
+                  <tr onClick="{{ r.pick }}" style="cursor:pointer;">
+                    <td style="font-weight:700;">{{ r.name }} <span style="font-weight:400; font-size:10.5px; color:#7a776f; font-family:Archivo;">{{ r.time }}</span></td>
+                    <td style="text-align:right; font-family:Archivo;">{{ r.heads }}</td>
+                    <td><div style="display:flex; align-items:center; gap:8px;"><span style="flex:1; height:10px; background:#eeeade; display:block;"><span style="{{ r.attBar }}"></span></span><strong style="font-family:Archivo; width:46px; text-align:right;">{{ r.att }}</strong></div></td>
+                    <td><div style="display:flex; align-items:center; gap:8px;"><span style="flex:1; height:10px; background:#eeeade; display:block;"><span style="{{ r.onBar }}"></span></span><strong style="font-family:Archivo; width:46px; text-align:right;">{{ r.on }}</strong></div></td>
+                    <td style="text-align:right; font-family:Archivo; color:#ae1f06; font-weight:700;">{{ r.absent }}</td>
+                    <td style="text-align:right; font-family:Archivo;">{{ r.late }}</td>
+                    <td style="text-align:right; font-family:Archivo;">{{ r.lateMin }}</td>
+                    <td style="text-align:right; font-family:Archivo;">{{ r.early }}</td>
+                    <td style="text-align:right; font-family:Archivo;">{{ r.inc }}</td>
+                    <td style="text-align:right; font-family:Archivo;">{{ r.leave }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px;">
+            <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+              <div style="font-size:13px; font-weight:800;">10 คน Attendance ต่ำสุด</div>
+              <div style="font-size:10.5px; color:#7a776f; margin-bottom:6px;">{{ sumLowNote }}</div>
+              <sc-for list="{{ sumLow }}" as="p" hint-placeholder-count="10">
+                <div onClick="{{ p.pick }}" title="{{ p.detail }}" style="display:grid; grid-template-columns:20px 1fr 90px 46px; gap:8px; align-items:center; padding:5px 0; border-bottom:1px solid #eeeade; cursor:pointer;">
+                  <span style="font-family:Archivo; font-weight:800; font-size:11px; color:#7a776f;">{{ p.rank }}</span>
+                  <div style="min-width:0;"><div style="font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.name }}</div><div style="font-size:10.5px; color:#7a776f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.detail }}</div></div>
+                  <span style="height:8px; background:#eeeade; display:block;"><span style="{{ p.bar }}"></span></span>
+                  <strong style="font-family:Archivo; font-size:12px; text-align:right;">{{ p.att }}</strong>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+                <div style="font-size:13px; font-weight:800; margin-bottom:8px;">ประเภทการลา (วัน)</div>
+                <sc-if value="{{ sumNoLeave }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px; color:#7a776f;">ไม่มีวันลาในช่วงนี้</div></sc-if>
+                <sc-for list="{{ sumLeave }}" as="l" hint-placeholder-count="4">
+                  <div style="display:grid; grid-template-columns:110px 1fr 36px; gap:8px; align-items:center; padding:3px 0; font-size:12px;">
+                    <span>{{ l.label }}</span><span style="display:block;"><span style="{{ l.bar }}"></span></span><strong style="font-family:Archivo; text-align:right;">{{ l.n }}</strong>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+                <div style="font-size:13px; font-weight:800;">ขาด / สาย แยกตามวันในสัปดาห์</div>
+                <div style="font-size:10.5px; color:#7a776f; margin-bottom:6px;">ดูว่าปัญหากระจุกอยู่วันไหน</div>
+                <div style="height:110px; display:flex; gap:8px; border-bottom:2px solid #121110;">
+                  <sc-for list="{{ sumDow }}" as="d" hint-placeholder-count="7">
+                    <div title="ขาด {{ d.abs }} · สาย {{ d.late }}" style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch;">
+                      <span style="text-align:center; font-size:10px; font-family:Archivo; font-weight:700;">{{ d.total }}</span>
+                      <div style="{{ d.lateStyle }}"></div><div style="{{ d.absStyle }}"></div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:3px;">
+                  <sc-for list="{{ sumDow }}" as="d" hint-placeholder-count="7"><div style="flex:1; text-align:center; font-size:11px; color:#57544c;">{{ d.label }}</div></sc-for>
+                </div>
+                <div style="display:flex; gap:14px; justify-content:center; margin-top:8px; font-size:11.5px;">
+                  <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#d92d0d;"></span>ขาดงาน</span>
+                  <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#f5c518;"></span>มาสาย</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        </sc-if>
+
+        <!-- ══ รายบุคคล ══ -->
+        <sc-if value="{{ sumIsPerson }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:18px;">
+
+          <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+            <div style="font-size:13px; font-weight:800;">ปฏิทินในช่วงที่เลือก</div>
+            <div style="font-size:10.5px; color:#7a776f; margin-bottom:8px;">สีเดียวกับตารางสี · ชี้เพื่อดูเวลาเข้า-ออก · กดเพื่อเปิดวันนั้นในหน้ารายพนักงาน</div>
+            <div style="display:flex; flex-wrap:wrap; gap:3px;">
+              <sc-for list="{{ sumCal }}" as="c" hint-placeholder-count="25">
+                <div title="{{ c.tip }}" onClick="{{ c.pick }}" style="display:flex; flex-direction:column; align-items:center; cursor:pointer;">
+                  <span style="font-size:10px; font-family:Archivo; font-weight:800;">{{ c.day }}</span>
+                  <span style="font-size:9.5px; color:#7a776f;">{{ c.dow }}</span>
+                  <div style="{{ c.style }}">{{ c.code }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:12px;">
+            <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+              <div style="font-size:13px; font-weight:800;">สาย / ออกก่อน รายวัน (นาที)</div>
+              <sc-if value="{{ sumNoLate }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px; color:#2e7d4f; font-weight:700; padding:20px 0;">ไม่มีวันที่สายหรือออกก่อนเกินเวลาผ่อนผันเลย</div></sc-if>
+              <sc-if value="{{ sumHasLate }}" hint-placeholder-val="{{ true }}">
+                <div style="height:140px; display:flex; gap:2px; border-bottom:2px solid #121110; margin-top:10px;">
+                  <sc-for list="{{ sumLateBars }}" as="b" hint-placeholder-count="20">
+                    <div title="{{ b.tip }}" style="flex:1; min-width:0; display:flex; align-items:flex-end; gap:1px;">
+                      <div style="flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;"><span style="font-size:9px; font-family:Archivo; font-weight:700;">{{ b.lv }}</span><div style="{{ b.late }}; width:100%;"></div></div>
+                      <div style="flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end;"><div style="{{ b.early }}; width:100%;"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex; gap:2px; margin-top:3px;">
+                  <sc-for list="{{ sumLateBars }}" as="b" hint-placeholder-count="20"><div style="flex:1; min-width:0; text-align:center; font-size:10px; color:#7a776f; font-family:Archivo; white-space:nowrap;">{{ b.day }}</div></sc-for>
+                </div>
+                <div style="display:flex; gap:14px; justify-content:center; margin-top:8px; font-size:11.5px;">
+                  <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#f5c518;"></span>สาย (นาที)</span>
+                  <span style="display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:11px; height:11px; background:#121110;"></span>ออกก่อน (นาที)</span>
+                </div>
+              </sc-if>
+            </div>
+            <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+              <div style="font-size:13px; font-weight:800;">เทียบกับทีม</div>
+              <div style="font-size:10.5px; color:#7a776f; margin-bottom:6px;">{{ sumTeamLabel }}</div>
+              <table class="table" style="width:100%; font-size:12px;">
+                <thead><tr><th style="text-align:left;">เรื่อง</th><th style="text-align:right;">คนนี้</th><th style="text-align:right;">ทีมเฉลี่ย</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ sumCompare }}" as="r" hint-placeholder-count="7">
+                    <tr><td>{{ r.label }}</td><td style="text-align:right; font-family:Archivo; font-weight:800;">{{ r.me }}</td><td style="text-align:right; font-family:Archivo; color:#57544c;">{{ r.team }}</td></tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+            <div style="font-size:13px; font-weight:800; margin-bottom:6px;">รายละเอียดรายวัน</div>
+            <div style="max-height:460px; overflow:auto;">
+            <table class="table" style="width:100%; font-size:12px;">
+              <thead><tr><th style="text-align:left;">วันที่</th><th style="text-align:left;">วัน</th><th style="text-align:left;">กะ</th><th style="text-align:left;">เข้า</th><th style="text-align:left;">ออก</th><th style="text-align:left;">สถานะ</th><th style="text-align:right;">สาย (น.)</th><th style="text-align:right;">ออกก่อน (น.)</th></tr></thead>
+              <tbody>
+                <sc-for list="{{ sumDaily }}" as="r" hint-placeholder-count="10">
+                  <tr onClick="{{ r.pick }}" style="cursor:pointer;">
+                    <td style="font-family:Archivo;">{{ r.date }}</td><td>{{ r.dow }}</td><td style="font-size:11px;">{{ r.shift }}</td>
+                    <td style="font-family:Archivo;">{{ r.tin }}</td><td style="font-family:Archivo;">{{ r.tout }}</td>
+                    <td><span style="{{ r.tag }}">{{ r.status }}</span></td>
+                    <td style="text-align:right; font-family:Archivo;">{{ r.late }}</td><td style="text-align:right; font-family:Archivo;">{{ r.early }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px;">
+            <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+              <div style="font-size:13px; font-weight:800; margin-bottom:8px;">ประเภทการลา (วัน)</div>
+              <sc-if value="{{ sumNoLeave }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px; color:#7a776f;">ไม่มีวันลาในช่วงนี้</div></sc-if>
+              <sc-for list="{{ sumLeave }}" as="l" hint-placeholder-count="4">
+                <div style="display:grid; grid-template-columns:110px 1fr 36px; gap:8px; align-items:center; padding:3px 0; font-size:12px;">
+                  <span>{{ l.label }}</span><span style="display:block;"><span style="{{ l.bar }}"></span></span><strong style="font-family:Archivo; text-align:right;">{{ l.n }}</strong>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#fff; border:2px solid rgba(32,30,29,.4); padding:12px 14px;">
+              <div style="font-size:13px; font-weight:800; margin-bottom:6px;">ขาด / สาย แยกตามวันในสัปดาห์</div>
+              <div style="height:100px; display:flex; gap:8px; border-bottom:2px solid #121110;">
+                <sc-for list="{{ sumDow }}" as="d" hint-placeholder-count="7">
+                  <div title="ขาด {{ d.abs }} · สาย {{ d.late }}" style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch;">
+                    <span style="text-align:center; font-size:10px; font-family:Archivo; font-weight:700;">{{ d.total }}</span>
+                    <div style="{{ d.lateStyle }}"></div><div style="{{ d.absStyle }}"></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex; gap:8px; margin-top:3px;">
+                <sc-for list="{{ sumDow }}" as="d" hint-placeholder-count="7"><div style="flex:1; text-align:center; font-size:11px; color:#57544c;">{{ d.label }}</div></sc-for>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        </sc-if>
+
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
     <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ true }}">
     <div style="display:flex; flex-direction:column; flex:1; min-height:0;">
       <div class="noprint" style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; padding:14px 28px; border-bottom:2px solid rgba(32,30,29,.4);">
@@ -1354,6 +1732,7 @@ function readableOn(hex) {
 const NAV = [
   ['upload', 'อัปโหลดไฟล์', 'Ingest', 'อัปโหลดไฟล์ประจำวัน'],
   ['dash', 'แดชบอร์ด', 'Overview', 'ภาพรวมการมาทำงาน'],
+  ['summary', 'สรุปแบบละเอียด', 'Summary', 'สรุปรายกะ · รายตำแหน่ง · รายบุคคล'],
   ['grid', 'ตารางสี', 'Matrix', 'พนักงาน × วันที่'],
   ['emp', 'รายพนักงาน', 'Employee', 'รายละเอียดรายบุคคล'],
   ['hub', 'รายตำแหน่ง', 'Position', 'สรุปตามตำแหน่งงาน'],
@@ -1382,6 +1761,7 @@ class Component extends DCLogic {
     archFrom: '', archTo: '', archDayFrom: '', archDayTo: '',
     search: '', fBranch: 'ทั้งหมด', fPos: 'ทั้งหมด', fStatus: 'all',
     dayKey: '', selId: null, scrollTop: 0, viewH: 600, wheelRows: 1, pickDay: '', seMinDays: 3, seShift: 'all',
+    sumView: 'shift', sumShift: 'all', sumPos: 'all', sumPerson: '', sumFrom: '', sumTo: '', sumPreset: 'month', sumQ: '',
     // flagShiftOnHoliday ปิดไว้: ไฟล์ตารางกะที่ HCM ส่งออกมาตั้งกะให้ทุกคนทุกวัน
     // ไม่เคยเขียนว่า "วันหยุด" กฎนี้จึงยิงธงแดงมั่วทุกวันหยุดจริง เปิดได้ถ้าไฟล์กะแยกวันหยุด
     grace: 5, earlyGrace: 5, flagNoShift: true, flagShiftOnHoliday: false, holidays: [], dropOpenDay: true,
@@ -1473,7 +1853,7 @@ class Component extends DCLogic {
 
      แก้โดยจดหน้าที่กำลังดูลงประวัติของเบราว์เซอร์ทุกครั้งที่เปลี่ยน
      กดย้อนกลับก็ถอยทีละหน้าเหมือนเว็บทั่วไป จนสุดแล้วค่อยออกจากแอป   */
-  navKeys = ['screen', 'selId', 'fPos', 'gShift', 'dashTab', 'pickDay', 'hShift'];
+  navKeys = ['screen', 'selId', 'fPos', 'gShift', 'dashTab', 'pickDay', 'hShift', 'sumView', 'sumShift', 'sumPos', 'sumPerson'];
   navState() {
     const out = {};
     this.navKeys.forEach(k => { out[k] = this.state[k]; });
@@ -2315,6 +2695,416 @@ class Component extends DCLogic {
     return { header, rows, colors, emps };
   }
 
+  /* ══ สรุปแบบละเอียด ═══════════════════════════════════════════════════
+     หน้าเดียวตอบได้ทั้ง "กะนี้เป็นยังไง" "ตำแหน่งนี้เป็นยังไง" และ "คนนี้เป็นยังไง"
+     ตัวกรองกะ / ตำแหน่ง / ช่วงวันที่ ใช้ร่วมกันทุกแท็บ ตัวเลขใช้สูตรเดียวกับแดชบอร์ด
+       Attendance Rate = ค่าเฉลี่ยของอัตรารายวัน (มา ÷ คนที่มีข้อมูลวันนั้น) ตามสูตรส่วนกลาง
+       อัตราตรงเวลา   = 1 − (ขาด + สาย + แสกนไม่ครบ) ÷ วันทำงาน (ตัดวันหยุดและวันลาออก)
+     กราฟแท่งทำเป็น HTML ทั้งหมด ส่วน SVG ใช้แค่วาดเส้นกับหน้าปัด ไม่มีตัวหนังสือข้างใน
+     เพราะตัวหนังสือจาก {{ }} ที่อยู่ใน SVG จะไม่ถูกวาด                          */
+  SUM_DOW = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+  sumDow(d) { return this.SUM_DOW[new Date(d + 'T00:00:00').getDay()]; }
+  sumNewAgg() {
+    return { head: 0, present: 0, slots: 0, absent: 0, late: 0, lateMin: 0, early: 0, earlyMin: 0, inc: 0, leave: 0, off: 0,
+      days: new Map(), leaveBy: {}, lateB: [0, 0, 0, 0], earlyB: [0, 0, 0, 0], dowAbs: [0, 0, 0, 0, 0, 0, 0], dowLate: [0, 0, 0, 0, 0, 0, 0],
+      cat: { ok: 0, late: 0, bad: 0, leave: 0, off: 0 } };
+  }
+  sumBucket(min) { return min <= 15 ? 0 : min <= 30 ? 1 : min <= 60 ? 2 : 3; }
+  sumAdd(A, c, di, dow) {
+    const s = this.state, E = this.eng;
+    const pres = E.isPresent(c);
+    if (!c.blank) {
+      A.head++;
+      const d = A.days.get(di) || [0, 0]; d[0]++; if (pres) d[1]++; A.days.set(di, d);
+    }
+    if (pres) A.present++;
+    const off = c.code === 'OFF' || c.code === 'PH';
+    if (off) A.off++;
+    if (c.leave) { A.leave++; A.leaveBy[c.leave] = (A.leaveBy[c.leave] || 0) + 1; }
+    if (!off && !c.leave) A.slots++;
+    const abs = c.color === 'red' && (c.code === 'AB' || c.code === 'NS');
+    if (abs) { A.absent++; A.dowAbs[dow]++; }
+    if (c.color === 'red' && c.code === 'INC') A.inc++;
+    if (c.late > s.grace) { A.late++; A.lateMin += c.late; A.lateB[this.sumBucket(c.late)]++; A.dowLate[dow]++; }
+    if (c.early > s.earlyGrace) { A.early++; A.earlyMin += c.early; A.earlyB[this.sumBucket(c.early)]++; }
+    // หมวดสีของวันนั้น ใช้กับกราฟแท่งซ้อนรายวัน (หนึ่งวัน-คน อยู่หมวดเดียว)
+    if (c.blank) return;
+    if (off) A.cat.off++;
+    else if (c.leave) A.cat.leave++;
+    else if (c.color === 'red' || c.color2 === 'red') A.cat.bad++;
+    else if (c.color === 'yellow' || c.color2 === 'yellow') A.cat.late++;
+    else if (c.color === 'ok') A.cat.ok++;
+    else A.cat.off++;
+  }
+  sumAtt(A) {
+    // ค่าเฉลี่ยของอัตรารายวัน — คนเดียวจะเท่ากับ มา ÷ วันที่มีข้อมูล
+    let n = 0, t = 0;
+    A.days.forEach(([h, p]) => { if (h) { n++; t += p / h; } });
+    return n ? Math.round(t / n * 1000) / 10 : null;
+  }
+  sumOnTime(A) { return A.slots ? Math.max(0, Math.round((1 - (A.absent + A.late + A.inc) / A.slots) * 1000) / 10) : null; }
+  sumRateColor(v) { return v == null ? '#b3afa4' : v >= 93 ? '#2e7d4f' : v >= 88 ? '#e0a800' : '#d92d0d'; }
+  sumGauge(title, sub, v, max, color, valText, minText, maxText) {
+    const cx = 60, cy = 58, r = 44;
+    const P = (deg) => { const a = deg * Math.PI / 180; return [(cx + r * Math.cos(a)).toFixed(2), (cy + r * Math.sin(a)).toFixed(2)]; };
+    const arc = (a, b) => { const p = P(a), q = P(b); return `M${p[0]},${p[1]} A${r},${r} 0 ${b - a > 180 ? 1 : 0} 1 ${q[0]},${q[1]}`; };
+    const f = Math.max(0, Math.min(1, (v || 0) / (max || 1)));
+    const end = 150 + 240 * f;
+    const na = end * Math.PI / 180;
+    return { title, sub, valText, minText, maxText, color,
+      bg: arc(150, 390), val: f > 0.004 ? arc(150, end) : '',
+      nx: (cx + (r - 20) * Math.cos(na)).toFixed(2), ny: (cy + (r - 20) * Math.sin(na)).toFixed(2),
+      valStyle: `font-family:Archivo,"Noto Sans Thai",sans-serif; font-weight:800; font-size:20px; color:${color};` };
+  }
+  sumSpark(vals) {
+    const v = vals.map(x => (x == null || isNaN(x)) ? null : x);
+    const ok = v.filter(x => x != null);
+    if (ok.length < 2) return '';
+    const lo = Math.min(...ok), hi = Math.max(...ok), span = (hi - lo) || 1;
+    const X = (i) => (i / Math.max(1, v.length - 1) * 100).toFixed(2);
+    const Y = (x) => (38 - ((x - lo) / span) * 30).toFixed(2);
+    let d = '', first = null, last = null;
+    v.forEach((x, i) => { if (x == null) return; d += `${d ? 'L' : 'M'}${X(i)},${Y(x)} `; if (first == null) first = i; last = i; });
+    return `${d}L${X(last)},40 L${X(first)},40 Z`;
+  }
+  sumExport() {
+    const R = this._sumRows || [];
+    if (!R.length) { this.addLog('ไม่มีข้อมูลให้โหลด'); return; }
+    const E = this.eng, info = this._sumInfo || {};
+    const header = ['รหัสพนักงาน', 'ชื่อ-สกุล', 'ตำแหน่ง', 'กะหลัก', 'วันที่มีข้อมูล', 'มา', 'ขาด', 'สาย (ครั้ง)', 'นาทีสายรวม', 'ออกก่อน', 'แสกนไม่ครบ', 'ลา', 'Attendance Rate', 'อัตราตรงเวลา'];
+    const rows = R.map(r => [r.id, r.name, r.position, r.shift, r.A.head, r.A.present, r.A.absent, r.A.late, r.A.lateMin, r.A.early, r.A.inc, r.A.leave,
+      r.att == null ? '' : r.att + '%', r.on == null ? '' : r.on + '%']);
+    const base = `สรุป-${info.tag || 'ทั้งหมด'}-${info.from}_${info.to}`.replace(/[\\/:*?"<>|]/g, '-');
+    E.download(base + '.xls', E.toSpreadsheetML(header, rows, rows.map(() => []), 'สรุป'), 'application/vnd.ms-excel');
+    this.addLog(`โหลดสรุปแล้ว ${rows.length} คน`);
+  }
+  sumPersonExport() {
+    const P = this._sumPerson;
+    if (!P || !P.rows.length) { this.addLog('ไม่มีข้อมูลให้โหลด'); return; }
+    const E = this.eng;
+    const header = ['วันที่', 'วัน', 'กะ', 'เข้า', 'ออก', 'สถานะ', 'สาย (นาที)', 'ออกก่อน (นาที)'];
+    const rows = P.rows.map(r => [r.date, r.dow, r.shift, r.tin, r.tout, r.status, r.late || '', r.early || '']);
+    const base = `สรุปรายคน-${P.id}-${P.from}_${P.to}`;
+    E.download(base + '.xls', E.toSpreadsheetML(header, rows, rows.map(() => []), P.name), 'application/vnd.ms-excel');
+    this.addLog(`โหลดข้อมูลของ ${P.name} แล้ว ${rows.length} วัน`);
+  }
+  sumStatus(c) {
+    const s = this.state;
+    if (c.blank) return ['ไม่มีข้อมูล', 'gray'];
+    if (c.code === 'OFF') return ['วันหยุด', 'gray'];
+    if (c.code === 'PH') return ['วันหยุดนักขัตฯ', 'gray'];
+    if (c.leave) { const L = (this.eng.LEAVE_TYPES || []).find(x => x.code === c.leave); return [(L ? L.label : 'ลา ' + c.leave) + (c.color === 'gray-half' ? ' (ครึ่งวัน)' : ''), 'gray']; }
+    if (c.code === 'AB') return ['ขาดงาน', 'red'];
+    if (c.code === 'NS') return ['ไม่มีการแสกน', 'red'];
+    if (c.code === 'INC') return ['แสกนไม่ครบ', 'red'];
+    if (c.code === 'NoS') return ['ไม่มีกะ', 'red'];
+    if (c.code === 'OFF!') return ['กะในวันหยุด', 'red'];
+    const bits = [];
+    if (c.late > s.grace) bits.push(`สาย ${c.late} น.`);
+    if (c.early > s.earlyGrace) bits.push(`ออกก่อน ${c.early} น.`);
+    if (bits.length) return [bits.join(' · '), 'yellow'];
+    return ['ปกติ', 'ok'];
+  }
+
+  summaryVals() {
+    const s = this.state, m = s.model, E = this.eng;
+    const set = (p) => this.setState(p);
+    const canPos = this.can('hub');
+    const view = s.sumView === 'person' ? 'person' : (s.sumView === 'pos' && canPos) ? 'pos' : 'shift';
+    const TAB = (on) => `padding:9px 18px; border:0; border-right:2px solid rgba(32,30,29,.4); cursor:pointer; font-family:Archivo,"Noto Sans Thai",sans-serif; font-size:13px; font-weight:${on ? 800 : 400}; background:${on ? '#121110' : 'transparent'}; color:${on ? '#f5c518' : '#121110'};`;
+    const V = {
+      sumTabs: [['shift', 'สรุปตามกะ'], ...(canPos ? [['pos', 'สรุปตามตำแหน่ง']] : []), ['person', 'รายบุคคล']]
+        .map(([k, l]) => ({ label: l, pick: () => this.goTo({ sumView: k }), style: TAB(view === k) })),
+      sumIsPerson: view === 'person', sumIsGroup: view !== 'person', sumCanPos: canPos,
+      sumTabHint: view === 'person' ? 'เลือกพนักงานจากรายชื่อ ดูละเอียดทีละวัน' : view === 'pos' ? 'เทียบทุกตำแหน่งในขอบเขตที่เลือก' : 'เทียบทุกกะในขอบเขตที่เลือก',
+      sumHasData: false, sumNoData: true,
+      sumShiftOpts: [], sumPosOpts: [], sumDateOpts: [], sumPresets: [], sumPersonOpts: [],
+      sumShift: s.sumShift, sumPos: s.sumPos, sumFrom: '', sumTo: '', sumQ: s.sumQ, sumPerson: '',
+      onSumShift: (e) => this.goTo({ sumShift: e.target.value }),
+      onSumPos: (e) => this.goTo({ sumPos: e.target.value }),
+      onSumFrom: (e) => set({ sumFrom: e.target.value, sumPreset: 'custom' }),
+      onSumTo: (e) => set({ sumTo: e.target.value, sumPreset: 'custom' }),
+      onSumQ: (e) => set({ sumQ: e.target.value }),
+      onSumPerson: (e) => this.goTo({ sumPerson: e.target.value }),
+      sumScope: '', sumKpis: [], sumGauges: [], sumAging: [], sumAgingNote: '',
+      sumLineGrid: [], sumLineAtt: '', sumLineOn: '', sumLineDots: [], sumLineTicks: [],
+      sumStack: [], sumStackTicks: [], sumBreakTitle: '', sumBreakRows: [], sumLow: [], sumLowNote: '', sumLeave: [], sumHasLeave: false, sumNoLeave: true, sumDow: [],
+      sumXLS: () => this.sumExport(),
+      sumP: { name: '', id: '', position: '', shift: '', days: '' }, sumCal: [], sumDaily: [], sumLateBars: [], sumHasLate: false, sumNoLate: true,
+      sumCompare: [], sumOpenEmp: () => {}, sumPXLS: () => this.sumPersonExport(),
+      sumPrint: () => window.print(),
+      sumEmptyText: 'ยังไม่มีข้อมูล — อัปโหลดไฟล์ หรือกด "ดึงข้อมูลจากชีต" ก่อน', sumPersonCount: '', sumStackMax: 0, sumBreakHead: '', sumTeamLabel: '',
+    };
+    if (!m || !E || !m.dates.length) return V;
+
+    const dates = m.dates;
+    let from = dates.includes(s.sumFrom) ? s.sumFrom : dates[0];
+    let to = dates.includes(s.sumTo) ? s.sumTo : dates[dates.length - 1];
+    if (from > to) { const t = from; from = to; to = t; }
+    const i0 = dates.indexOf(from), i1 = dates.indexOf(to);
+    const rDates = dates.slice(i0, i1 + 1);
+    const lastD = dates[dates.length - 1];
+    V.sumFrom = from; V.sumTo = to;
+    V.sumDateOpts = dates.map(d => ({ value: d, label: `${d} (${this.sumDow(d)})` }));
+    const PRE = (k, label, f, t) => ({ label, pick: () => set({ sumPreset: k, sumFrom: f, sumTo: t }),
+      style: `padding:0 10px; height:100%; border:0; cursor:pointer; font-size:12px; font-family:Archivo,"Noto Sans Thai",sans-serif; background:${(s.sumPreset || 'month') === k ? '#121110' : 'transparent'}; color:${(s.sumPreset || 'month') === k ? '#f5c518' : '#121110'};` });
+    V.sumPresets = [
+      PRE('last', 'วันล่าสุด', lastD, lastD),
+      PRE('7', '7 วัน', dates[Math.max(0, dates.length - 7)], lastD),
+      PRE('14', '14 วัน', dates[Math.max(0, dates.length - 14)], lastD),
+      PRE('month', 'ทั้งเดือน', dates[0], lastD),
+    ];
+
+    // ── ตัวเลือกกะ / ตำแหน่ง
+    const groups = s.shiftGroups || [];
+    const shiftKey = (s.sumShift && s.sumShift !== 'all' && (groups.some(g => g.key === s.sumShift) || s.sumShift === 'none' || s.sumShift === 'other')) ? s.sumShift : 'all';
+    V.sumShift = shiftKey;
+    V.sumShiftOpts = [{ value: 'all', label: 'ทุกกะ' }, ...groups.map(g => ({ value: g.key, label: `${g.name}` })), { value: 'none', label: 'ไม่ได้ตั้งกะ' }];
+    const positions = [...new Set(m.employees.map(e => e.position).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+    const posSel = canPos && s.sumPos && positions.includes(s.sumPos) ? s.sumPos : 'all';
+    V.sumPos = posSel;
+    V.sumPosOpts = [{ value: 'all', label: 'ทุกตำแหน่ง' }, ...positions.map(p => ({ value: p, label: p }))];
+
+    // ── เดินทุกเซลล์ในขอบเขตครั้งเดียว เก็บผลไว้หลายมุมพร้อมกัน
+    const inShift = (c) => shiftKey === 'all' || this.shiftOf(c).key === shiftKey;
+    const TOT = this.sumNewAgg();
+    const perDay = rDates.map(() => this.sumNewAgg());
+    const byGroup = new Map();
+    const people = [];
+    m.employees.forEach(e => {
+      if (posSel !== 'all' && e.position !== posSel) return;
+      const A = this.sumNewAgg(), cells = [], shCount = {};
+      for (let i = i0; i <= i1; i++) {
+        const c = e.cells[i];
+        if (!c || !inShift(c)) continue;
+        const j = i - i0, dow = new Date(dates[i] + 'T00:00:00').getDay();
+        cells.push({ c, i, j });
+        this.sumAdd(A, c, i, dow);
+        this.sumAdd(TOT, c, i, dow);
+        this.sumAdd(perDay[j], c, i, dow);
+        const sh = this.shiftOf(c);
+        if (c.shift) shCount[sh.name] = (shCount[sh.name] || 0) + 1;
+        const gk = view === 'pos' ? (e.position || '—') : sh.key;
+        const gName = view === 'pos' ? (e.position || '—') : sh.name;
+        if (!byGroup.has(gk)) byGroup.set(gk, { key: gk, name: gName, time: view === 'pos' || sh.time === sh.name ? '' : sh.time, A: this.sumNewAgg(), ids: new Set() });
+        const G = byGroup.get(gk);
+        this.sumAdd(G.A, c, i, dow);
+        if (!c.blank) G.ids.add(e.id);
+      }
+      if (!A.head) return;
+      const mainShift = Object.entries(shCount).sort((a, b) => b[1] - a[1])[0];
+      people.push({ e, id: e.id, name: e.name, position: e.position || '—', shift: mainShift ? mainShift[0] : 'ไม่ได้ตั้งกะ', A, cells,
+        att: this.sumAtt(A), on: this.sumOnTime(A) });
+    });
+    people.sort((a, b) => (a.att ?? 101) - (b.att ?? 101) || (a.on ?? 101) - (b.on ?? 101) || b.A.absent - a.A.absent);
+    this._sumRows = people;
+    const shiftLabel = shiftKey === 'all' ? 'ทุกกะ' : (V.sumShiftOpts.find(o => o.value === shiftKey) || {}).label || shiftKey;
+    const posLabel = posSel === 'all' ? 'ทุกตำแหน่ง' : posSel;
+    this._sumInfo = { from, to, tag: [shiftKey === 'all' ? '' : shiftLabel, posSel === 'all' ? '' : posSel].filter(Boolean).join('-') || 'ทั้งหมด' };
+    V.sumScope = `${shiftLabel} · ${posLabel} · ${from} → ${to} (${rDates.length} วัน) · ${people.length} คน`;
+    if (!people.length) { V.sumNoData = true; V.sumEmptyText = 'ไม่มีพนักงานในขอบเขตที่เลือก ลองเปลี่ยนกะ ตำแหน่ง หรือช่วงวันที่'; return V; }
+    V.sumHasData = true; V.sumNoData = false;
+
+    const f1 = (x) => x == null ? '—' : (Math.round(x * 10) / 10).toLocaleString();
+    const pct = (x) => x == null ? '—' : x + '%';
+    const RED = '#d92d0d', YEL = '#f5c518', OKG = '#2e7d4f', INK = '#121110';
+    const tile = (title, value, sub, color, spark, sparkColor) => ({ title, value, sub, spark: spark || '', sparkFill: sparkColor || color,
+      valStyle: `font-family:Archivo,"Noto Sans Thai",sans-serif; font-weight:800; font-size:30px; letter-spacing:-.02em; line-height:1.1; color:${color}; position:relative;` });
+    const dayAtt = perDay.map(A => this.sumAtt(A));
+    const dayOn = perDay.map(A => this.sumOnTime(A));
+
+    // ══ ภาพรวมของกลุ่ม ══
+    if (view !== 'person') {
+      const att = this.sumAtt(TOT), on = this.sumOnTime(TOT);
+      const perfect = people.filter(p => !p.A.absent && !p.A.late && !p.A.inc && !p.A.early).length;
+      V.sumKpis = [
+        tile('Attendance Rate', pct(att), `เฉลี่ยของอัตรารายวัน · มา ${TOT.present.toLocaleString()} จาก ${TOT.head.toLocaleString()} วัน-คน`, this.sumRateColor(att), this.sumSpark(dayAtt)),
+        tile('อัตรามาตรงเวลา', pct(on), `จาก ${TOT.slots.toLocaleString()} วันทำงาน (ตัดวันหยุด/ลา)`, this.sumRateColor(on), this.sumSpark(dayOn)),
+        tile('ขาดงาน', TOT.absent.toLocaleString() + ' วัน', `${people.filter(p => p.A.absent).length} คนมีวันขาด`, TOT.absent ? RED : INK, this.sumSpark(perDay.map(A => A.absent)), RED),
+        tile('มาสาย', TOT.late.toLocaleString() + ' ครั้ง', `รวม ${TOT.lateMin.toLocaleString()} นาที · เฉลี่ย ${TOT.late ? Math.round(TOT.lateMin / TOT.late) : 0} น./ครั้ง`, TOT.late ? '#a37800' : INK, this.sumSpark(perDay.map(A => A.late)), YEL),
+        tile('ลา', TOT.leave.toLocaleString() + ' วัน', `${people.filter(p => p.A.leave).length} คนมีวันลา`, INK, this.sumSpark(perDay.map(A => A.leave)), '#7a776f'),
+        tile('แสกนไม่ครบ', TOT.inc.toLocaleString() + ' ครั้ง', `ออกก่อนเวลา ${TOT.early.toLocaleString()} ครั้ง`, TOT.inc ? RED : INK, this.sumSpark(perDay.map(A => A.inc)), RED),
+      ];
+      const absPct = TOT.slots ? Math.round(TOT.absent / TOT.slots * 1000) / 10 : 0;
+      const perfPct = Math.round(perfect / people.length * 1000) / 10;
+      V.sumGauges = [
+        this.sumGauge('Attendance Rate', 'สูตรส่วนกลาง', att, 100, this.sumRateColor(att), pct(att), '0', '100%'),
+        this.sumGauge('อัตรามาตรงเวลา', 'ไม่ขาด ไม่สาย ไม่แสกนไม่ครบ', on, 100, this.sumRateColor(on), pct(on), '0', '100%'),
+        this.sumGauge('ขาดงาน', '% ของวันทำงาน', absPct, 10, absPct <= 2 ? OKG : absPct <= 5 ? '#e0a800' : RED, absPct + '%', '0', '10%'),
+        this.sumGauge('มาปกติทุกวัน', `${perfect} จาก ${people.length} คน`, perfPct, 100, perfPct >= 70 ? OKG : perfPct >= 50 ? '#e0a800' : RED, perfPct + '%', '0', '100%'),
+      ];
+    }
+
+    // ── กราฟแท่ง "สาย/ออกก่อน กี่นาที" (แบบ aging)
+    const agingOf = (A) => {
+      const g = s.grace;
+      const labels = [`${g + 1}–15 น.`, '16–30 น.', '31–60 น.', 'เกิน 60 น.'];
+      const mx = Math.max(1, ...A.lateB, ...A.earlyB);
+      V.sumAgingNote = `นับเฉพาะที่เกินเวลาผ่อนผัน ${g} นาที · สายรวม ${A.late} ครั้ง · ออกก่อนรวม ${A.early} ครั้ง`;
+      return labels.map((label, k) => ({ label,
+        late: A.lateB[k], early: A.earlyB[k],
+        lateStyle: `width:34%; background:${YEL}; height:${(A.lateB[k] / mx * 100).toFixed(1)}%; min-height:${A.lateB[k] ? 2 : 0}px;`,
+        earlyStyle: `width:34%; background:${INK}; height:${(A.earlyB[k] / mx * 100).toFixed(1)}%; min-height:${A.earlyB[k] ? 2 : 0}px;` }));
+    };
+
+    // ── ป้ายวันที่ใต้กราฟ
+    const tickEvery = Math.max(1, Math.ceil(rDates.length / 10));
+
+    if (view !== 'person') {
+      V.sumAging = agingOf(TOT);
+
+      // ── กราฟเส้นรายวัน: Attendance Rate เทียบ อัตราตรงเวลา
+      const vals = [...dayAtt, ...dayOn].filter(x => x != null);
+      const lo = Math.max(0, Math.floor((Math.min(100, ...vals) - 5) / 10) * 10);
+      const W = 1000, H = 190, top = 12, bot = 170;
+      const X = (j) => rDates.length === 1 ? W / 2 : j * (W / (rDates.length - 1));
+      const Y = (v) => bot - (v - lo) / (100 - lo) * (bot - top);
+      const path = (arr) => { let d = '', pen = false; arr.forEach((v, j) => { if (v == null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${X(j).toFixed(1)},${Y(v).toFixed(1)} `; pen = true; }); return d.trim(); };
+      V.sumLineAtt = path(dayAtt); V.sumLineOn = path(dayOn);
+      V.sumLineGrid = [0, 1, 2, 3, 4].map(k => { const v = lo + (100 - lo) * k / 4; return { y: Y(v).toFixed(1), label: Math.round(v) + '%', lbl: `position:absolute; right:6px; top:${(Y(v) - 7).toFixed(1)}px; font-size:10px; line-height:14px; color:#7a776f; font-family:Archivo,sans-serif;` }; });
+      const showVal = rDates.length <= 16;
+      const dots = [];
+      [[dayAtt, INK, -20], [dayOn, '#e0a800', 6]].forEach(([arr, col, off]) => arr.forEach((v, j) => {
+        if (v == null) return;
+        const left = (X(j) / W * 100).toFixed(2);
+        dots.push({ style: `position:absolute; left:${left}%; top:${(Y(v) - 4).toFixed(1)}px; width:8px; height:8px; margin-left:-4px; border-radius:50%; background:${col}; border:2px solid #fff; box-sizing:border-box;`,
+          label: showVal ? String(Math.round(v)) : '', title: `${rDates[j]} · ${v}%`,
+          lstyle: `position:absolute; left:${left}%; top:${(Y(v) + off).toFixed(1)}px; transform:translateX(-50%); font-size:10px; font-family:Archivo; font-weight:700; color:${col === INK ? INK : '#a37800'}; white-space:nowrap; pointer-events:none;` });
+      }));
+      V.sumLineDots = dots;
+      V.sumLineTicks = rDates.map((d, j) => ({ d, j })).filter(o => o.j % tickEvery === 0 || o.j === rDates.length - 1)
+        .map(o => ({ label: o.d.slice(-2), lbl: `position:absolute; left:${(X(o.j) / W * 100).toFixed(2)}%; top:176px; transform:translateX(-50%); font-size:10px; color:#7a776f; font-family:Archivo;` }));
+
+      // ── กราฟแท่งซ้อนรายวัน: ปกติ / สาย-ออกก่อน / ขาด-ไม่ครบ / ลา
+      const mx = Math.max(1, ...perDay.map(A => A.cat.ok + A.cat.late + A.cat.bad + A.cat.leave));
+      const seg = (n, col) => `height:${(n / mx * 100).toFixed(2)}%; background:${col};`;
+      V.sumStack = perDay.map((A, j) => ({
+        tip: `${rDates[j]} (${this.sumDow(rDates[j])}) · ปกติ ${A.cat.ok} · สาย/ออกก่อน ${A.cat.late} · ขาด/ไม่ครบ ${A.cat.bad} · ลา ${A.cat.leave} · หยุด ${A.cat.off}`,
+        ok: seg(A.cat.ok, '#93c9ab'), late: seg(A.cat.late, YEL), bad: seg(A.cat.bad, RED), leave: seg(A.cat.leave, '#ddd8c9'),
+        day: (j % tickEvery === 0 || j === rDates.length - 1) ? rDates[j].slice(-2) : '',
+        total: A.cat.ok + A.cat.late + A.cat.bad + A.cat.leave,
+        pick: () => this.goTo({ screen: 'dash', dashTab: 'all', dashFrom: rDates[j], dashTo: rDates[j], dayKey: rDates[j], rangePreset: 'custom' }),
+      }));
+      V.sumStackMax = mx;
+
+      // ── ตารางแยกกลุ่ม (กะ หรือ ตำแหน่ง)
+      V.sumBreakTitle = view === 'pos' ? 'แยกตามตำแหน่ง' : 'แยกตามกะ';
+      V.sumBreakHead = view === 'pos' ? 'ตำแหน่ง' : 'กะ';
+      V.sumBreakRows = [...byGroup.values()].filter(G => G.A.head).map(G => {
+        const a = this.sumAtt(G.A), o = this.sumOnTime(G.A);
+        return { name: G.name, time: G.time, heads: G.ids.size, att: pct(a), on: pct(o), absent: G.A.absent, late: G.A.late, lateMin: G.A.lateMin, early: G.A.early, inc: G.A.inc, leave: G.A.leave,
+          sort: a ?? 101,
+          attBar: `display:block; height:10px; width:${Math.max(2, a || 0)}%; background:${this.sumRateColor(a)};`,
+          onBar: `display:block; height:10px; width:${Math.max(2, o || 0)}%; background:${this.sumRateColor(o)};`,
+          pick: () => this.goTo(view === 'pos' ? { sumPos: G.key } : { sumShift: G.key }) };
+      }).sort((a, b) => a.sort - b.sort);
+
+      // ── 10 คน Attendance ต่ำสุด
+      const minDays = Math.min(3, rDates.length);
+      V.sumLow = people.filter(p => p.A.head >= minDays).slice(0, 10).map((p, k) => ({
+        rank: k + 1, name: p.name, sub: `${p.position} · ${p.shift}`, att: pct(p.att),
+        detail: `มา ${p.A.present}/${p.A.head} · ขาด ${p.A.absent} · ลา ${p.A.leave} · สาย ${p.A.late}`,
+        bar: `display:block; height:8px; width:${Math.max(2, p.att || 0)}%; background:${this.sumRateColor(p.att)};`,
+        pick: () => this.goTo({ sumView: 'person', sumPerson: p.id }) }));
+      V.sumLowNote = `นับเฉพาะคนที่มีข้อมูลอย่างน้อย ${minDays} วัน · กดชื่อเพื่อดูรายบุคคล`;
+    }
+
+    // ── ประเภทการลา / วันในสัปดาห์ (ใช้ทั้งกลุ่มและรายบุคคล)
+    const leaveOf = (A) => {
+      const rows = Object.entries(A.leaveBy).sort((a, b) => b[1] - a[1]);
+      const mx = Math.max(1, ...rows.map(r => r[1]));
+      return rows.map(([code, n]) => { const L = (E.LEAVE_TYPES || []).find(x => x.code === code);
+        return { label: L ? L.label : code, code, n, bar: `display:block; height:12px; width:${(n / mx * 100).toFixed(1)}%; background:#7a776f;` }; });
+    };
+    const dowOf = (A) => {
+      const order = [1, 2, 3, 4, 5, 6, 0];
+      const mx = Math.max(1, ...order.map(k => A.dowAbs[k] + A.dowLate[k]));
+      return order.map(k => ({ label: this.SUM_DOW[k], abs: A.dowAbs[k], late: A.dowLate[k], total: A.dowAbs[k] + A.dowLate[k],
+        absStyle: `height:${(A.dowAbs[k] / mx * 100).toFixed(1)}%; background:${RED};`,
+        lateStyle: `height:${(A.dowLate[k] / mx * 100).toFixed(1)}%; background:${YEL};` }));
+    };
+
+    if (view !== 'person') {
+      V.sumLeave = leaveOf(TOT);
+      V.sumDow = dowOf(TOT);
+    } else {
+      // ══ รายบุคคล ══
+      const q = (s.sumQ || '').trim().toLowerCase();
+      const pick = people.find(p => String(p.id) === String(s.sumPerson)) || people[0];
+      const list = people.filter(p => p === pick || !q || (p.name || '').toLowerCase().includes(q) || String(p.id).includes(q));
+      V.sumPersonOpts = list.map(p => ({ value: String(p.id), label: `${p.name} · ${p.position} · ${pct(p.att)}` }));
+      V.sumPerson = String(pick.id);
+      V.sumPersonCount = `${list.length} คน · เรียงจาก Attendance ต่ำสุด`;
+      const A = pick.A;
+      const teamAtt = this.sumAtt(TOT), teamOn = this.sumOnTime(TOT);
+      const n = people.length;
+      const avg = (k) => Math.round(people.reduce((t, p) => t + p.A[k], 0) / n * 10) / 10;
+      const rank = people.indexOf(pick) + 1;
+      V.sumP = { name: pick.name, id: pick.id, position: pick.position, shift: pick.shift,
+        days: `${A.head} วันที่มีข้อมูล · อันดับ Attendance ${rank} จาก ${n} คน (นับจากต่ำสุด)` };
+      V.sumKpis = [
+        tile('Attendance Rate', pct(pick.att), `มา ${A.present} จาก ${A.head} วัน · ทีมเฉลี่ย ${pct(teamAtt)}`, this.sumRateColor(pick.att)),
+        tile('อัตรามาตรงเวลา', pct(pick.on), `จาก ${A.slots} วันทำงาน · ทีมเฉลี่ย ${pct(teamOn)}`, this.sumRateColor(pick.on)),
+        tile('ขาดงาน', A.absent + ' วัน', `ทีมเฉลี่ย ${f1(avg('absent'))} วัน/คน`, A.absent ? RED : INK),
+        tile('มาสาย', A.late + ' ครั้ง', `รวม ${A.lateMin} นาที · ทีมเฉลี่ย ${f1(avg('late'))} ครั้ง/คน`, A.late ? '#a37800' : INK),
+        tile('ลา', A.leave + ' วัน', leaveOf(A).map(r => `${r.label} ${r.n}`).join(' · ') || 'ไม่มีวันลา', INK),
+        tile('แสกนไม่ครบ', A.inc + ' ครั้ง', `ออกก่อนเวลา ${A.early} ครั้ง`, A.inc ? RED : INK),
+      ];
+      // เกณฑ์หนังสือเตือนที่ต่ำที่สุดของแต่ละเรื่อง
+      const ruleMin = (metric, fb) => { const r = (s.warnRules || []).filter(x => x.on && x.metric === metric).map(x => Number(x.value)).filter(x => x > 0); return r.length ? Math.min(...r) : fb; };
+      const wA = ruleMin('absent', s.warnAbsent || 3), wL = ruleMin('late', s.warnLate || 5);
+      const warnCol = (v, mx) => v >= mx ? RED : v >= mx - (s.nearGap || 1) ? '#e0a800' : OKG;
+      V.sumGauges = [
+        this.sumGauge('Attendance Rate', `ทีมเฉลี่ย ${pct(teamAtt)}`, pick.att, 100, this.sumRateColor(pick.att), pct(pick.att), '0', '100%'),
+        this.sumGauge('อัตรามาตรงเวลา', `ทีมเฉลี่ย ${pct(teamOn)}`, pick.on, 100, this.sumRateColor(pick.on), pct(pick.on), '0', '100%'),
+        this.sumGauge('ขาดงาน เทียบเกณฑ์เตือน', `เกณฑ์ ${wA} วัน${A.absent >= wA ? ' · ถึงเกณฑ์แล้ว' : ` · เหลืออีก ${wA - A.absent} วัน`}`, A.absent, wA, warnCol(A.absent, wA), A.absent + ' วัน', '0', wA + ' วัน'),
+        this.sumGauge('มาสาย เทียบเกณฑ์เตือน', `เกณฑ์ ${wL} ครั้ง${A.late >= wL ? ' · ถึงเกณฑ์แล้ว' : ` · เหลืออีก ${wL - A.late} ครั้ง`}`, A.late, wL, warnCol(A.late, wL), A.late + ' ครั้ง', '0', wL + ' ครั้ง'),
+      ];
+      V.sumAging = agingOf(A);
+      V.sumLeave = leaveOf(A);
+      V.sumDow = dowOf(A);
+      const byIdx = new Map(pick.cells.map(x => [x.i, x.c]));
+      V.sumCal = rDates.map((d, j) => {
+        const c = byIdx.get(i0 + j);
+        const st = c ? this.sumStatus(c) : ['นอกขอบเขต', 'gray'];
+        return { day: d.slice(-2), dow: this.sumDow(d), code: c ? c.code : '',
+          style: c ? this.cellStyle(c, 34) : 'width:34px; height:26px; background:#f2efe6;',
+          tip: `${d} · ${st[0]}${c && c.in != null ? ` · ${E.fmtMin(c.in)}–${c.out != null ? E.fmtMin(c.out) : '--'}` : ''}`,
+          pick: () => this.goTo({ screen: 'emp', selId: pick.id, pickDay: d }) };
+      });
+      const lateDays = pick.cells.filter(x => x.c.late > s.grace || x.c.early > s.earlyGrace);
+      const mxL = Math.max(1, ...lateDays.map(x => Math.max(x.c.late || 0, x.c.early || 0)));
+      V.sumLateBars = rDates.map((d, j) => {
+        const c = byIdx.get(i0 + j), L = c && c.late > s.grace ? c.late : 0, Er = c && c.early > s.earlyGrace ? c.early : 0;
+        return { day: (j % tickEvery === 0 || j === rDates.length - 1) ? d.slice(-2) : '', tip: `${d} · สาย ${L} น. · ออกก่อน ${Er} น.`,
+          lv: L ? String(L) : '', late: `height:${(L / mxL * 100).toFixed(1)}%; background:${YEL};`, early: `height:${(Er / mxL * 100).toFixed(1)}%; background:${INK};` };
+      });
+      V.sumHasLate = lateDays.length > 0; V.sumNoLate = !V.sumHasLate;
+      const rows = pick.cells.map(({ c, i }) => {
+        const st = this.sumStatus(c);
+        return { date: dates[i], dow: this.sumDow(dates[i]), shift: c.shift ? this.shiftOf(c).name : '—',
+          tin: c.in != null ? E.fmtMin(c.in) : '—', tout: c.out != null ? E.fmtMin(c.out) : '—',
+          status: st[0], tag: this.tagStyle(st[1]), late: c.late > s.grace ? c.late : '', early: c.early > s.earlyGrace ? c.early : '',
+          pick: () => this.goTo({ screen: 'emp', selId: pick.id, pickDay: dates[i] }) };
+      });
+      V.sumDaily = rows;
+      this._sumPerson = { id: pick.id, name: pick.name, from, to, rows };
+      V.sumCompare = [
+        ['Attendance Rate', pct(pick.att), pct(teamAtt)],
+        ['อัตรามาตรงเวลา', pct(pick.on), pct(teamOn)],
+        ['ขาดงาน (วัน)', A.absent, f1(avg('absent'))],
+        ['มาสาย (ครั้ง)', A.late, f1(avg('late'))],
+        ['นาทีสายรวม', A.lateMin, f1(avg('lateMin'))],
+        ['ลา (วัน)', A.leave, f1(avg('leave'))],
+        ['แสกนไม่ครบ (ครั้ง)', A.inc, f1(avg('inc'))],
+      ].map(([label, me, team]) => ({ label, me, team }));
+      V.sumTeamLabel = `ค่าเฉลี่ยต่อคนของ ${n} คนในขอบเขตเดียวกัน`;
+      V.sumOpenEmp = () => this.goTo({ screen: 'emp', selId: pick.id, pickDay: '' });
+    }
+    V.sumHasLeave = V.sumLeave.length > 0; V.sumNoLeave = !V.sumHasLeave;
+    return V;
+  }
+
   /* ป้ายตัวเลขบนกราฟเป็น HTML ไม่ใช่ <text> ใน SVG — ตัวแปรใน {{ }} ถูกห่อด้วย <span>
      ซึ่ง SVG ไม่วาด ป้ายจึงหายหมด วางทับกราฟด้วยตำแหน่งเป็น % แทน */
   yLbl(y) { return `position:absolute; right:6px; top:${(y - 7).toFixed(1)}px; font-size:10px; line-height:14px; color:#7a776f; font-family:Archivo,sans-serif; white-space:nowrap;`; }
@@ -2329,7 +3119,10 @@ class Component extends DCLogic {
     /* เมนูที่คนนี้เข้าได้ มาจากคอลัมน์ "เมนูที่เข้าได้" ในชีต DATA
        เมนูที่ไม่มีสิทธิ์จะไม่ถูกวาด และเปิดตรงด้วย URL ก็ไม่ได้
        (ตัวกันจริงอยู่ที่เซิร์ฟเวอร์ — ข้อมูลกะอื่นไม่ถูกส่งมาตั้งแต่ต้นทาง) */
-    const allowed = (s.me && Array.isArray(s.me.menus) && s.me.menus.length) ? s.me.menus : NAV.map(n => n[0]);
+    const allowed0 = (s.me && Array.isArray(s.me.menus) && s.me.menus.length) ? s.me.menus : NAV.map(n => n[0]);
+    /* หน้าสรุปใช้ข้อมูลชุดเดียวกับแดชบอร์ด ใครเห็นแดชบอร์ดก็เห็นหน้าสรุป
+       ไม่ต้องไปเพิ่มสิทธิ์ในชีต DATA ทีละคน (ข้อมูลกะอื่นถูกกันไว้ที่เซิร์ฟเวอร์อยู่แล้ว) */
+    const allowed = allowed0.indexOf('dash') >= 0 && allowed0.indexOf('summary') < 0 ? [...allowed0, 'summary'] : allowed0;
     const NAVV = NAV.filter(n => allowed.indexOf(n[0]) >= 0);
     /* หน้าส่งออกไม่ได้อยู่ในเมนูซ้าย เข้าได้จากปุ่ม "ส่งออก" มุมขวาบนอย่างเดียว
        จึงหาในรายการเมนูไม่เจอ แล้วเด้งกลับแดชบอร์ดทุกครั้งที่กด — ต้องรับไว้ตรงนี้ */
@@ -2354,7 +3147,7 @@ class Component extends DCLogic {
       })),
       screenTitle: scr[3], screenKicker: scr[2],
       isUpload: scr[0] === 'upload', isDash: scr[0] === 'dash', isGrid: scr[0] === 'grid',
-      isEmp: scr[0] === 'emp', isHub: scr[0] === 'hub', isExport: scr[0] === 'export', isRules: scr[0] === 'rules', isUsers: scr[0] === 'users',
+      isEmp: scr[0] === 'emp', isHub: scr[0] === 'hub', isExport: scr[0] === 'export', isRules: scr[0] === 'rules', isUsers: scr[0] === 'users', isSum: scr[0] === 'summary',
       /* หน้าตารางสีกับหน้ารายพนักงานมีพื้นที่เลื่อนของตัวเองอยู่ข้างในแล้ว
          ถ้าปล่อยให้ตัวหน้าเลื่อนได้อีกชั้น พอเลื่อนในตารางจนสุดมันจะไหลต่อ
          ไปเลื่อนทั้งหน้าแทน กลายเป็นไหลยาวคุมไม่ได้ จึงปิดการเลื่อนชั้นนอก */
@@ -2705,6 +3498,7 @@ class Component extends DCLogic {
         Object.keys(a.byShift || {}).filter(k => k !== 'none' && k !== 'other' && a.byShift[k])
           .map(k => k + ' ' + a.byShift[k].onTime + '%').join(' · '), a.source])), 'text/csv;charset=utf-8');
 
+    if (V.isSum) Object.assign(V, this.summaryVals());
     if (!m || !E) return V;
 
     const emps = this.filtered();
